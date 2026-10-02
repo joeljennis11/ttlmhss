@@ -52,8 +52,15 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑32 | Lockout policy | 5 failures → 15‑minute lock per username; 10 sign‑in requests/min per IP. A school network may put many users behind one IP — raise `LOGIN_RATE_LIMIT_PER_MINUTE` if that causes lockouts at the start of a period | Adopted — please confirm |
 | D‑33 | Self‑service password reset (email/SMS) | Not provided: "Forgot password" = ask the school office, who issues a temporary password. Avoids needing email/SMS infrastructure | Adopted — please confirm |
 
+## Raised when the logo arrived
+
+| ID | Question | Notes | Status |
+|---|---|---|---|
+| D‑34 | Higher‑resolution / vector logo for print | Supplied file is a 556 × 556 JPEG with a white background: fine on screen, may look soft on A4 PDFs | Open — optional input |
+| D‑35 | Logo green vs brand colour | The logo's green measures ≈ `#345729`, lighter than the specified brand colour `#003300`; it also uses gold ≈ `#F6CB17`. Spec keeps `#003300` as primary; gold could serve as a sparing accent. Confirm in Phase 3 | Open |
+
 ## Pending inputs from the user
 
-- Official school logo file (do not create a placeholder).
+- ~~Official school logo file~~ — **received 2026‑10‑03**, stored unmodified at `assets/brand/ttlmhss-logo-official.jpg` (not yet used by the app; Phase 3). Optional: a higher‑resolution or vector original for sharp A4 printing (D‑34).
 - School address, contact details, and signatory names/titles for PDFs.
 - Current class/section list, subject list and period timings (for Phase 4 configuration — entered as data, not code).

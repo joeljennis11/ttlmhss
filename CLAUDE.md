@@ -86,7 +86,7 @@ Accounts: Teacher and Student accounts are created automatically when Admin adds
 
 - **Primary brand colour: Dark Green `#003300` (RGB 0, 51, 0).** Use for sidebar, primary buttons, active navigation, headers, key accents, login branding, dashboard highlights, PDF branding. Derive lighter/darker shades for hover/selected/borders/highlights.
 - Content on white/light neutral backgrounds. **Do not make the whole UI green.** Maintain accessible contrast (WCAG AA minimum).
-- **Logo:** the user will supply the official school logo. Use it as‑is. **Never generate, redraw, invent, or substitute a placeholder logo.** Until provided, show the school name in text only. Store the official file under a single, documented asset path once received.
+- **Logo:** the user will supply the official school logo. Use it as‑is. **Never generate, redraw, invent, or substitute a placeholder logo.** The official logo was received on 2026‑10‑03 and is stored unmodified at `assets/brand/ttlmhss-logo-official.jpg` (see `assets/brand/README.md`). Never edit that file; generate any needed sizes from it.
 - UI must be responsive (desktop + mobile), with consistent components, loading / empty / error states, confirmations for destructive actions, toast feedback, search, filters and pagination where useful.
 - Student profile is **compact** (photo, name, admission/roll, class, section, year, basic contact, quick stats) with detail in a modal/drawer — not a giant tab‑heavy page.
 - Requests and announcements stay **simple** — no chat system, no ticketing platform, no complex notification infrastructure.
