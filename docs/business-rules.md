@@ -127,3 +127,19 @@ Authoritative definitions of the domain rules. Each rule has an ID so code, test
 - **BR‑RQ‑01** Request types: Attendance Issue, Result Clarification, Profile Correction. Lifecycle: Open → Resolved / Rejected, with a response note. No threaded chat.
 - **BR‑RQ‑02** Default routing proposal: requests go to the student's Class Teacher; Admin sees all. **⚠ Open (D‑14)**
 - **BR‑RQ‑03** Announcements: Admin can target all / role / class; Class Teacher targets own class only.
+
+## Authentication & accounts (BR‑AUTH) — implemented in Phase 2
+
+- **BR‑AUTH‑01** No public registration. Accounts are created by the school: the first Administrator through the operator CLI (`pnpm account create-admin`), all others by Admin workflows (Phase 5).
+- **BR‑AUTH‑02** Account roles are ADMIN, TEACHER, STUDENT. **CLASS_TEACHER is derived**, never stored: a TEACHER with an ACTIVE class‑teacher assignment in the CURRENT academic year holds both TEACHER and CLASS_TEACHER. Removing the assignment removes the extra role and scope on the next request.
+- **BR‑AUTH‑03** Usernames are case‑insensitive (stored lowercase; letters, digits and `. _ @ -`). What a username looks like for students/teachers is open (D‑22).
+- **BR‑AUTH‑04** Passwords are never stored or logged in plaintext and never returned by the API. Hashes use Argon2id.
+- **BR‑AUTH‑05** New passwords: 8–128 characters, at least one letter and one digit, no leading/trailing space, not a common password, must not contain the username, must differ from the current password, confirmation must match.
+- **BR‑AUTH‑06** New accounts and password resets get a **temporary password** (shown once to the issuer). A user with a temporary password can sign in but cannot use anything except viewing their identity, changing the password and signing out until they choose their own password. Calling other endpoints directly does not bypass this.
+- **BR‑AUTH‑07** Changing the password requires the current one and signs the user out of every other session.
+- **BR‑AUTH‑08** Sign‑in failure messages never reveal whether the username exists, the password was wrong, or the account is inactive.
+- **BR‑AUTH‑09** Inactive accounts cannot sign in; deactivating an account ends its sessions immediately.
+- **BR‑AUTH‑10** Sessions end on sign‑out, after the idle timeout (default 2 h without activity) and after the absolute lifetime (default 12 h).
+- **BR‑AUTH‑11** Repeated failed sign‑ins lock that username for a period (default 5 failures → 15 minutes); sign‑in requests are also rate‑limited per client.
+- **BR‑AUTH‑12** Sign‑in success and failure, sign‑out, password changes, temporary‑password issue and account creation/activation/deactivation are audited — without passwords or tokens.
+- **BR‑AUTH‑13** Authorization is enforced by the API: permission per role **and** record‑level scope (Admin school‑wide; Class Teacher own class/section; Student self only). Hidden buttons are never the protection. See docs/permissions.md.

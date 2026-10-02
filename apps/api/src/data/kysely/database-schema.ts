@@ -23,6 +23,31 @@ export interface Database {
   students: StudentsTable;
   enrolments: EnrolmentsTable;
   audit_logs: AuditLogsTable;
+  user_credentials: UserCredentialsTable;
+  sessions: SessionsTable;
+}
+
+export interface UserCredentialsTable {
+  user_id: string;
+  password_hash: string;
+  password_status: string;
+  password_changed_at: string;
+  last_login_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SessionsTable {
+  id: string;
+  token_hash: string;
+  user_id: string;
+  created_at: string;
+  last_seen_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  revoked_reason: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
 }
 
 interface Timestamps {

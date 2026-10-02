@@ -1,5 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import { ForbiddenError, InternalError, UnauthorizedError } from '../errors/app-errors.js';
+import {
+  ForbiddenError,
+  InternalError,
+  PasswordChangeRequiredError,
+  UnauthorizedError,
+} from '../errors/app-errors.js';
 import type { AccessPolicy, AccessRequirement, Authenticator, Principal } from './access.js';
 
 declare module 'fastify' {
@@ -13,9 +18,14 @@ declare module 'fastify' {
 }
 
 /**
- * Global access gate, run before validation and handlers on every route.
- * A matched route without an access declaration is a programming error and is refused (500)
- * rather than silently exposed.
+ * Global access gate, run before validation and handlers on every route:
+ *   1. authenticate (session → active user → principal), even on public routes so handlers can
+ *      see who is signed in;
+ *   2. protected route without a principal → 401;
+ *   3. temporary password in use and the route is not part of the change flow → 403
+ *      PASSWORD_CHANGE_REQUIRED (cannot be bypassed by calling other endpoints directly);
+ *   4. route permission not held → 403.
+ * A matched route without an access declaration is a programming error and is refused (500).
  */
 export function registerAccessControl(
   app: FastifyInstance,
@@ -37,6 +47,9 @@ export function registerAccessControl(
 
     if (access.kind === 'public') return;
     if (!principal) throw new UnauthorizedError();
+    if (principal.mustChangePassword && !access.allowDuringPasswordChange) {
+      throw new PasswordChangeRequiredError();
+    }
     if (!(await policy.isAllowed(principal, access))) throw new ForbiddenError();
   });
 }

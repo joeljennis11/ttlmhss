@@ -68,11 +68,17 @@ export function registerErrorHandling(app: FastifyInstance): void {
             ? ErrorCode.FORBIDDEN
             : status === 404
               ? ErrorCode.NOT_FOUND
-              : ErrorCode.VALIDATION_ERROR;
+              : status === 429
+                ? ErrorCode.TOO_MANY_REQUESTS
+                : ErrorCode.VALIDATION_ERROR;
       return send(reply, request, status, {
         code,
         message:
-          status === 413 ? 'The request is too large.' : 'The request could not be processed.',
+          status === 413
+            ? 'The request is too large.'
+            : status === 429
+              ? 'Too many attempts. Please wait a few minutes and try again.'
+              : 'The request could not be processed.',
       });
     }
 

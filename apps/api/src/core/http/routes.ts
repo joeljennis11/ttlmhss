@@ -44,6 +44,8 @@ export interface RouteDefinition<
   access: AccessRequirement;
   /** HTTP status on success (default 200). */
   successStatus?: number;
+  /** Per-client (IP) request limit for this route, e.g. sign-in. */
+  rateLimit?: { max: number; timeWindowMs: number };
   schema?: { params?: PS; query?: QS; body?: BS };
   handler: (ctx: RouteContext<Infer<PS>, Infer<QS>, Infer<BS>>) => Promise<R> | R;
 }
@@ -93,7 +95,12 @@ export function registerRoutes(app: FastifyInstance, routes: readonly AnyRouteDe
     app.route({
       method: route.method,
       url: route.url,
-      config: { access: route.access },
+      config: {
+        access: route.access,
+        ...(route.rateLimit
+          ? { rateLimit: { max: route.rateLimit.max, timeWindow: route.rateLimit.timeWindowMs } }
+          : {}),
+      },
       handler: async (request, reply) => {
         const issues: FieldIssue[] = [];
         const params = parsePart(route.schema?.params, request.params, 'params', issues);

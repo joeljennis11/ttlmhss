@@ -5,6 +5,12 @@ import { createKysely } from './connection.js';
 import type { Database } from './database-schema.js';
 import { translateDbError } from './db-errors.js';
 import { KyselyAuditLogRepository } from './repositories/audit-log.repository.js';
+import { KyselyAuthScopeRepository } from './repositories/auth-scope.repository.js';
+import { KyselySessionRepository } from './repositories/session.repository.js';
+import {
+  KyselyCredentialRepository,
+  KyselyUserAccountRepository,
+} from './repositories/user-account.repository.js';
 import { KyselySchoolSettingsRepository } from './repositories/school-settings.repository.js';
 import { KyselySchemaManager } from './schema-manager.js';
 
@@ -12,6 +18,10 @@ function createRepositories(db: Kysely<Database>): Repositories {
   return Object.freeze({
     schoolSettings: new KyselySchoolSettingsRepository(db),
     auditLogs: new KyselyAuditLogRepository(db),
+    userAccounts: new KyselyUserAccountRepository(db),
+    credentials: new KyselyCredentialRepository(db),
+    sessions: new KyselySessionRepository(db),
+    authScope: new KyselyAuthScopeRepository(db),
   });
 }
 

@@ -1,4 +1,10 @@
 import type { AuditLogRepository } from '../core/audit/audit-log.repository.js';
+import type { AuthScopeRepository } from '../core/auth/scope.repository.js';
+import type {
+  CredentialRepository,
+  SessionRepository,
+  UserAccountRepository,
+} from '../modules/auth/auth.repository.js';
 import type { SchoolSettingsRepository } from '../modules/school/school-settings.repository.js';
 
 /**
@@ -13,6 +19,11 @@ import type { SchoolSettingsRepository } from '../modules/school/school-settings
 export interface Repositories {
   readonly schoolSettings: SchoolSettingsRepository;
   readonly auditLogs: AuditLogRepository;
+  // Phase 2 — authentication & authorization
+  readonly userAccounts: UserAccountRepository;
+  readonly credentials: CredentialRepository;
+  readonly sessions: SessionRepository;
+  readonly authScope: AuthScopeRepository;
 }
 
 export interface MigrationState {

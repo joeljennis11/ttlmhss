@@ -1,6 +1,6 @@
 # Architecture — TTLMHSS
 
-Status after **Phase 1**: the foundation described in §2–§7 is **implemented and verified**. Items in §9 remain proposals. Open decisions live in [decisions.md](decisions.md); the database provider is still **not finalised** (D‑04).
+Status after **Phase 2**: the foundation (Phase 1) and authentication + RBAC (Phase 2, §10) are **implemented and verified**. Items in §9 remain proposals. Open decisions live in [decisions.md](decisions.md); the database provider is still **not finalised** (D‑04).
 
 ---
 
@@ -22,14 +22,15 @@ Status after **Phase 1**: the foundation described in §2–§7 is **implemented
 
 One deployable API + one static web client, in a pnpm monorepo. No microservices.
 
-## 2. Technology — what was actually adopted in Phase 1
+## 2. Technology — what was actually adopted
 
 | Concern | Adopted | Notes |
 |---|---|---|
 | Language | TypeScript 6.0 (strict, `noUncheckedIndexedAccess`) | TS 7.x exists but typescript‑eslint supports `<6.1`; pinned `~6.0.3`. |
 | Runtime | Node.js ≥ 22.12 (`.nvmrc` = 22) | |
 | Repo | pnpm 10 workspaces: `apps/api`, `apps/web`, `packages/shared` | |
-| Backend | Fastify 5, `@fastify/helmet`, `@fastify/cors` | |
+| Backend | Fastify 5, `@fastify/helmet`, `@fastify/cors`, `@fastify/cookie`, `@fastify/rate-limit` | cookie + rate limit added in Phase 2 |
+| Password hashing | Argon2id via `@node-rs/argon2` (prebuilt native binding, no compile step) | Phase 2, see §10 |
 | Validation | Zod 4, shared building blocks in `@ttlmhss/shared` | |
 | Data access | **Kysely 0.29** query builder + migrations, behind repository interfaces | **Deviation from Phase 0** (was "Prisma or Drizzle") — see §8. |
 | DB drivers | `better-sqlite3` (SQLite), `pg` (PostgreSQL) | Selected at runtime from `DATABASE_URL`; loaded lazily. |
@@ -38,7 +39,7 @@ One deployable API + one static web client, in a pnpm monorepo. No microservices
 | Testing | Vitest 5 (projects: shared, api, web); PGlite for PostgreSQL tests | |
 | Lint/format | ESLint 10 (flat config) + typescript‑eslint + react‑hooks, Prettier 3 | |
 
-Not yet used (planned for later phases): argon2id, sessions/CSRF, rate limiting (Phase 2), PDF/Excel generation (Phase 11), Playwright E2E.
+Not yet used (planned for later phases): PDF/Excel generation (Phase 11), Playwright E2E.
 
 ## 3. Repository layout (actual)
 
@@ -48,13 +49,15 @@ apps/
     src/
       server.ts              process entry: config → data store → schema check → listen → graceful shutdown
       app.ts                 buildApp(deps): Fastify factory (helmet, cors, request ids, error handling, access hook, modules)
-      app-dependencies.ts    AppDependencies: config, dataStore, clock, authenticator, accessPolicy
+      app-dependencies.ts    AppDependencies: config, dataStore, clock, hasher, sessions, throttle, authenticator, policy, authorization
+      composition.ts         createAppDependencies(): wires the production implementations
       modules.ts             list of registered feature modules
       config/                env loading (.env precedence), Zod-validated AppConfig, DATABASE_URL parsing
       core/
-        auth/                Principal, AccessRequirement, Authenticator/AccessPolicy interfaces, access hook
+        auth/                Principal, AccessRequirement/requires(), access hook, role → permission map,
+                             AuthorizationService (permission + scope guards), AuthScopeRepository interface
         errors/              AppError hierarchy + the single error → HTTP mapper
-        http/                defineRoute / registerRoutes convention, FeatureModule type
+        http/                defineRoute / registerRoutes convention (+ per-route rate limit), FeatureModule, CSRF origin check
         audit/               AuditLogRepository interface, AuditRecorder (redacts secrets)
         logging/             logger options + redaction paths
         utils/               Clock, id and timestamp helpers
@@ -71,18 +74,23 @@ apps/
       modules/
         system/              GET /api/v1/health
         school/              GET /api/v1/school/branding (+ SchoolSettingsRepository interface)
+        auth/                login/logout/me/change-password, sessions, hashing, throttle, account credentials
       scripts/db.ts          migrate / rollback / status CLI
-    test/                    config, HTTP foundation, data layer (SQLite + PostgreSQL); support/ harness + PGlite dialect
+      scripts/accounts.ts    create-admin / reset-password / activate / deactivate CLI
+    test/                    config, HTTP foundation, data layer (SQLite + PostgreSQL), authentication, authorization;
+                             support/ harness, auth fixtures, PGlite dialect
     .env.example .env.development .env.test
   web/
     src/
       main.tsx App.tsx
       styles/                tokens.css (brand scale from #003300), base.css
       lib/                   api-client.ts, use-api-query.ts
-      features/foundation/   FoundationStatus page (identity + system status)
+      features/auth/         AuthProvider, AuthGate, LoginPage, ChangePasswordPage, SignedInHome (minimal, Phase 2)
+      features/system/       SystemStatus (API/database status line)
     test/                    api-client tests
 packages/
-  shared/src/                api-contract.ts, controlled-values.ts, validation.ts
+  shared/src/                api-contract.ts, auth.ts (roles, permissions, password policy, auth DTOs),
+                             controlled-values.ts, validation.ts
 docs/                        this documentation
 ```
 
@@ -109,31 +117,31 @@ defineRoute({
 ### Request/response contract (`@ttlmhss/shared/api-contract`)
 - Success: `{ "data": T, "meta"?: { page, pageSize, total } }`
 - Error: `{ "error": { "code", "message", "details"?: [{ path, message }], "requestId" } }`
-- Codes: `VALIDATION_ERROR 400`, `UNAUTHORIZED 401`, `FORBIDDEN 403`, `NOT_FOUND 404`, `CONFLICT 409`, `INTERNAL_ERROR 500`, `SERVICE_UNAVAILABLE 503`.
+- Codes: `VALIDATION_ERROR 400`, `UNAUTHORIZED 401`, `PASSWORD_CHANGE_REQUIRED 403`, `FORBIDDEN 403`, `NOT_FOUND 404`, `CONFLICT 409`, `TOO_MANY_REQUESTS 429`, `INTERNAL_ERROR 500`, `SERVICE_UNAVAILABLE 503`.
 - Every response carries `x-request-id` (server‑generated; client values ignored) which also appears in logs.
 
 ### Error handling
-- Services/repositories throw `ValidationError`, `NotFoundError`, `ConflictError`, `UnauthorizedError`, `ForbiddenError`, `ServiceUnavailableError`, `InternalError`.
+- Services/repositories throw `ValidationError`, `NotFoundError`, `ConflictError`, `UnauthorizedError`, `ForbiddenError`, `PasswordChangeRequiredError`, `TooManyRequestsError`, `ServiceUnavailableError`, `InternalError`.
 - One error handler maps them. Unknown errors and `InternalError` → 500 with a generic message; the real error is logged only. Malformed JSON / oversized bodies → 4xx without internals.
 
-### Authentication & authorization boundary (fail‑closed)
-- `Authenticator.authenticate(request) → Principal | null` and `AccessPolicy.isAllowed(principal, requirement)` are interfaces injected via `AppDependencies`.
-- A global `onRequest` hook enforces each route's declared `access`: public → allowed; otherwise no principal → 401, policy denies → 403; a route **without** a declaration → 500 (never exposed).
-- **Phase 1 wiring:** `noAuthentication` + `denyAllPolicy` — nobody can authenticate and every non‑public route is refused. There is no temporary or bypass login. Phase 2 supplies real implementations; record‑level scope checks will live in per‑feature `policy.ts` files called by services.
+### Authentication & authorization boundary
+- `Authenticator.authenticate(request) → Principal | null` and `AccessPolicy.isAllowed(principal, requirement)` are interfaces injected via `AppDependencies`; production wiring is `SessionAuthenticator` + `permissionPolicy` (§10).
+- A global `onRequest` hook enforces each route's declared `access`: public → allowed; otherwise no principal → 401, temporary password → 403 PASSWORD_CHANGE_REQUIRED, permission missing → 403; a route **without** a declaration → 500 (never exposed).
+- Record‑level scope is checked in services through `AuthorizationService` (docs/permissions.md §5).
 
 ### Service / business‑logic boundary
-- Services receive repository interfaces, `Clock`, and (from Phase 2) policies. They never import Kysely, SQL or drivers — **enforced by ESLint** (`no-restricted-imports` on `apps/api/src/**` except `src/data/kysely/**`, `src/data/index.ts` and the CLI).
+- Services receive repository interfaces, `Clock`, and `AuthorizationService`. They never import Kysely, SQL or drivers — **enforced by ESLint** (`no-restricted-imports` on `apps/api/src/**` except `src/data/kysely/**`, `src/data/index.ts` and the CLI).
 
 ### Data‑access boundary
 - `DataStore` exposes `repositories`, `transaction(work)` (unit of work: all writes, including audit entries, commit or roll back together), `ping()`, `schema` (migrations) and `close()`.
 - Repository implementations translate driver errors: unique / foreign‑key / restrict violations → `ConflictError`; CHECK / NOT NULL → `InternalError` (validation should have caught it); connection failures → `ServiceUnavailableError`.
-- Phase 1 repositories: `SchoolSettingsRepository` (read), `AuditLogRepository` (append‑only: append + listForEntity). Feature repositories arrive with their features.
+- Repositories so far: `SchoolSettingsRepository`, `AuditLogRepository` (Phase 1); `UserAccountRepository`, `CredentialRepository`, `SessionRepository`, `AuthScopeRepository` (Phase 2). Feature repositories arrive with their features.
 
 ### Audit
-- `AuditRecorder(repository, clock).record(event, { actorUserId, requestId })` writes `audit_logs` rows; keys matching password/secret/token/hash are redacted. Construct it with the repositories of the current transaction. No feature emits audit events yet.
+- `AuditRecorder(repository, clock).record(event, { actorUserId, requestId })` writes `audit_logs` rows; keys matching password/secret/token/hash are redacted. Construct it with the repositories of the current transaction. Events emitted so far: authentication and account events (§10).
 
 ### Configuration
-- **Deployment configuration** (`apps/api/src/config`): Zod‑validated at startup; invalid config stops the process listing every problem without echoing values. Precedence: real env → `.env.<mode>.local` → `.env.<mode>` → `.env`. Modes: development, test, production. Production additionally rejects in‑memory databases and requires `CORS_ORIGINS`. `.env.development` / `.env.test` are committed (no secrets); `.env`, `*.local`, `.env.production` are git‑ignored.
+- **Deployment configuration** (`apps/api/src/config`): Zod‑validated at startup; invalid config stops the process listing every problem without echoing values. Precedence: real env → `.env.<mode>.local` → `.env.<mode>` → `.env`. Modes: development, test, production. Production additionally rejects in‑memory databases and requires `CORS_ORIGINS` and `SESSION_SECRET`. `.env.development` / `.env.test` are committed (no secrets); `.env`, `*.local`, `.env.production` are git‑ignored.
 - **School configuration** is data in the database (`school_settings`, classes, sections, subjects, periods, …), never hard‑coded. Admin editing arrives in Phase 4.
 
 ### Logging
@@ -150,6 +158,8 @@ defineRoute({
 | `apps/api/test/config.test.ts` | defaults, problem reporting, secret non‑echo, production rules, `.env` precedence, URL parsing |
 | `apps/api/test/http-foundation.test.ts` | health (200/503), branding, security headers/CORS, 404 envelope, validation envelope, error mapping & internal‑error masking, pagination envelope, access boundary (401/403/allowed/undeclared), real TCP listen |
 | `apps/api/test/data-layer.test.ts` | runs **twice — SQLite and PostgreSQL (PGlite)**: migrate/rollback/re‑apply, repositories, transactional rollback incl. audit, unique/FK/RESTRICT/CHECK constraints, partial unique indexes, academic‑history rules |
+| `apps/api/test/authentication.test.ts` | Argon2id hashing/verification, login (valid, identical generic failures for unknown/wrong/inactive/no‑password), malformed input, cookie flags, token stored only as HMAC, `/auth/me`, logout revocation, idle + absolute expiry, deactivation mid‑session, temporary‑password enforcement and change flow, session rotation, password reset, per‑username lockout, per‑IP rate limit, CSRF origin check, audit content, no secrets in logs |
+| `apps/api/test/authorization.test.ts` | via real sessions: 401 for anonymous; Admin; plain Teacher (no scope yet, no achievements); Class Teacher scope limited to own section and following the assignment immediately; Student self‑scope; role‑permission map invariants; guard unit tests |
 | `apps/web/test/api-client.test.ts` | envelope parsing, error/network/invalid‑payload handling |
 
 Test fixtures are synthetic and live only in throwaway in‑memory databases. No feature tests exist for features that are not built. Every later business rule should be traceable to a test by its BR‑ID.
@@ -166,6 +176,7 @@ Test fixtures are synthetic and live only in throwaway in‑memory databases. No
 | `pnpm build` | build shared → api (`apps/api/dist`) → web (`apps/web/dist`) |
 | `pnpm start` | run the built API (`node dist/server.js`; set `NODE_ENV=production` and real env vars) |
 | `pnpm --filter @ttlmhss/api db:migrate:prod` | run migrations with the compiled CLI |
+| `pnpm account create-admin <username>` | create an Administrator with a one‑time temporary password (also `reset-password`, `deactivate`, `activate`; compiled: `account:prod`) |
 | `pnpm test` / `pnpm test:watch` | all test suites |
 | `pnpm typecheck` / `pnpm lint` / `pnpm format` / `pnpm format:check` | static checks |
 | `pnpm check` | lint + format check + typecheck + tests |
@@ -178,7 +189,64 @@ Test fixtures are synthetic and live only in throwaway in‑memory databases. No
 4. **Feature tables deferred to their phases** — see [database-design.md](database-design.md) §5.
 
 ## 9. Still proposals (not implemented)
-- Sessions with httpOnly cookies + CSRF, argon2id, login rate limiting (D‑18, Phase 2).
 - PDF via HTML/CSS + headless Chromium; Excel via ExcelJS (D‑19, Phase 11).
 - Playwright E2E tests (from Phase 3, once there is UI to test).
 - Hosting target (D‑20).
+
+## 10. Authentication & RBAC (Phase 2)
+
+### Mechanism: server-side sessions in HttpOnly cookies (D‑18)
+Chosen over JWTs because the web app and API are same‑origin (the dev proxy / a reverse proxy in production), the database is already there, and the requirements need **real logout, immediate deactivation and immediate scope changes** — all natural with server‑side sessions and awkward with self‑contained tokens.
+
+| Aspect | Implementation |
+|---|---|
+| Token | 256 random bits (base64url, 43 chars), only in the cookie |
+| Storage | `sessions.token_hash = HMAC‑SHA256(SESSION_SECRET, token)` — a database leak yields no usable session |
+| Cookie | `HttpOnly`, `SameSite=Lax`, `Path=/`, `Expires` = absolute expiry; `Secure` + `__Host-` prefix when `COOKIE_SECURE` (default in production) |
+| Lifetime | idle timeout (default 120 min, sliding; `last_seen_at` written at most once a minute) + absolute timeout (default 12 h) |
+| Validation per request | not revoked · before absolute expiry · within idle timeout · user ACTIVE · credential present |
+| Logout | revokes the session row and clears the cookie; the old cookie value is useless afterwards |
+| Fixation | a new session is issued on every sign‑in and on password change |
+| Revocation | password change → all sessions revoked, new one issued; password reset / deactivation → all sessions revoked |
+| Housekeeping | a user's expired/revoked session rows are deleted at their next sign‑in (events remain in the audit log) |
+
+### Passwords
+- **Argon2id** (`m=19456 KiB, t=2, p=1`, OWASP baseline), PHC strings, unique salts. Verification never throws on bad input.
+- Hashes live in `user_credentials`, separate from `users`; no API response or log contains them.
+- Policy for new passwords (shared, enforced by the API): 8–128 characters, a letter and a digit, no leading/trailing space, not a common password, must not contain the username, must differ from the current one, confirmation must match.
+- **Temporary passwords**: 12 characters from a look‑alike‑free alphabet (CSPRNG), stored hashed with status `TEMPORARY`; shown once to the issuer. A `TEMPORARY` user can sign in but only `/auth/me`, `/auth/change-password` and logout work until it is changed — enforced in the access hook and again in `AuthorizationService.authorize`.
+
+### Sign-in protection
+- **Generic failure**: unknown user, wrong password, inactive account and missing password all return the same `401 Invalid username or password.` A dummy Argon2 verification runs for unknown users so timing does not reveal account existence. The specific reason goes to the audit log only.
+- **Per‑IP rate limit** on `/auth/login` and `/auth/change-password` (`LOGIN_RATE_LIMIT_PER_MINUTE`, default 10) via `@fastify/rate-limit` → 429 `TOO_MANY_REQUESTS`.
+- **Per‑username lockout** after `LOGIN_MAX_FAILED_ATTEMPTS` (5) failures within `LOGIN_LOCKOUT_MINUTES` (15) → 429 even with the right password; unknown usernames are tracked identically (no enumeration). Change‑password has its own per‑user lockout for wrong current passwords.
+- **CSRF**: SameSite=Lax cookie + JSON‑only bodies (`text/plain` parser removed) + Origin/Sec‑Fetch‑Site check on unsafe methods.
+- `TRUST_PROXY` must only be enabled behind a known reverse proxy (otherwise clients could spoof their IP for rate limiting).
+
+### Endpoints
+| Method & path | Access | Purpose |
+|---|---|---|
+| `POST /api/v1/auth/login` | public, rate‑limited | `{username, password}` → sets cookie, returns `{ user }` |
+| `POST /api/v1/auth/logout` | public (works with an expired session) | revokes session, clears cookie |
+| `GET /api/v1/auth/me` | signed in (also during password change) | `{ user }` — the authenticated‑user DTO |
+| `POST /api/v1/auth/change-password` | signed in (also during password change), rate‑limited | `{currentPassword, newPassword, confirmPassword}` → new cookie, `{ user }` |
+
+The user DTO (`AuthUser`) contains id, username, display name, account role, effective roles, permissions, linked teacher/student id, class‑teacher sections and `mustChangePassword` — never hashes, tokens or secrets.
+
+### Authenticated-user context (`Principal`)
+Built on every request by `SessionAuthenticator`: `userId, username, displayName, accountRole, roles, permissions, teacherId, studentId, classTeacherOf, enrolledIn, mustChangePassword, sessionId`. Services receive it from the route (`ctx.principal`) — they never decode cookies.
+
+### Audit events
+`auth.login.succeeded`, `auth.login.failed` (with internal reason), `auth.login.blocked`, `auth.logout`, `auth.password.changed`, `auth.password.change_failed`, `auth.password.temporary_issued`, `account.created`, `account.activated`, `account.deactivated`. Audit data passes through redaction; passwords and tokens are never written.
+
+### Account operations
+`AccountCredentialsService` (create account with temporary password, issue temporary password, activate/deactivate) is ready for the Admin phases; it checks `users.create` / `users.reset_password` / `users.edit` when called by a signed‑in user. Today it is used by the `pnpm account` CLI (actor `system`), which is how the first Administrator is created — there is no public registration.
+
+### Frontend (minimal)
+`AuthProvider` asks `/auth/me` on load; `AuthGate` renders the sign‑in page, the mandatory change‑password page, or a minimal signed‑in page with sign‑out. The browser never sees the session token. Final login design and the app shell are Phase 3.
+
+### Known limitations
+- Login throttle state is **in memory** (single API process). Multiple instances would need a shared store.
+- Without `SESSION_SECRET` in development/test, a per‑process secret is generated: everyone is signed out when the API restarts (a startup warning says so).
+- Argon2 parameters are fixed in code; a "rehash on next login when parameters increase" step is not implemented yet.
+- A plain subject teacher has no record‑level scope until the timetable exists (Phase 6).

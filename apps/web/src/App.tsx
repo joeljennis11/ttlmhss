@@ -1,8 +1,13 @@
-import { FoundationStatus } from './features/foundation/FoundationStatus';
+import { AuthProvider } from './features/auth/auth-context';
+import { AuthGate } from './features/auth/AuthGate';
 
 /**
- * Application root. Routing, the authenticated shell and the login page arrive in Phases 2–3.
+ * Application root. The application shell (navigation, layout, final branding) arrives in Phase 3.
  */
 export function App() {
-  return <FoundationStatus />;
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
+  );
 }

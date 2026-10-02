@@ -1,5 +1,6 @@
 import type { FeatureModule } from './core/http/module.js';
 import type { AppDependencies } from './app-dependencies.js';
+import { authModule } from './modules/auth/auth.module.js';
 import { schoolModule } from './modules/school/school.module.js';
 import { systemModule } from './modules/system/system.module.js';
 
@@ -8,5 +9,5 @@ import { systemModule } from './modules/system/system.module.js';
  * is real. No placeholder endpoints.
  */
 export function featureModules(deps: AppDependencies): FeatureModule[] {
-  return [systemModule(deps), schoolModule(deps)];
+  return [systemModule(deps), schoolModule(deps), authModule(deps)];
 }

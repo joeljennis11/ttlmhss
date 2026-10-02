@@ -118,7 +118,7 @@ erDiagram
 
 ## 5. Implemented schema (Phase 1)
 
-Created by `apps/api/src/data/kysely/migrations/0001_foundation.ts` and `0002_school_identity.ts`. Row types: `database-schema.ts`.
+Created by `apps/api/src/data/kysely/migrations/0001_foundation.ts`, `0002_school_identity.ts` (Phase 1) and `0003_authentication.ts` (Phase 2). Row types: `database-schema.ts`.
 
 ### Storage conventions (portable)
 | Kind | Stored as |
@@ -140,12 +140,14 @@ Created by `apps/api/src/data/kysely/migrations/0001_foundation.ts` and `0002_sc
 | `sections` | Sections of a class | FK class; unique (`class_id`, `name`); status |
 | `subjects` | Subject master | `name` unique; `code` unique (nullable); status |
 | `periods` | Ordered day structure **per academic year**; breaks are rows with `kind='BREAK'` | FK year; CHECK kind; CHECK lessons have `period_number > 0`, breaks have none; CHECK `start_time < end_time`; unique (year, sequence); unique (year, period_number) |
-| `users` | Login identity (credentials added in Phase 2) | `username` unique and CHECK lowercase (case‑insensitive uniqueness on every provider); role ∈ ADMIN/TEACHER/STUDENT; status |
+| `users` | Login identity (no secrets — see `user_credentials`) | `username` unique and CHECK lowercase (case‑insensitive uniqueness on every provider); role ∈ ADMIN/TEACHER/STUDENT; status |
 | `teachers` | Staff profile, 1:1 with a user | FK user (unique); `staff_code` unique; index `full_name` |
 | `teacher_subjects` | Teacher → Subject (many‑to‑many) | PK (teacher, subject); index subject |
 | `class_teacher_assignments` | Teacher + section + academic year | FKs; status; `assigned_on`/`ended_on`; **partial unique: one ACTIVE class teacher per section per year**; index (teacher, year) |
 | `students` | Permanent student identity, 1:1 with a user | FK user (unique); `admission_number` unique; index `full_name` |
 | `enrolments` | **StudentAcademicHistory**: student × section × year placement | FKs; status ∈ ACTIVE/PROMOTED/TRANSFERRED/NOT_PROMOTED/LEFT; **partial unique: one ACTIVE enrolment per student per year**; **partial unique: active roll numbers unique within section+year**; index (section, year, status); index student |
+| `user_credentials` *(0003)* | Password hash + state, 1:1 with a user; **separate from `users`** so ordinary user queries can never select a hash | PK = FK `user_id` (RESTRICT); `password_hash` NOT NULL, CHECK length > 20 (a real Argon2id PHC string); `password_status` ∈ TEMPORARY/SET; `password_changed_at`; `last_login_at`. No row = no password = cannot sign in |
+| `sessions` *(0003)* | Server‑side sessions | `id`; `token_hash` UNIQUE (HMAC of the cookie token — the token itself is never stored); FK user; `created_at`, `last_seen_at`, `expires_at` (CHECK `created_at < expires_at`); `revoked_at`, `revoked_reason`; `ip_address`, `user_agent` (truncated). Index (user_id, expires_at) |
 | `audit_logs` | Append‑only audit trail | FK actor user (nullable); JSON text `before_json`/`after_json`; indexes (entity_type, entity_id, occurred_at), (actor, occurred_at), (occurred_at) |
 
 Promotion and mid‑year transfer **close** the current enrolment (set status + `ended_on`) and **open** a new one; previous rows are never rewritten. This is tested.
@@ -157,9 +159,9 @@ Promotion and mid‑year transfer **close** the current enrolment (set status + 
 | AcademicYear, Class, Section, Subject, Period | Tables above | Phase 1 ✔ |
 | Break | `periods` row with `kind='BREAK'` (one ordered day structure, so breaks sit between periods) | Phase 1 ✔ |
 | SchoolConfiguration | `school_settings` (identity/contact). Other settings (attendance cutoff, grade rules, behaviour labels …) get **typed tables in their own phase**, not a generic key/value bag | Phase 1 ✔ / Phase 4+ |
-| User | `users` | Phase 1 ✔ (credentials Phase 2) |
-| Role | Controlled value `users.role` (ADMIN/TEACHER/STUDENT). **Class Teacher is not a role row** — it is derived from `class_teacher_assignments` | Phase 1 ✔ |
-| Permission | Not created. Fixed role map vs Admin‑editable permissions is open (D‑15) | Phase 2 |
+| User | `users` (identity) + `user_credentials` (password) + `sessions` | Phase 1 ✔ / Phase 2 ✔ |
+| Role | Controlled value `users.role` (ADMIN/TEACHER/STUDENT). **CLASS_TEACHER is never stored** — it is derived per request from ACTIVE `class_teacher_assignments` in the CURRENT year | Phase 1 ✔ / Phase 2 ✔ |
+| Permission | **No tables.** Permissions are a code‑defined catalogue with per‑role grants (D‑15, docs/permissions.md). Tables would only be added if Admin‑editable permissions are requested | Phase 2 ✔ |
 | Student, Teacher, TeacherSubject, ClassTeacherAssignment | Tables above | Phase 1 ✔ |
 | StudentAcademicHistory | `enrolments` | Phase 1 ✔ |
 | Configurable student profile fields | `student_field_definitions` + values | Phase 4/5 |

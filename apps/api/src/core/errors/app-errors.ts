@@ -40,6 +40,23 @@ export class ForbiddenError extends AppError {
   }
 }
 
+/** Signed in with a temporary password: everything except the change-password flow is refused. */
+export class PasswordChangeRequiredError extends AppError {
+  readonly code = ErrorCode.PASSWORD_CHANGE_REQUIRED;
+  readonly statusCode = 403;
+  constructor(message = 'You must change your temporary password before continuing.') {
+    super(message);
+  }
+}
+
+export class TooManyRequestsError extends AppError {
+  readonly code = ErrorCode.TOO_MANY_REQUESTS;
+  readonly statusCode = 429;
+  constructor(message = 'Too many attempts. Please wait a few minutes and try again.') {
+    super(message);
+  }
+}
+
 export class NotFoundError extends AppError {
   readonly code = ErrorCode.NOT_FOUND;
   readonly statusCode = 404;

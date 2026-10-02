@@ -1,6 +1,7 @@
 import type { Migration } from 'kysely/migration';
 import { migration0001Foundation } from './0001_foundation.js';
 import { migration0002SchoolIdentity } from './0002_school_identity.js';
+import { migration0003Authentication } from './0003_authentication.js';
 
 /**
  * Ordered migration registry. Names sort lexically and are applied in that order.
@@ -14,4 +15,5 @@ import { migration0002SchoolIdentity } from './0002_school_identity.js';
 export const migrations: Record<string, Migration> = {
   '0001_foundation': migration0001Foundation,
   '0002_school_identity': migration0002SchoolIdentity,
+  '0003_authentication': migration0003Authentication,
 };

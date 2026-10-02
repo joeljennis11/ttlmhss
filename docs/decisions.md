@@ -12,10 +12,10 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑02 | Frontend / backend frameworks | React + Vite SPA; Node.js + Fastify API | Adopted in Phase 1 (same basis) |
 | D‑03 | ORM / query layer | **Kysely** behind repository interfaces — changed from the Phase‑0 proposal (Prisma/Drizzle) because it keeps one schema and one data layer working on several providers (architecture.md §8) | **Adopted — please confirm** |
 | D‑04 | **Database provider** | Still undecided. The data layer supports SQLite and PostgreSQL via `DATABASE_URL`, both tested. Development/test default is SQLite (zero setup) — this is a development convenience, **not** a production choice. Recommendation for production: PostgreSQL | **Open — user decision** |
-| D‑18 | Session strategy | Server‑side sessions with httpOnly cookies (vs JWT) | Proposed |
+| D‑18 | Session strategy | **Server‑side sessions** (HMAC‑hashed token in DB) in an HttpOnly, SameSite=Lax cookie; idle + absolute timeouts. Rationale: real logout, immediate deactivation/scope changes (architecture.md §10) | Adopted in Phase 2 |
 | D‑19 | PDF generation approach | HTML/CSS → headless Chromium (Playwright); good Tamil script support | Proposed |
 | D‑20 | Hosting / deployment target | Depends on school's IT setup (cloud VM, PaaS, on‑premise). Also affects D‑04 | Open |
-| D‑22 | Student/teacher login identifier | Students: admission number; Teachers: staff ID or email | Open |
+| D‑22 | Student/teacher login identifier | Auth accepts any lowercase username (letters, digits, `. _ @ -`). Recommendation for Phase 5: students = admission number, teachers = staff code | Open |
 | D‑23 | Photo/certificate file storage | Local disk behind an interface (swap to object storage later) | Proposed |
 | D‑27 | Frontend UI libraries (Tailwind, Radix, React Router, TanStack Query from the Phase‑0 proposal) | Not installed yet — Phase 1 uses CSS tokens + CSS Modules for one page. Decide in Phase 3 when the shell is built | Open |
 | D‑28 | TypeScript version | Pinned `~6.0.3` because typescript‑eslint does not yet support TS 7 | Adopted |
@@ -34,7 +34,7 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑12 | Rank ties and who is ranked (e.g. students with an absent subject) | Competition ranking (1,2,2,4); all enrolled students ranked once all subjects are final | Open |
 | D‑13 | Who records behaviour ratings | Class Teacher (+ Admin) | Proposed |
 | D‑14 | Request routing | Class Teacher of the student's section; Admin sees all | Proposed |
-| D‑15 | "Permissions" management: fixed role map or Admin‑editable toggles; Class Teacher audit visibility | Fixed role map + scopes initially; extensible later | Open |
+| D‑15 | "Permissions" management: fixed role map or Admin‑editable toggles; Class Teacher audit visibility | **Code‑defined catalogue + per‑role grants** (no permission tables); Class Teacher has no `audit.view`. Admin‑editable toggles can be added later without changing feature code | Adopted in Phase 2 — please confirm |
 | D‑16 | Class Teacher student‑management scope (edit which fields? promote?) | View all + edit non‑protected contact fields; promotion proposed by CT, confirmed by Admin | Open |
 | D‑17 | Can Class Teacher edit the class timetable or only view? | View only; Admin edits (avoids cross‑class teacher conflicts) | Open |
 | D‑21 | Are sections defined per academic year or permanently? | Schema: sections are permanent (with status); the per‑year link comes from enrolments and class‑teacher assignments. Revisit if sections must differ by year | Adopted provisionally |
@@ -42,6 +42,15 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑24 | Substitute / ad‑hoc teacher for a period (teacher absent) — who takes attendance? | Not in spec. Proposal: Class Teacher or Admin can mark; substitution feature only if requested | Open |
 | D‑25 | Do internal/practical components have their own pass marks? | Configurable per component | Open |
 | D‑26 | Leave entered after a subject teacher already marked `A` | Class Teacher's L replaces A, audited | Proposed |
+
+## Added in Phase 2
+
+| ID | Question | Current default | Status |
+|---|---|---|---|
+| D‑30 | Password policy | 8–128 chars, letter + digit, not common, not containing the username (BR‑AUTH‑05). Simple enough for students; raise for staff if wanted | Adopted — please confirm |
+| D‑31 | Session lifetime | Idle 120 min, absolute 12 h (configurable by env) | Adopted — please confirm |
+| D‑32 | Lockout policy | 5 failures → 15‑minute lock per username; 10 sign‑in requests/min per IP. A school network may put many users behind one IP — raise `LOGIN_RATE_LIMIT_PER_MINUTE` if that causes lockouts at the start of a period | Adopted — please confirm |
+| D‑33 | Self‑service password reset (email/SMS) | Not provided: "Forgot password" = ask the school office, who issues a temporary password. Avoids needing email/SMS infrastructure | Adopted — please confirm |
 
 ## Pending inputs from the user
 

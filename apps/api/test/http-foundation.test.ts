@@ -61,7 +61,7 @@ const probeModule: FeatureModule = {
     defineRoute({
       method: 'GET',
       url: '/__test/protected',
-      access: { kind: 'authenticated', permission: 'test.read' },
+      access: { kind: 'authenticated', permission: 'users.view' },
       handler: ({ principal }) => ({ userId: principal?.userId }),
     }),
   ],
@@ -69,9 +69,17 @@ const probeModule: FeatureModule = {
 
 const somePrincipal: Principal = {
   userId: 'u-1',
-  role: 'TEACHER',
+  username: 'test.teacher',
+  displayName: 'Test Teacher',
+  accountRole: 'TEACHER',
+  roles: ['TEACHER'],
+  permissions: new Set(),
   teacherId: 't-1',
   studentId: null,
+  classTeacherOf: [],
+  enrolledIn: [],
+  mustChangePassword: false,
+  sessionId: null,
 };
 const alwaysAuthenticated: Authenticator = { authenticate: async () => somePrincipal };
 const allowAll: AccessPolicy = { isAllowed: async () => true };
@@ -157,7 +165,7 @@ describe('HTTP foundation', () => {
 
   describe('validation', () => {
     it('passes parsed, typed input to the handler and wraps the result', async () => {
-      const app = await setup({}, { extraModules: [probeModule] });
+      const app = await setup({}, { modules: () => [probeModule] });
       const res = await app.inject({
         method: 'POST',
         url: `/api/v1/__test/echo/${ID}?verbose=yes`,
@@ -168,7 +176,7 @@ describe('HTTP foundation', () => {
     });
 
     it('collects issues from params, query and body into one 400 response', async () => {
-      const app = await setup({}, { extraModules: [probeModule] });
+      const app = await setup({}, { modules: () => [probeModule] });
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/__test/echo/not-a-uuid?verbose=maybe',
@@ -182,7 +190,7 @@ describe('HTTP foundation', () => {
     });
 
     it('malformed JSON is a validation error, not a crash', async () => {
-      const app = await setup({}, { extraModules: [probeModule] });
+      const app = await setup({}, { modules: () => [probeModule] });
       const res = await app.inject({
         method: 'POST',
         url: `/api/v1/__test/echo/${ID}`,
@@ -196,7 +204,7 @@ describe('HTTP foundation', () => {
 
   describe('error mapping', () => {
     it('maps typed application errors to status codes with user-safe messages', async () => {
-      const app = await setup({}, { extraModules: [probeModule] });
+      const app = await setup({}, { modules: () => [probeModule] });
       const notFound = await app.inject({ method: 'GET', url: '/api/v1/__test/not-found' });
       expect(notFound.statusCode).toBe(404);
       expect(notFound.json().error).toMatchObject({
@@ -210,7 +218,7 @@ describe('HTTP foundation', () => {
     });
 
     it('hides internal error details from the client', async () => {
-      const app = await setup({}, { extraModules: [probeModule] });
+      const app = await setup({}, { modules: () => [probeModule] });
       const res = await app.inject({ method: 'GET', url: '/api/v1/__test/crash' });
       expect(res.statusCode).toBe(500);
       expect(res.json().error).toEqual({
@@ -223,7 +231,7 @@ describe('HTTP foundation', () => {
     });
 
     it('wraps paged results with meta', async () => {
-      const app = await setup({}, { extraModules: [probeModule] });
+      const app = await setup({}, { modules: () => [probeModule] });
       const res = await app.inject({ method: 'GET', url: '/api/v1/__test/list' });
       expect(res.json()).toEqual({ data: ['a', 'b'], meta: { page: 1, pageSize: 2, total: 5 } });
     });
@@ -231,7 +239,7 @@ describe('HTTP foundation', () => {
 
   describe('access control boundary (fail-closed; real authentication arrives in Phase 2)', () => {
     it('refuses non-public routes with 401 when no authentication exists', async () => {
-      const app = await setup({}, { extraModules: [probeModule] });
+      const app = await setup({}, { modules: () => [probeModule] });
       const res = await app.inject({ method: 'GET', url: '/api/v1/__test/protected' });
       expect(res.statusCode).toBe(401);
       expect(res.json().error.code).toBe(ErrorCode.UNAUTHORIZED);
@@ -240,7 +248,7 @@ describe('HTTP foundation', () => {
     it('returns 403 when a principal exists but the policy denies', async () => {
       const app = await setup(
         { authenticator: alwaysAuthenticated },
-        { extraModules: [probeModule] },
+        { modules: () => [probeModule] },
       );
       const res = await app.inject({ method: 'GET', url: '/api/v1/__test/protected' });
       expect(res.statusCode).toBe(403);
@@ -250,7 +258,7 @@ describe('HTTP foundation', () => {
     it('lets a pluggable authenticator + policy through, exposing the principal', async () => {
       const app = await setup(
         { authenticator: alwaysAuthenticated, accessPolicy: allowAll },
-        { extraModules: [probeModule] },
+        { modules: () => [probeModule] },
       );
       const res = await app.inject({ method: 'GET', url: '/api/v1/__test/protected' });
       expect(res.statusCode).toBe(200);
@@ -262,7 +270,7 @@ describe('HTTP foundation', () => {
         name: 'undeclared',
         routes: [{ method: 'GET', url: '/__test/undeclared', handler: () => 'leak' }],
       } as unknown as FeatureModule;
-      const app = await setup({}, { extraModules: [undeclared] });
+      const app = await setup({}, { modules: () => [undeclared] });
       const res = await app.inject({ method: 'GET', url: '/api/v1/__test/undeclared' });
       expect(res.statusCode).toBe(500);
       expect(res.body).not.toContain('leak');

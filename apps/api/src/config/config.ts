@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
@@ -18,6 +19,8 @@ export type RuntimeEnv = (typeof RUNTIME_ENVS)[number];
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
+const booleanFlag = z.enum(['true', 'false']).transform((value) => value === 'true');
+
 const EnvSchema = z.object({
   NODE_ENV: z.enum(RUNTIME_ENVS).default('development'),
   HOST: z.string().trim().min(1).default('127.0.0.1'),
@@ -33,7 +36,50 @@ const EnvSchema = z.object({
         .map((origin) => origin.trim())
         .filter(Boolean),
     ),
+  TRUST_PROXY: booleanFlag.optional(),
+
+  // ---- Authentication (Phase 2) ----
+  /** HMAC key for session-token hashing. Required in production; generated per process otherwise. */
+  SESSION_SECRET: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(32, { message: 'must be at least 32 characters' }).optional(),
+  ),
+  SESSION_IDLE_TIMEOUT_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(5)
+    .max(24 * 60)
+    .default(120),
+  SESSION_ABSOLUTE_TIMEOUT_HOURS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(24 * 30)
+    .default(12),
+  /** Defaults to true in production, false otherwise (plain-http development). */
+  COOKIE_SECURE: booleanFlag.optional(),
+  LOGIN_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(1000).default(10),
+  LOGIN_MAX_FAILED_ATTEMPTS: z.coerce.number().int().min(1).max(100).default(5),
+  LOGIN_LOCKOUT_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(24 * 60)
+    .default(15),
 });
+
+export interface AuthConfig {
+  /** Never log or return this. */
+  readonly sessionSecret: string;
+  /** True when no SESSION_SECRET was configured (development/test only): sessions end on restart. */
+  readonly sessionSecretIsEphemeral: boolean;
+  readonly idleTimeoutMs: number;
+  readonly absoluteTimeoutMs: number;
+  readonly cookieSecure: boolean;
+  readonly loginRateLimitPerMinute: number;
+  readonly maxFailedAttempts: number;
+  readonly lockoutMs: number;
+}
 
 export interface AppConfig {
   readonly env: RuntimeEnv;
@@ -43,6 +89,9 @@ export interface AppConfig {
   readonly logLevel: LogLevel;
   readonly database: DatabaseConfig;
   readonly corsOrigins: readonly string[];
+  /** Trust X-Forwarded-* headers (only behind a known reverse proxy). */
+  readonly trustProxy: boolean;
+  readonly auth: AuthConfig;
 }
 
 export class ConfigError extends Error {
@@ -95,6 +144,12 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     if (env.CORS_ORIGINS.length === 0) {
       problems.push('CORS_ORIGINS: must list the web app origin(s) in production');
     }
+    if (!env.SESSION_SECRET) {
+      problems.push('SESSION_SECRET: is required in production (at least 32 random characters)');
+    }
+  }
+  if (env.SESSION_ABSOLUTE_TIMEOUT_HOURS * 60 < env.SESSION_IDLE_TIMEOUT_MINUTES) {
+    problems.push('SESSION_IDLE_TIMEOUT_MINUTES: must not exceed the absolute session timeout');
   }
 
   if (problems.length > 0 || !database) throw new ConfigError(problems);
@@ -107,5 +162,16 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     logLevel: env.LOG_LEVEL,
     database,
     corsOrigins: Object.freeze([...env.CORS_ORIGINS]),
+    trustProxy: env.TRUST_PROXY ?? false,
+    auth: Object.freeze({
+      sessionSecret: env.SESSION_SECRET ?? randomBytes(32).toString('base64url'),
+      sessionSecretIsEphemeral: !env.SESSION_SECRET,
+      idleTimeoutMs: env.SESSION_IDLE_TIMEOUT_MINUTES * 60_000,
+      absoluteTimeoutMs: env.SESSION_ABSOLUTE_TIMEOUT_HOURS * 3_600_000,
+      cookieSecure: env.COOKIE_SECURE ?? env.NODE_ENV === 'production',
+      loginRateLimitPerMinute: env.LOGIN_RATE_LIMIT_PER_MINUTE,
+      maxFailedAttempts: env.LOGIN_MAX_FAILED_ATTEMPTS,
+      lockoutMs: env.LOGIN_LOCKOUT_MINUTES * 60_000,
+    }),
   });
 }

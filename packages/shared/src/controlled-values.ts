@@ -17,7 +17,7 @@ export interface ControlledValueSet<T extends string> {
   is(value: unknown): value is T;
 }
 
-function controlledValues<const T extends readonly [string, ...string[]]>(
+export function controlledValues<const T extends readonly [string, ...string[]]>(
   values: T,
 ): ControlledValueSet<T[number]> {
   const set = new Set<string>(values);

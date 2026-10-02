@@ -134,24 +134,24 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) =
   });
 
   describe('schema management', () => {
+    const ALL = ['0001_foundation', '0002_school_identity', '0003_authentication'];
+
     it('migrates an empty database to the latest version', async () => {
       expect(await store.schema.pending()).toEqual([]);
       const status = await store.schema.status();
-      expect(status.map((m) => m.name)).toEqual(['0001_foundation', '0002_school_identity']);
+      expect(status.map((m) => m.name)).toEqual(ALL);
       expect(status.every((m) => m.executedAt !== null)).toBe(true);
       expect(await store.ping()).toBe(true);
     });
 
     it('every migration rolls back cleanly and re-applies (schema is reproducible)', async () => {
+      expect(await store.schema.rollbackLast()).toBe('0003_authentication');
       expect(await store.schema.rollbackLast()).toBe('0002_school_identity');
       expect(await store.repositories.schoolSettings.get()).toBeNull();
       expect(await store.schema.rollbackLast()).toBe('0001_foundation');
       expect(await store.schema.rollbackLast()).toBeNull();
-      expect(await store.schema.pending()).toEqual(['0001_foundation', '0002_school_identity']);
-      expect(await store.schema.migrateToLatest()).toEqual([
-        '0001_foundation',
-        '0002_school_identity',
-      ]);
+      expect(await store.schema.pending()).toEqual(ALL);
+      expect(await store.schema.migrateToLatest()).toEqual(ALL);
       expect(await store.repositories.schoolSettings.get()).not.toBeNull();
     });
   });
@@ -333,6 +333,142 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) =
             .execute(),
         ),
       ).rejects.toBeInstanceOf(InternalError);
+    });
+  });
+
+  describe('authentication repositories', () => {
+    it('credentials live outside users, upsert cleanly and enforce the status values', async () => {
+      const userId = await f.user('ADMIN', 'test.admin');
+      const creds = store.repositories.credentials;
+      expect(await creds.find(userId)).toBeNull();
+      await creds.save(userId, '$argon2id$v=19$m=19456,t=2,p=1$fakefakefake', 'TEMPORARY', NOW);
+      await creds.save(
+        userId,
+        '$argon2id$v=19$m=19456,t=2,p=1$otherotherother',
+        'SET',
+        '2026-06-02T00:00:00.000Z',
+      );
+      expect(await creds.find(userId)).toMatchObject({
+        passwordStatus: 'SET',
+        passwordChangedAt: '2026-06-02T00:00:00.000Z',
+      });
+      expect(await db.selectFrom('user_credentials').select('user_id').execute()).toHaveLength(1);
+      await expect(
+        guard(() => db.updateTable('user_credentials').set({ password_status: 'NONE' }).execute()),
+      ).rejects.toBeInstanceOf(InternalError);
+      // A user referenced by credentials cannot be deleted.
+      await expect(
+        guard(() => db.deleteFrom('users').where('id', '=', userId).execute()),
+      ).rejects.toBeInstanceOf(ConflictError);
+    });
+
+    it('user accounts resolve their linked profile and display name', async () => {
+      const userId = await f.user('STUDENT', 'test.student');
+      const studentId = await f.student(userId);
+      const account = await store.repositories.userAccounts.findByUsername('test.student');
+      expect(account).toEqual({
+        id: userId,
+        username: 'test.student',
+        role: 'STUDENT',
+        status: 'ACTIVE',
+        displayName: 'Test Student',
+        teacherId: null,
+        studentId,
+      });
+      expect(await store.repositories.userAccounts.findByUsername('TEST.STUDENT')).toBeNull();
+    });
+
+    it('sessions: create, find by token hash, revoke, revoke-all and prune', async () => {
+      const userId = await f.user('ADMIN', 'test.admin');
+      const sessions = store.repositories.sessions;
+      const make = (id: string, expiresAt = '2026-06-01T21:00:00.000Z') =>
+        sessions.create({
+          id,
+          userId,
+          tokenHash: `hash-${id}`,
+          createdAt: NOW,
+          lastSeenAt: NOW,
+          expiresAt,
+          ipAddress: null,
+          userAgent: null,
+        });
+      await make('s1');
+      await make('s2');
+      await make('s3', '2026-06-01T10:00:00.000Z');
+      await expect(guard(() => make('s1'))).rejects.toBeInstanceOf(ConflictError);
+
+      expect(await sessions.findByTokenHash('hash-s1')).toMatchObject({
+        id: 's1',
+        userId,
+        revokedAt: null,
+      });
+      await sessions.touch('s1', '2026-06-01T09:30:00.000Z');
+      await sessions.revoke('s2', '2026-06-01T09:31:00.000Z', 'logout');
+      expect((await sessions.findByTokenHash('hash-s2'))?.revokedAt).toBe(
+        '2026-06-01T09:31:00.000Z',
+      );
+      expect(
+        await sessions.revokeAllForUser(
+          userId,
+          '2026-06-01T09:32:00.000Z',
+          'password_changed',
+          's1',
+        ),
+      ).toBe(1);
+
+      await sessions.pruneForUser(userId, '2026-06-01T11:00:00.000Z');
+      const left = await db.selectFrom('sessions').select(['id', 'last_seen_at']).execute();
+      expect(left).toEqual([{ id: 's1', last_seen_at: '2026-06-01T09:30:00.000Z' }]);
+    });
+
+    it('scope queries return only ACTIVE assignments/enrolments in the CURRENT year', async () => {
+      const current = await f.year('CURRENT');
+      const closed = await f.year('CLOSED');
+      const classId = await f.classRow();
+      const a = await f.section(classId, 'A');
+      const b = await f.section(classId, 'B');
+      const teacherUser = await f.user('TEACHER');
+      const teacherId = randomUUID();
+      await db
+        .insertInto('teachers')
+        .values({
+          id: teacherId,
+          user_id: teacherUser,
+          staff_code: 'TEST-T1',
+          full_name: 'T',
+          phone: null,
+          email: null,
+          status: 'ACTIVE',
+          ...ts,
+        })
+        .execute();
+      const assign = (yearId: string, sectionId: string, status: string) =>
+        db
+          .insertInto('class_teacher_assignments')
+          .values({
+            id: randomUUID(),
+            academic_year_id: yearId,
+            section_id: sectionId,
+            teacher_id: teacherId,
+            status,
+            assigned_on: '2026-06-01',
+            ended_on: null,
+            ...ts,
+          })
+          .execute();
+      await assign(current, a, 'ACTIVE');
+      await assign(current, b, 'INACTIVE');
+      await assign(closed, b, 'ACTIVE');
+      expect(await store.repositories.authScope.classTeacherSections(teacherId)).toEqual([
+        { academicYearId: current, sectionId: a },
+      ]);
+
+      const studentId = await f.student(await f.user());
+      await f.enrolment(studentId, closed, a, 'PROMOTED');
+      await f.enrolment(studentId, current, b, 'ACTIVE');
+      expect(await store.repositories.authScope.studentSections(studentId)).toEqual([
+        { academicYearId: current, sectionId: b },
+      ]);
     });
   });
 

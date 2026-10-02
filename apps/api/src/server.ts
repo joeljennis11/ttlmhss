@@ -1,8 +1,7 @@
 import { buildApp } from './app.js';
 import { ConfigError, loadConfig } from './config/config.js';
 import { describeDatabase } from './config/database-url.js';
-import { denyAllPolicy, noAuthentication } from './core/auth/access.js';
-import { systemClock } from './core/utils/clock.js';
+import { createAppDependencies } from './composition.js';
 import { openDataStore } from './data/index.js';
 
 async function main(): Promise<void> {
@@ -18,14 +17,13 @@ async function main(): Promise<void> {
   }
 
   const dataStore = await openDataStore(config.database);
-  const app = await buildApp({
-    config,
-    dataStore,
-    clock: systemClock,
-    // Phase 1: no authentication exists, so every non-public route is refused (fail-closed).
-    authenticator: noAuthentication,
-    accessPolicy: denyAllPolicy,
-  });
+  const app = await buildApp(createAppDependencies(config, dataStore));
+
+  if (config.auth.sessionSecretIsEphemeral) {
+    app.log.warn(
+      'SESSION_SECRET is not set: using a per-process secret, so everyone is signed out when the API restarts. Set it in apps/api/.env.development.local to keep sessions.',
+    );
+  }
 
   const pending = await dataStore.schema.pending();
   if (pending.length > 0) {

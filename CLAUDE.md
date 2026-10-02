@@ -32,7 +32,7 @@ Development happens in explicit, user‑unlocked phases:
 - Do not silently introduce major new requirements.
 - Do not make irreversible architectural decisions the spec leaves open — ask. Open decisions are tracked in `docs/decisions.md`.
 
-**Current phase status:** Phase 1 complete (foundation + data layer). Waiting for Phase 2 instruction.
+**Current phase status:** Phase 2 complete (authentication + RBAC). Waiting for Phase 3 instruction.
 
 ## 2. Workflow for every phase
 
@@ -104,6 +104,7 @@ Real generated documents only: A4, official logo, school name, academic year, st
 - Throw typed `AppError`s; never leak internals. Use `AuditRecorder` inside the same `transaction` as the change it audits.
 - Controlled values come from `@ttlmhss/shared`; never compare against bare strings.
 - No sample/fake school data. Test fixtures are synthetic and live in throwaway databases.
+- **Security (Phase 2):** every protected route uses `access: requires('<permission>')`; every service method re‑checks with `deps.authorization.authorize(principal, '<permission>')` and applies a scope check (`checkStudentScope`, `checkSectionScope`, …) before reading or writing records. Student‑facing data uses `principal.studentId`, never an id from the request. Permissions are granted only in `core/auth/role-permissions.ts`. Never return or log passwords, hashes or session tokens.
 - Run `pnpm check` (lint + format + typecheck + tests) before finishing a phase.
 
 ## 9. Documentation map

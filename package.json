@@ -23,7 +23,8 @@
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
     "db:migrate": "pnpm --filter @ttlmhss/api db:migrate",
     "db:rollback": "pnpm --filter @ttlmhss/api db:rollback",
-    "db:status": "pnpm --filter @ttlmhss/api db:status"
+    "db:status": "pnpm --filter @ttlmhss/api db:status",
+    "account": "pnpm --filter @ttlmhss/api account"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

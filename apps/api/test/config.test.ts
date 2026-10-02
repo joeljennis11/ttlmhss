@@ -77,6 +77,57 @@ describe('configuration', () => {
     expect(describeDatabase(pg)).toBe('postgres (db.local:5433/ttlmhss)');
   });
 
+  describe('authentication settings', () => {
+    const prod = {
+      NODE_ENV: 'production',
+      DATABASE_URL: 'sqlite:./data/x.sqlite',
+      CORS_ORIGINS: 'https://school.example',
+    };
+
+    it('requires SESSION_SECRET in production and defaults to secure cookies there', () => {
+      expect(() => loadConfig({ readEnvFiles: false, env: prod })).toThrow(/SESSION_SECRET/);
+      const config = loadConfig({
+        readEnvFiles: false,
+        env: { ...prod, SESSION_SECRET: 'x'.repeat(40) },
+      });
+      expect(config.auth).toMatchObject({ cookieSecure: true, sessionSecretIsEphemeral: false });
+    });
+
+    it('rejects a short secret without echoing it, and treats an empty one as unset', () => {
+      try {
+        loadConfig({ readEnvFiles: false, env: { ...base, SESSION_SECRET: 'tooShortSecret' } });
+        expect.unreachable();
+      } catch (error) {
+        expect((error as Error).message).toContain('SESSION_SECRET');
+        expect((error as Error).message).not.toContain('tooShortSecret');
+      }
+      const config = loadConfig({ readEnvFiles: false, env: { ...base, SESSION_SECRET: '' } });
+      expect(config.auth.sessionSecretIsEphemeral).toBe(true);
+      expect(config.auth.sessionSecret.length).toBeGreaterThanOrEqual(32);
+    });
+
+    it('has safe defaults and validates the timeouts', () => {
+      expect(loadConfig({ readEnvFiles: false, env: base }).auth).toMatchObject({
+        idleTimeoutMs: 120 * 60_000,
+        absoluteTimeoutMs: 12 * 3_600_000,
+        cookieSecure: false,
+        loginRateLimitPerMinute: 10,
+        maxFailedAttempts: 5,
+        lockoutMs: 15 * 60_000,
+      });
+      expect(() =>
+        loadConfig({
+          readEnvFiles: false,
+          env: {
+            ...base,
+            SESSION_IDLE_TIMEOUT_MINUTES: '600',
+            SESSION_ABSOLUTE_TIMEOUT_HOURS: '2',
+          },
+        }),
+      ).toThrow(/must not exceed/);
+    });
+  });
+
   describe('.env files', () => {
     let dir: string;
     afterEach(() => rmSync(dir, { recursive: true, force: true }));
