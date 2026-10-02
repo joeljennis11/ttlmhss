@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 10 blocks dependency install scripts by default.
+# Only packages that genuinely need a native build/postinstall are allowed.
+onlyBuiltDependencies:
+  - better-sqlite3
+  - esbuild

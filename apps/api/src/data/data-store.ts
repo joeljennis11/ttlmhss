@@ -1,0 +1,44 @@
+import type { AuditLogRepository } from '../core/audit/audit-log.repository.js';
+import type { SchoolSettingsRepository } from '../modules/school/school-settings.repository.js';
+
+/**
+ * THE data-access boundary.
+ *
+ * Services depend on these interfaces only. They never import Kysely, SQL, or a driver
+ * (enforced by ESLint). The concrete implementation is chosen in src/data/index.ts from
+ * DATABASE_URL, so the database provider can change without touching business logic.
+ *
+ * Each phase adds its repositories here as its features are built.
+ */
+export interface Repositories {
+  readonly schoolSettings: SchoolSettingsRepository;
+  readonly auditLogs: AuditLogRepository;
+}
+
+export interface MigrationState {
+  name: string;
+  executedAt: string | null;
+}
+
+/** Reproducible schema management (versioned migrations in src/data/kysely/migrations). */
+export interface SchemaManager {
+  status(): Promise<MigrationState[]>;
+  pending(): Promise<string[]>;
+  migrateToLatest(): Promise<string[]>;
+  rollbackLast(): Promise<string | null>;
+}
+
+export interface DataStore {
+  /** Repositories outside a transaction (each call is atomic on its own). */
+  readonly repositories: Repositories;
+  /**
+   * Unit of work: everything done through `repos` commits together or not at all.
+   * Use for multi-record operations (publish timetable, submit marks, promote class) and to keep
+   * audit entries in the same transaction as the change they describe.
+   */
+  transaction<T>(work: (repos: Repositories) => Promise<T>): Promise<T>;
+  /** True when the database answers a trivial query. */
+  ping(): Promise<boolean>;
+  readonly schema: SchemaManager;
+  close(): Promise<void>;
+}

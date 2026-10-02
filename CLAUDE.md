@@ -32,7 +32,7 @@ Development happens in explicit, user‑unlocked phases:
 - Do not silently introduce major new requirements.
 - Do not make irreversible architectural decisions the spec leaves open — ask. Open decisions are tracked in `docs/decisions.md`.
 
-**Current phase status:** Phase 0 complete. Waiting for Phase 1 instruction.
+**Current phase status:** Phase 1 complete (foundation + data layer). Waiting for Phase 2 instruction.
 
 ## 2. Workflow for every phase
 
@@ -95,7 +95,18 @@ Accounts: Teacher and Student accounts are created automatically when Admin adds
 
 Real generated documents only: A4, official logo, school name, academic year, student info, proper tables, `#003300` branding, readable print‑friendly typography, signatures and page numbers where applicable. No fake download buttons.
 
-## 8. Documentation map
+## 8. Codebase conventions (established in Phase 1 — follow them)
+
+- Monorepo: `apps/api` (Fastify), `apps/web` (React + Vite), `packages/shared` (contracts, controlled values, Zod building blocks). Commands: see README.md.
+- **Routes** use `defineRoute` with a mandatory `access` declaration and Zod schemas; handlers call one service method. Feature code lives in `apps/api/src/modules/<feature>/` and is registered in `src/modules.ts` only when real.
+- **Services** depend on repository interfaces (`src/data/data-store.ts`) — never on Kysely/SQL/drivers (ESLint enforces this). Only `src/data/kysely/**` touches the database.
+- **Schema changes = new migration** in `src/data/kysely/migrations/` (portable DDL, working `down`, never edit an applied migration). Update `database-schema.ts` and `docs/database-design.md`.
+- Throw typed `AppError`s; never leak internals. Use `AuditRecorder` inside the same `transaction` as the change it audits.
+- Controlled values come from `@ttlmhss/shared`; never compare against bare strings.
+- No sample/fake school data. Test fixtures are synthetic and live in throwaway databases.
+- Run `pnpm check` (lint + format + typecheck + tests) before finishing a phase.
+
+## 9. Documentation map
 
 | File | Purpose |
 |------|---------|

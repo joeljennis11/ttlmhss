@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+coverage/
+
+# Environment — secrets never committed.
+# Committed on purpose: .env.example, apps/api/.env.development, apps/api/.env.test (no secrets).
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Local databases
+apps/api/data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# Logs & OS / editor noise
+*.log
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

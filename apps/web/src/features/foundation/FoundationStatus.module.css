@@ -1,0 +1,85 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-4);
+}
+
+.identity {
+  text-align: center;
+  max-width: 40rem;
+}
+
+.shortName {
+  margin: 0 0 var(--space-1);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--brand-900);
+}
+
+.fullName {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.5vw + 0.75rem, 1.875rem);
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.card {
+  width: 100%;
+  max-width: 26rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--brand-900);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4) var(--space-6) var(--space-6);
+}
+
+.cardTitle {
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+  color: var(--brand-900);
+}
+
+.statusList {
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.statusList > div {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-2);
+}
+
+.statusList dt {
+  color: var(--text-muted);
+}
+
+.statusList dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.ok {
+  color: var(--success);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.note {
+  margin: var(--space-4) 0 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}

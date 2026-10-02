@@ -1,0 +1,24 @@
+{
+  "name": "@ttlmhss/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Types, controlled values and validation schemas shared by the TTLMHSS web app and API.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@ttlmhss/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}

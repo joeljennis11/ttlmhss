@@ -1,0 +1,422 @@
+import {
+  AcademicYearStatus,
+  EnrolmentStatus,
+  PeriodKind,
+  RecordStatus,
+  UserRole,
+} from '@ttlmhss/shared';
+import { randomUUID } from 'node:crypto';
+import type { Kysely } from 'kysely';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { AuditRecorder } from '../src/core/audit/audit-recorder.js';
+import { ConflictError, InternalError } from '../src/core/errors/app-errors.js';
+import type { Database } from '../src/data/kysely/database-schema.js';
+import { classifyDbError, guard } from '../src/data/kysely/db-errors.js';
+import type { KyselyDataStore } from '../src/data/kysely/kysely-data-store.js';
+import { fixedClock, openTestDatabase, type TestDriver } from './support/test-harness.js';
+
+/*
+ * Every assertion here runs against BOTH SQLite and PostgreSQL (PGlite). This is the evidence
+ * that the schema and data layer are provider-independent (docs/decisions.md D-04).
+ *
+ * The rows inserted below are TEST FIXTURES ONLY (obviously synthetic names). They are created
+ * in throwaway in-memory databases and are not school data.
+ */
+const NOW = '2026-06-01T09:00:00.000Z';
+const ts = { created_at: NOW, updated_at: NOW };
+
+function fixtures(db: Kysely<Database>) {
+  return {
+    year: async (status: string = 'UPCOMING', label = `Y-${randomUUID().slice(0, 8)}`) => {
+      const id = randomUUID();
+      await db
+        .insertInto('academic_years')
+        .values({ id, label, start_date: '2026-06-01', end_date: '2027-04-30', status, ...ts })
+        .execute();
+      return id;
+    },
+    classRow: async (name = `Class-${randomUUID().slice(0, 6)}`, status = 'ACTIVE') => {
+      const id = randomUUID();
+      await db
+        .insertInto('classes')
+        .values({ id, name, display_order: 1, status, ...ts })
+        .execute();
+      return id;
+    },
+    section: async (classId: string, name = 'A') => {
+      const id = randomUUID();
+      await db
+        .insertInto('sections')
+        .values({ id, class_id: classId, name, status: 'ACTIVE', ...ts })
+        .execute();
+      return id;
+    },
+    user: async (role: string = 'STUDENT', username = `test.user.${randomUUID().slice(0, 8)}`) => {
+      const id = randomUUID();
+      await db
+        .insertInto('users')
+        .values({ id, username, role, status: 'ACTIVE', ...ts })
+        .execute();
+      return id;
+    },
+    student: async (userId: string) => {
+      const id = randomUUID();
+      await db
+        .insertInto('students')
+        .values({
+          id,
+          user_id: userId,
+          admission_number: `TEST-${randomUUID().slice(0, 8)}`,
+          full_name: 'Test Student',
+          date_of_birth: null,
+          photo_path: null,
+          status: 'ACTIVE',
+          ...ts,
+        })
+        .execute();
+      return id;
+    },
+    enrolment: async (
+      studentId: string,
+      yearId: string,
+      sectionId: string,
+      status = 'ACTIVE',
+      roll: string | null = null,
+    ) => {
+      const id = randomUUID();
+      await db
+        .insertInto('enrolments')
+        .values({
+          id,
+          student_id: studentId,
+          academic_year_id: yearId,
+          section_id: sectionId,
+          roll_number: roll,
+          status,
+          started_on: '2026-06-01',
+          ended_on: null,
+          ...ts,
+        })
+        .execute();
+      return id;
+    },
+    period: async (
+      yearId: string,
+      values: { sequence: number; kind: string; period_number: number | null },
+    ) =>
+      db
+        .insertInto('periods')
+        .values({
+          id: randomUUID(),
+          academic_year_id: yearId,
+          label: 'Test',
+          start_time: '09:00',
+          end_time: '09:45',
+          status: 'ACTIVE',
+          ...values,
+          ...ts,
+        })
+        .execute(),
+  };
+}
+
+describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) => {
+  let db: Kysely<Database>;
+  let store: KyselyDataStore;
+  let f: ReturnType<typeof fixtures>;
+
+  beforeEach(async () => {
+    ({ db, store } = await openTestDatabase(driver));
+    f = fixtures(db);
+  });
+  afterEach(async () => {
+    await store.close();
+  });
+
+  describe('schema management', () => {
+    it('migrates an empty database to the latest version', async () => {
+      expect(await store.schema.pending()).toEqual([]);
+      const status = await store.schema.status();
+      expect(status.map((m) => m.name)).toEqual(['0001_foundation', '0002_school_identity']);
+      expect(status.every((m) => m.executedAt !== null)).toBe(true);
+      expect(await store.ping()).toBe(true);
+    });
+
+    it('every migration rolls back cleanly and re-applies (schema is reproducible)', async () => {
+      expect(await store.schema.rollbackLast()).toBe('0002_school_identity');
+      expect(await store.repositories.schoolSettings.get()).toBeNull();
+      expect(await store.schema.rollbackLast()).toBe('0001_foundation');
+      expect(await store.schema.rollbackLast()).toBeNull();
+      expect(await store.schema.pending()).toEqual(['0001_foundation', '0002_school_identity']);
+      expect(await store.schema.migrateToLatest()).toEqual([
+        '0001_foundation',
+        '0002_school_identity',
+      ]);
+      expect(await store.repositories.schoolSettings.get()).not.toBeNull();
+    });
+  });
+
+  describe('repositories', () => {
+    it('reads the school identity reference data', async () => {
+      expect(await store.repositories.schoolSettings.get()).toMatchObject({
+        shortName: 'TTLMHSS',
+        fullName: 'Thiruthangal Lions Matriculation Higher Secondary School',
+        primaryColor: '#003300',
+        logoPath: null,
+      });
+    });
+
+    it('audit log is written through the recorder with sensitive values redacted', async () => {
+      const actor = await f.user('ADMIN', 'test.admin');
+      const recorder = new AuditRecorder(store.repositories.auditLogs, fixedClock());
+      await recorder.record(
+        {
+          action: 'test.updated',
+          entityType: 'test_entity',
+          entityId: 'e-1',
+          before: { status: 'P', password: 'old' },
+          after: { status: 'A', nested: { token: 'abc' } },
+          reason: 'Correction',
+        },
+        { actorUserId: actor, requestId: 'req-1' },
+      );
+      const [entry, ...rest] = await store.repositories.auditLogs.listForEntity(
+        'test_entity',
+        'e-1',
+        10,
+      );
+      expect(rest).toHaveLength(0);
+      expect(entry).toMatchObject({
+        actorUserId: actor,
+        action: 'test.updated',
+        occurredAt: '2026-06-01T09:00:00.000Z',
+        before: { status: 'P', password: '[REDACTED]' },
+        after: { status: 'A', nested: { token: '[REDACTED]' } },
+        reason: 'Correction',
+        requestId: 'req-1',
+      });
+    });
+
+    it('a failed unit of work rolls back every write, including audit entries', async () => {
+      const recorder = (repos: typeof store.repositories) =>
+        new AuditRecorder(repos.auditLogs, fixedClock());
+      await expect(
+        store.transaction(async (repos) => {
+          await recorder(repos).record(
+            { action: 'test.step', entityType: 'tx', entityId: 'tx-1' },
+            { actorUserId: null, requestId: null },
+          );
+          throw new ConflictError('second step failed');
+        }),
+      ).rejects.toBeInstanceOf(ConflictError);
+      expect(await store.repositories.auditLogs.listForEntity('tx', 'tx-1', 10)).toEqual([]);
+
+      await store.transaction(async (repos) => {
+        await recorder(repos).record(
+          { action: 'test.step', entityType: 'tx', entityId: 'tx-1' },
+          { actorUserId: null, requestId: null },
+        );
+      });
+      expect(await store.repositories.auditLogs.listForEntity('tx', 'tx-1', 10)).toHaveLength(1);
+    });
+  });
+
+  describe('integrity constraints', () => {
+    it('unique values are reported as ConflictError', async () => {
+      await f.classRow('Dup');
+      await expect(guard(() => f.classRow('Dup'))).rejects.toBeInstanceOf(ConflictError);
+    });
+
+    it('referenced records cannot be hard-deleted (history is protected)', async () => {
+      const classId = await f.classRow();
+      await f.section(classId);
+      await expect(
+        guard(() => db.deleteFrom('classes').where('id', '=', classId).execute()),
+      ).rejects.toBeInstanceOf(ConflictError);
+      expect(
+        await db.selectFrom('classes').select('id').where('id', '=', classId).execute(),
+      ).toHaveLength(1);
+    });
+
+    it('rejects references to records that do not exist', async () => {
+      await expect(guard(() => f.section(randomUUID()))).rejects.toBeInstanceOf(ConflictError);
+    });
+
+    it('controlled values are enforced by the database (no arbitrary strings)', async () => {
+      await expect(guard(() => f.classRow(undefined, 'DELETED'))).rejects.toBeInstanceOf(
+        InternalError,
+      );
+      await expect(guard(() => f.user('CLASS_TEACHER'))).rejects.toBeInstanceOf(InternalError);
+      await expect(guard(() => f.year('ARCHIVED'))).rejects.toBeInstanceOf(InternalError);
+    });
+
+    it('accepts every controlled value currently defined in @ttlmhss/shared', async () => {
+      for (const role of UserRole.values) await f.user(role);
+      for (const status of RecordStatus.values) await f.classRow(undefined, status);
+      for (const status of AcademicYearStatus.values) await f.year(status);
+      const yearId = await f.year();
+      const sectionId = await f.section(await f.classRow());
+      for (const status of EnrolmentStatus.values) {
+        await f.enrolment(await f.student(await f.user()), yearId, sectionId, status);
+      }
+      expect(PeriodKind.values).toEqual(['LESSON', 'BREAK']);
+      await f.period(yearId, { sequence: 1, kind: 'LESSON', period_number: 1 });
+      await f.period(yearId, { sequence: 2, kind: 'BREAK', period_number: null });
+    });
+
+    it('allows only one CURRENT academic year', async () => {
+      await f.year('CURRENT');
+      await f.year('CLOSED');
+      await f.year('CLOSED');
+      await expect(guard(() => f.year('CURRENT'))).rejects.toBeInstanceOf(ConflictError);
+    });
+
+    it('academic year must end after it starts', async () => {
+      await expect(
+        guard(() =>
+          db
+            .insertInto('academic_years')
+            .values({
+              id: randomUUID(),
+              label: 'bad',
+              start_date: '2027-01-01',
+              end_date: '2026-01-01',
+              status: 'UPCOMING',
+              ...ts,
+            })
+            .execute(),
+        ),
+      ).rejects.toBeInstanceOf(InternalError);
+    });
+
+    it('periods: lessons are numbered, breaks are not, no duplicate slots per year', async () => {
+      const yearId = await f.year();
+      await expect(
+        guard(() => f.period(yearId, { sequence: 1, kind: 'BREAK', period_number: 3 })),
+      ).rejects.toBeInstanceOf(InternalError);
+      await expect(
+        guard(() => f.period(yearId, { sequence: 1, kind: 'LESSON', period_number: null })),
+      ).rejects.toBeInstanceOf(InternalError);
+      await f.period(yearId, { sequence: 1, kind: 'LESSON', period_number: 1 });
+      await f.period(yearId, { sequence: 2, kind: 'BREAK', period_number: null });
+      await f.period(yearId, { sequence: 3, kind: 'BREAK', period_number: null });
+      await expect(
+        guard(() => f.period(yearId, { sequence: 4, kind: 'LESSON', period_number: 1 })),
+      ).rejects.toBeInstanceOf(ConflictError);
+      await expect(
+        guard(() => f.period(yearId, { sequence: 1, kind: 'LESSON', period_number: 2 })),
+      ).rejects.toBeInstanceOf(ConflictError);
+    });
+
+    it('usernames are stored lowercase so uniqueness is case-insensitive everywhere', async () => {
+      await expect(guard(() => f.user('ADMIN', 'Test.Admin'))).rejects.toBeInstanceOf(
+        InternalError,
+      );
+    });
+
+    it('school settings is a single-row table', async () => {
+      await expect(
+        guard(() =>
+          db
+            .insertInto('school_settings')
+            .values({
+              id: 'second',
+              short_name: 'X',
+              full_name: 'X',
+              primary_color: '#000000',
+              logo_path: null,
+              address: null,
+              phone: null,
+              email: null,
+              ...ts,
+            })
+            .execute(),
+        ),
+      ).rejects.toBeInstanceOf(InternalError);
+    });
+  });
+
+  describe('academic history (enrolments)', () => {
+    it('a student has at most one ACTIVE enrolment per academic year', async () => {
+      const yearId = await f.year();
+      const classId = await f.classRow();
+      const studentId = await f.student(await f.user());
+      await f.enrolment(studentId, yearId, await f.section(classId, 'A'));
+      const sectionB = await f.section(classId, 'B');
+      await expect(guard(() => f.enrolment(studentId, yearId, sectionB))).rejects.toBeInstanceOf(
+        ConflictError,
+      );
+    });
+
+    it('promotion/transfer keeps prior years: history rows coexist with the new active row', async () => {
+      const year1 = await f.year('CLOSED', '2025-26');
+      const year2 = await f.year('CURRENT', '2026-27');
+      const studentId = await f.student(await f.user());
+      const nine = await f.section(await f.classRow('IX'));
+      const ten = await f.section(await f.classRow('X'));
+      await f.enrolment(studentId, year1, nine, 'PROMOTED', '7');
+      await f.enrolment(studentId, year2, ten, 'ACTIVE', '7');
+      // Mid-year transfer within the same year: close the old row, open a new one.
+      const tenB = await f.section(
+        (
+          await db
+            .selectFrom('sections')
+            .select('class_id')
+            .where('id', '=', ten)
+            .executeTakeFirstOrThrow()
+        ).class_id,
+        'B',
+      );
+      await db
+        .updateTable('enrolments')
+        .set({ status: 'TRANSFERRED', ended_on: '2026-09-30' })
+        .where('student_id', '=', studentId)
+        .where('academic_year_id', '=', year2)
+        .execute();
+      await f.enrolment(studentId, year2, tenB, 'ACTIVE');
+
+      const history = await db
+        .selectFrom('enrolments')
+        .select(['academic_year_id', 'status'])
+        .where('student_id', '=', studentId)
+        .execute();
+      expect(history).toHaveLength(3);
+    });
+
+    it('roll numbers are unique among active students of a section and year', async () => {
+      const yearId = await f.year();
+      const sectionId = await f.section(await f.classRow());
+      await f.enrolment(await f.student(await f.user()), yearId, sectionId, 'ACTIVE', '1');
+      await expect(
+        guard(async () =>
+          f.enrolment(await f.student(await f.user()), yearId, sectionId, 'ACTIVE', '1'),
+        ),
+      ).rejects.toBeInstanceOf(ConflictError);
+      // A former student's roll number does not block reuse.
+      await f.enrolment(await f.student(await f.user()), yearId, sectionId, 'LEFT', '2');
+      await f.enrolment(await f.student(await f.user()), yearId, sectionId, 'ACTIVE', '2');
+    });
+  });
+});
+
+describe('database error classification', () => {
+  it.each([
+    ['SQLITE_CONSTRAINT_UNIQUE', 'unique'],
+    ['SQLITE_CONSTRAINT_FOREIGNKEY', 'foreign_key'],
+    ['SQLITE_CONSTRAINT_TRIGGER', 'foreign_key'],
+    ['SQLITE_CONSTRAINT_CHECK', 'integrity'],
+    ['23505', 'unique'],
+    ['23503', 'foreign_key'],
+    ['23001', 'foreign_key'],
+    ['23514', 'integrity'],
+    ['ECONNREFUSED', 'unavailable'],
+    ['XX000', 'unknown'],
+  ])('%s → %s', (code, kind) => {
+    expect(classifyDbError({ code })).toBe(kind);
+  });
+
+  it('passes non-database errors through untouched', async () => {
+    const original = new Error('plain');
+    await expect(guard(() => Promise.reject(original))).rejects.toBe(original);
+  });
+});
