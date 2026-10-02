@@ -133,7 +133,7 @@ describe('HTTP foundation', () => {
         shortName: 'TTLMHSS',
         fullName: 'Thiruthangal Lions Matriculation Higher Secondary School',
         primaryColor: '#003300',
-        logoUrl: null,
+        logoUrl: '/brand/ttlmhss-logo.webp',
       },
     });
   });

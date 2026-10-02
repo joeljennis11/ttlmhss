@@ -134,7 +134,12 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) =
   });
 
   describe('schema management', () => {
-    const ALL = ['0001_foundation', '0002_school_identity', '0003_authentication'];
+    const ALL = [
+      '0001_foundation',
+      '0002_school_identity',
+      '0003_authentication',
+      '0004_school_logo',
+    ];
 
     it('migrates an empty database to the latest version', async () => {
       expect(await store.schema.pending()).toEqual([]);
@@ -145,6 +150,8 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) =
     });
 
     it('every migration rolls back cleanly and re-applies (schema is reproducible)', async () => {
+      expect(await store.schema.rollbackLast()).toBe('0004_school_logo');
+      expect((await store.repositories.schoolSettings.get())?.logoPath).toBeNull();
       expect(await store.schema.rollbackLast()).toBe('0003_authentication');
       expect(await store.schema.rollbackLast()).toBe('0002_school_identity');
       expect(await store.repositories.schoolSettings.get()).toBeNull();
@@ -162,7 +169,7 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) =
         shortName: 'TTLMHSS',
         fullName: 'Thiruthangal Lions Matriculation Higher Secondary School',
         primaryColor: '#003300',
-        logoPath: null,
+        logoPath: '/brand/ttlmhss-logo.webp',
       });
     });
 

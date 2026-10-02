@@ -1,46 +1,94 @@
 /*
- * TTLMHSS design tokens.
- * Primary identity colour: Dark Green #003300 (RGB 0, 51, 0).
- * Tints/shades are derived from it; content sits on white/neutral surfaces.
- * Use the brand colour for identity and primary actions only — never paint the whole UI green.
+ * TTLMHSS design tokens (Phase 3).
+ *
+ * Identity: Forest #003300 (RGB 0, 51, 0) — sidebar, primary actions, active navigation, headings.
+ * Content lives on white / cool green-grey neutrals. Gold comes from the school crest and is used
+ * ONLY as a thin active-navigation marker on the green sidebar (provisional, D-35).
+ * Never paint large areas green other than the sidebar and the login identity panel.
  */
 :root {
-  /* Brand scale (derived from #003300 by mixing with white / black) */
-  --brand-50: #f2f5f2;
-  --brand-100: #e6ebe6;
-  --brand-200: #ccd6cc;
-  --brand-300: #a6b8a6;
-  --brand-500: #4d704d;
-  --brand-700: #265226;
-  --brand-900: #003300; /* primary */
-  --brand-950: #002600; /* hover / pressed on primary */
+  /* Brand scale — derived from #003300 */
+  --forest: #003300; /* primary */
+  --forest-deep: #002600; /* hover / pressed on primary */
+  --forest-700: #1c4a1c; /* sidebar hover surface */
+  --forest-600: #2e5a2e; /* borders on dark */
+  --forest-300: #9db59d; /* subtle borders, focus on light */
+  --leaf: #e7efe5; /* selected / subtle fill */
+  --leaf-soft: #f1f6f0; /* hover on light */
+  --crest-gold: #f6cb17; /* from the official crest; accent only */
 
   /* Neutrals */
-  --surface: #ffffff;
-  --surface-muted: #f7f8f7;
-  --border: #dde3dd;
-  --text: #1a1f1a;
-  --text-muted: #556055;
-  --text-on-brand: #ffffff;
+  --paper: #ffffff;
+  --canvas: #f5f7f4;
+  --line: #dfe5de;
+  --line-strong: #c6d0c5;
+  --ink: #18211b;
+  --ink-muted: #556259;
+  --ink-faint: #7a867d;
+  --on-forest: #ffffff;
+  --on-forest-muted: rgb(255 255 255 / 0.74);
 
-  /* Status (paired with text labels — colour is never the only signal) */
-  --success: #1e7a34;
-  --success-bg: #e8f5ec;
-  --danger: #b42318;
-  --danger-bg: #fdecea;
+  /* Feedback (always paired with an icon or text — never colour alone) */
+  --success: #1f7a36;
+  --success-bg: #e9f5ec;
+  --danger: #b3261e;
+  --danger-bg: #fcecea;
   --warning: #8a5a00;
-  --warning-bg: #fff4dc;
+  --warning-bg: #fff5dc;
+  --info: #1f5f8b;
+  --info-bg: #e8f1f8;
 
-  /* Shape & type */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08);
+  /* Type */
   --font-sans:
-    'Noto Sans', 'Noto Sans Tamil', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    'Public Sans Variable', 'Noto Sans Tamil', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Source Serif 4 Variable', 'Noto Serif Tamil', Georgia, 'Times New Roman', serif;
+  --text-xs: 0.75rem; /* 12 — metadata */
+  --text-sm: 0.875rem; /* 14 — labels, helper, meta */
+  --text-md: 1rem; /* 16 — body */
+  --text-lg: 1.125rem; /* 18 — card / panel heading */
+  --text-xl: 1.375rem; /* 22 — section heading */
+  --text-2xl: 1.75rem; /* 28 — page title */
+  --leading-tight: 1.2;
+  --leading-body: 1.55;
+
+  /* Space (4 px grid) */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Shape — small radii; hierarchy comes from borders and space, not shadows */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --shadow-pop:
+    0 8px 24px rgb(0 20 0 / 0.14), 0 1px 3px rgb(0 20 0 / 0.08); /* menus, dialogs only */
+  --focus-ring: 0 0 0 3px rgb(0 51 0 / 0.35);
+
+  /* Layout */
+  --sidebar-width: 248px;
+  --sidebar-rail: 72px;
+  --header-height: 60px;
+  --content-max: 1120px;
+  --tap-target: 44px;
+}
+
+/* Legacy aliases kept so Phase 1/2 styles keep working while they are migrated. */
+:root {
+  --brand-50: var(--leaf-soft);
+  --brand-100: var(--leaf);
+  --brand-300: var(--forest-300);
+  --brand-500: var(--forest-600);
+  --brand-900: var(--forest);
+  --brand-950: var(--forest-deep);
+  --surface: var(--paper);
+  --surface-muted: var(--canvas);
+  --border: var(--line);
+  --text: var(--ink);
+  --text-muted: var(--ink-muted);
+  --text-on-brand: var(--on-forest);
 }

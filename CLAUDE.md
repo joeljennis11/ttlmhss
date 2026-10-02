@@ -32,7 +32,7 @@ Development happens in explicit, user‑unlocked phases:
 - Do not silently introduce major new requirements.
 - Do not make irreversible architectural decisions the spec leaves open — ask. Open decisions are tracked in `docs/decisions.md`.
 
-**Current phase status:** Phase 2 complete (authentication + RBAC). Waiting for Phase 3 instruction.
+**Current phase status:** Phase 3 complete (branding, sign-in, application shell). Waiting for Phase 4 instruction.
 
 ## 2. Workflow for every phase
 
@@ -105,7 +105,8 @@ Real generated documents only: A4, official logo, school name, academic year, st
 - Controlled values come from `@ttlmhss/shared`; never compare against bare strings.
 - No sample/fake school data. Test fixtures are synthetic and live in throwaway databases.
 - **Security (Phase 2):** every protected route uses `access: requires('<permission>')`; every service method re‑checks with `deps.authorization.authorize(principal, '<permission>')` and applies a scope check (`checkStudentScope`, `checkSectionScope`, …) before reading or writing records. Student‑facing data uses `principal.studentId`, never an id from the request. Permissions are granted only in `core/auth/role-permissions.ts`. Never return or log passwords, hashes or session tokens.
-- Run `pnpm check` (lint + format + typecheck + tests) before finishing a phase.
+- **UI (Phase 3):** add pages to `apps/web/src/app/routes.tsx` (`SHELL_ROUTES`) with `permission`/`roles` and an optional `nav` entry — the menu is generated from it; never add menu entries for unbuilt modules. Use the tokens in `styles/tokens.css` and the components in `components/ui` and `components/layout`; school name and logo come from `useBranding()` / `<SchoolLogo>`, never hard-coded. Each page calls `usePageTitle()`. Frontend gating is UX only.
+- Run `pnpm check` (lint + format + typecheck + tests) before finishing a phase; run `pnpm --filter @ttlmhss/web test:e2e` when UI flows change.
 
 ## 9. Documentation map
 

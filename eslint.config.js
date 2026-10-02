@@ -57,7 +57,12 @@ export default tseslint.config(
     rules: { 'no-restricted-imports': 'off' },
   },
   {
-    files: ['apps/api/src/scripts/**/*.ts'],
+    files: [
+      'apps/api/src/scripts/**/*.ts',
+      'apps/api/test/e2e/**/*.ts',
+      'apps/*/scripts/**/*.{js,mjs,ts}',
+      'apps/web/e2e/**/*.ts',
+    ],
     rules: { 'no-console': 'off' },
   },
   {

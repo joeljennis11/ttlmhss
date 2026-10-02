@@ -17,7 +17,7 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑20 | Hosting / deployment target | Depends on school's IT setup (cloud VM, PaaS, on‑premise). Also affects D‑04 | Open |
 | D‑22 | Student/teacher login identifier | Auth accepts any lowercase username (letters, digits, `. _ @ -`). Recommendation for Phase 5: students = admission number, teachers = staff code | Open |
 | D‑23 | Photo/certificate file storage | Local disk behind an interface (swap to object storage later) | Proposed |
-| D‑27 | Frontend UI libraries (Tailwind, Radix, React Router, TanStack Query from the Phase‑0 proposal) | Not installed yet — Phase 1 uses CSS tokens + CSS Modules for one page. Decide in Phase 3 when the shell is built | Open |
+| D‑27 | Frontend UI libraries | **Adopted in Phase 3:** React Router 8, CSS Modules + design tokens, lucide‑react icons, self‑hosted Public Sans / Source Serif 4. Not adopted: Tailwind, Radix, TanStack Query (unnecessary for the shell; revisit for data‑heavy modules) | Adopted — please confirm |
 | D‑28 | TypeScript version | Pinned `~6.0.3` because typescript‑eslint does not yet support TS 7 | Adopted |
 
 ## Domain
@@ -57,7 +57,7 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | ID | Question | Notes | Status |
 |---|---|---|---|
 | D‑34 | Higher‑resolution / vector logo for print | Supplied file is a 556 × 556 JPEG with a white background: fine on screen, may look soft on A4 PDFs | Open — optional input |
-| D‑35 | Logo green vs brand colour | The logo's green measures ≈ `#345729`, lighter than the specified brand colour `#003300`; it also uses gold ≈ `#F6CB17`. Spec keeps `#003300` as primary; gold could serve as a sparing accent. Confirm in Phase 3 | Open |
+| D‑35 | Logo green vs brand colour | The logo's green measures ≈ `#345729`, lighter than the specified brand colour `#003300`; it also uses gold ≈ `#F6CB17`. Phase 3 keeps `#003300` as primary everywhere and uses the crest gold **only** as the active‑page marker / focus colour on the green sidebar | Provisional — please confirm |
 
 ## Pending inputs from the user
 

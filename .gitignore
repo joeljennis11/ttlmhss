@@ -26,3 +26,5 @@ apps/api/data/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+**/e2e/.results/
+**/playwright-report/

@@ -2,7 +2,7 @@
 
 School Management System for **Thiruthangal Lions Matriculation Higher Secondary School**.
 
-**Status:** Phase 2 complete — foundation, data layer, authentication and role-based access control. No school-management features yet.
+**Status:** Phase 3 complete — foundation, data layer, authentication, role-based access control, school branding, sign-in and the application shell. No school-management modules yet.
 
 ## Requirements
 - Node.js ≥ 22.12 (`.nvmrc`)
@@ -32,6 +32,8 @@ Optional: put `SESSION_SECRET=<48+ random chars>` in `apps/api/.env.development.
 | `pnpm test` / `pnpm test:watch` | all tests (data-layer tests run on SQLite and PostgreSQL) |
 | `pnpm lint` / `pnpm format` / `pnpm format:check` / `pnpm typecheck` | static checks |
 | `pnpm check` | everything above in one go |
+| `pnpm --filter @ttlmhss/web test:e2e` | browser end-to-end tests against the real API (first run `pnpm --filter @ttlmhss/web exec playwright install chromium`, or set `CHROMIUM_PATH`) |
+| `pnpm --filter @ttlmhss/web brand:assets` | regenerate web logo/favicons from `assets/brand/ttlmhss-logo-official.jpg` |
 
 ## Configuration
 API settings come from environment variables — see `apps/api/.env.example`. Committed `.env.development` / `.env.test` hold non-secret defaults; put local overrides and any secrets in `apps/api/.env.development.local` (git-ignored). In production, use real environment variables only; `SESSION_SECRET` is required.

@@ -118,7 +118,7 @@ erDiagram
 
 ## 5. Implemented schema (Phase 1)
 
-Created by `apps/api/src/data/kysely/migrations/0001_foundation.ts`, `0002_school_identity.ts` (Phase 1) and `0003_authentication.ts` (Phase 2). Row types: `database-schema.ts`.
+Created by `apps/api/src/data/kysely/migrations/0001_foundation.ts`, `0002_school_identity.ts` (Phase 1) and `0003_authentication.ts` (Phase 2) and `0004_school_logo.ts` (Phase 3: sets `school_settings.logo_path` to the official web logo `/brand/ttlmhss-logo.webp` when unset). Row types: `database-schema.ts`.
 
 ### Storage conventions (portable)
 | Kind | Stored as |

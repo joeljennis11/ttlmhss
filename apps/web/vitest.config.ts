@@ -11,7 +11,10 @@ export default defineProject({
   },
   test: {
     name: 'web',
+    // Component tests opt into a DOM with `// @vitest-environment jsdom`.
     environment: 'node',
-    include: ['test/**/*.test.ts'],
+    include: ['test/**/*.test.{ts,tsx}'],
+    setupFiles: ['./test/setup.ts'],
+    css: { modules: { classNameStrategy: 'non-scoped' } },
   },
 });

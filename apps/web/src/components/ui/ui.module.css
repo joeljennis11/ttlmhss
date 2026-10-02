@@ -1,0 +1,381 @@
+/* ---------- Button ---------- */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target);
+  padding: 0 var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-md);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  text-decoration: none; /* also used on links styled as buttons */
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+  white-space: nowrap;
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+}
+
+.button-primary {
+  background: var(--forest);
+  color: var(--on-forest);
+}
+
+.button-primary:hover:not(:disabled) {
+  background: var(--forest-deep);
+}
+
+.button-primary:disabled:not([aria-busy]) {
+  background: var(--forest-300);
+}
+
+.button-secondary {
+  background: var(--paper);
+  color: var(--forest);
+  border-color: var(--line-strong);
+}
+
+.button-secondary:hover:not(:disabled) {
+  background: var(--leaf-soft);
+  border-color: var(--forest-300);
+}
+
+.button-ghost {
+  background: transparent;
+  color: var(--forest);
+}
+
+.button-ghost:hover:not(:disabled) {
+  background: var(--leaf-soft);
+}
+
+.button-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.button-sm {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.button-full {
+  width: 100%;
+}
+
+/* ---------- Spinner ---------- */
+.spinnerWrap {
+  display: inline-flex;
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Fields ---------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.input {
+  width: 100%;
+  min-height: var(--tap-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  font-size: var(--text-md); /* ≥16px prevents iOS zoom on focus */
+  color: var(--ink);
+  transition: border-color 120ms ease;
+}
+
+.input:hover {
+  border-color: var(--forest-300);
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--forest);
+  box-shadow: var(--focus-ring);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.inputWithAction {
+  position: relative;
+}
+
+.inputWithAction .input {
+  padding-right: var(--tap-target);
+}
+
+.inputAction {
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  width: var(--tap-target);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  cursor: pointer;
+}
+
+.inputAction:hover {
+  color: var(--forest);
+}
+
+.inputAction:focus-visible {
+  outline: none;
+  box-shadow: inset var(--focus-ring);
+}
+
+.hint {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.fieldError {
+  font-size: var(--text-sm);
+  color: var(--danger);
+}
+
+/* ---------- Alert ---------- */
+.alert {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-size: var(--text-sm);
+}
+
+.alertIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.alertTitle {
+  font-weight: 600;
+}
+
+.alert-info {
+  background: var(--info-bg);
+  border-color: color-mix(in srgb, var(--info) 25%, transparent);
+  color: var(--info);
+}
+
+.alert-success {
+  background: var(--success-bg);
+  border-color: color-mix(in srgb, var(--success) 25%, transparent);
+  color: var(--success);
+}
+
+.alert-warning {
+  background: var(--warning-bg);
+  border-color: color-mix(in srgb, var(--warning) 25%, transparent);
+  color: var(--warning);
+}
+
+.alert-error {
+  background: var(--danger-bg);
+  border-color: color-mix(in srgb, var(--danger) 25%, transparent);
+  color: var(--danger);
+}
+
+.alertBody {
+  color: var(--ink);
+}
+
+/* ---------- Loading / empty / error ---------- */
+.state,
+.stateFullPage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-10) var(--space-6);
+  color: var(--ink-muted);
+}
+
+.stateFullPage {
+  min-height: 100vh;
+  justify-content: center;
+}
+
+.stateIcon {
+  display: inline-flex;
+  padding: var(--space-3);
+  border-radius: 50%;
+  background: var(--leaf);
+  color: var(--forest);
+}
+
+.stateIconError {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.stateTitle {
+  font-weight: 600;
+  font-size: var(--text-lg);
+  color: var(--ink);
+}
+
+.stateText {
+  max-width: 46ch;
+  font-size: var(--text-sm);
+}
+
+/* ---------- Dialog ---------- */
+.dialog {
+  width: min(28rem, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+  color: var(--ink);
+}
+
+.dialog::backdrop {
+  background: rgb(0 20 0 / 0.45);
+}
+
+.dialogTitle {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.dialogBody {
+  margin-top: var(--space-2);
+  color: var(--ink-muted);
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+/* ---------- Toasts ---------- */
+.toastRegion {
+  position: fixed;
+  z-index: 60;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(24rem, calc(100vw - 2 * var(--space-4)));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--forest);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-pop);
+  font-size: var(--text-sm);
+  pointer-events: auto;
+  animation: toast-in 160ms ease-out;
+}
+
+.toast p {
+  flex: 1;
+}
+
+.toast-success {
+  border-left-color: var(--success);
+}
+
+.toast-success svg:first-child {
+  color: var(--success);
+}
+
+.toast-info {
+  border-left-color: var(--forest);
+}
+
+.toast-info svg:first-child {
+  color: var(--forest);
+}
+
+.toast-error {
+  border-left-color: var(--danger);
+}
+
+.toast-error svg:first-child {
+  color: var(--danger);
+}
+
+.toastClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.toastClose:hover {
+  background: var(--canvas);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (max-width: 767px) {
+  .toastRegion {
+    left: var(--space-4);
+    right: var(--space-4);
+    width: auto;
+  }
+}

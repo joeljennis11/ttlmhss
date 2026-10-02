@@ -16,6 +16,8 @@ Domain rules referenced here are defined authoritatively in [business-rules.md](
 
 ## 2. Branding (Phase 3, applied throughout)
 
+> Status: login page, application shell, favicon and the official logo implemented in Phase 3 (architecture.md §11). PDF branding follows in Phase 11.
+
 - **R‑2.1** Primary colour Dark Green `#003300` for sidebar, primary buttons, active nav, headers, accents, login branding, dashboard highlights, PDF branding.
 - **R‑2.2** Derived tints/shades for hover, selected, borders, cards and highlights. White/light neutral content backgrounds. Not an all‑green UI. Accessible contrast.
 - **R‑2.3** Official logo supplied by the user is the only logo. Never generated, redrawn, replaced or placeholder‑substituted. Used in: login, sidebar/header, dashboards, teacher and student portals, favicon, attendance reports, mark sheets, report cards, annual reports, official PDFs.

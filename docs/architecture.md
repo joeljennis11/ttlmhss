@@ -1,6 +1,6 @@
 # Architecture — TTLMHSS
 
-Status after **Phase 2**: the foundation (Phase 1) and authentication + RBAC (Phase 2, §10) are **implemented and verified**. Items in §9 remain proposals. Open decisions live in [decisions.md](decisions.md); the database provider is still **not finalised** (D‑04).
+Status after **Phase 3**: the foundation (Phase 1), authentication + RBAC (Phase 2, §10) and branding, sign‑in and the application shell (Phase 3, §11) are **implemented and verified**. Items in §9 remain proposals. Open decisions live in [decisions.md](decisions.md); the database provider is still **not finalised** (D‑04).
 
 ---
 
@@ -34,12 +34,13 @@ One deployable API + one static web client, in a pnpm monorepo. No microservices
 | Validation | Zod 4, shared building blocks in `@ttlmhss/shared` | |
 | Data access | **Kysely 0.29** query builder + migrations, behind repository interfaces | **Deviation from Phase 0** (was "Prisma or Drizzle") — see §8. |
 | DB drivers | `better-sqlite3` (SQLite), `pg` (PostgreSQL) | Selected at runtime from `DATABASE_URL`; loaded lazily. |
-| Frontend | React 19 + Vite 8, CSS custom‑property design tokens + CSS Modules | Tailwind/Radix/TanStack Query/React Router **not added yet** — only one page exists. Decided in Phase 3 (D‑27). |
+| Frontend | React 19 + Vite 8, **React Router 8**, CSS custom‑property design tokens + CSS Modules, `lucide-react` icons, self‑hosted fonts (`@fontsource-variable` Public Sans + Source Serif 4) | D‑27: no Tailwind/Radix/TanStack Query — not needed for the shell; revisit when data‑heavy modules arrive |
+| Browser tests | Vitest + jsdom + Testing Library (components); **Playwright** (end‑to‑end against the real API) | Phase 3 |
 | Logging | Pino (Fastify built‑in); pretty output in development, JSON elsewhere | |
 | Testing | Vitest 5 (projects: shared, api, web); PGlite for PostgreSQL tests | |
 | Lint/format | ESLint 10 (flat config) + typescript‑eslint + react‑hooks, Prettier 3 | |
 
-Not yet used (planned for later phases): PDF/Excel generation (Phase 11), Playwright E2E.
+Not yet used (planned for later phases): PDF/Excel generation (Phase 11).
 
 ## 3. Repository layout (actual)
 
@@ -82,12 +83,24 @@ apps/
     .env.example .env.development .env.test
   web/
     src/
-      main.tsx App.tsx
-      styles/                tokens.css (brand scale from #003300), base.css
-      lib/                   api-client.ts, use-api-query.ts
-      features/auth/         AuthProvider, AuthGate, LoginPage, ChangePasswordPage, SignedInHome (minimal, Phase 2)
-      features/system/       SystemStatus (API/database status line)
-    test/                    api-client tests
+      main.tsx               providers: Router → Toasts → Branding → Auth → AppRoutes
+      app/                   AppRoutes (routing), routes.tsx (SHELL_ROUTES: pages + menu), guards, page-meta
+      brand/                 brand.ts (single fallback identity), BrandingProvider, SchoolLogo
+      shell/                 AppShell, Sidebar, Header, UserMenu, navigation (role-aware filtering)
+      pages/                 HomePage, AccountPasswordPage, NotFoundPage, ForbiddenPage
+      features/auth/         auth-context, LoginPage, ForcedPasswordChangePage, ChangePasswordForm
+      features/system/       SystemNotice (shown on sign-in only when the system is down)
+      components/ui/         Button, TextField/PasswordField, Alert, Spinner, Loading/Empty/Error states,
+                             ConfirmDialog, Toasts (ui.module.css)
+      components/layout/     PageHeader, Panel
+      lib/                   api-client (+ auth-failure events), roles, use-media-query
+      styles/                tokens.css (design tokens), base.css (fonts, reset)
+    public/brand/            web copies of the official logo (generated; see §11)
+    scripts/                 build-brand-assets.mjs
+    test/                    component tests (jsdom) + navigation/role helpers
+    e2e/                     Playwright end-to-end tests
+    playwright.config.ts
+assets/brand/                the OFFICIAL logo, stored unmodified
 packages/
   shared/src/                api-contract.ts, auth.ts (roles, permissions, password policy, auth DTOs),
                              controlled-values.ts, validation.ts
@@ -99,8 +112,8 @@ docs/                        this documentation
 ### Frontend
 - Reaches data **only** through `lib/api-client.ts` (`/api/v1/...`), which validates payloads with shared Zod schemas and turns the error envelope into `ApiClientError` with a user‑safe message.
 - ESLint forbids importing backend code into `apps/web`.
-- Every async view has loading / error / success states (`useApiQuery`).
-- Brand tokens: `--brand-900: #003300` plus derived tints/shades; neutral surfaces for content. No logo or favicon until the official logo is supplied.
+- Every async view has loading / error / success states (shared `LoadingState`, `ErrorState`, `EmptyState`).
+- Design tokens and the shell are described in §11.
 
 ### API layer — route/controller convention
 ```ts
@@ -161,6 +174,9 @@ defineRoute({
 | `apps/api/test/authentication.test.ts` | Argon2id hashing/verification, login (valid, identical generic failures for unknown/wrong/inactive/no‑password), malformed input, cookie flags, token stored only as HMAC, `/auth/me`, logout revocation, idle + absolute expiry, deactivation mid‑session, temporary‑password enforcement and change flow, session rotation, password reset, per‑username lockout, per‑IP rate limit, CSRF origin check, audit content, no secrets in logs |
 | `apps/api/test/authorization.test.ts` | via real sessions: 401 for anonymous; Admin; plain Teacher (no scope yet, no achievements); Class Teacher scope limited to own section and following the assignment immediately; Student self‑scope; role‑permission map invariants; guard unit tests |
 | `apps/web/test/api-client.test.ts` | envelope parsing, error/network/invalid‑payload handling |
+| `apps/web/test/app.test.tsx` (jsdom) | routing guards; permission‑ and role‑gated pages via test‑only routes (no‑access page, menu entries hidden, typed URL still gated); temporary‑password routing; sign‑in validation, network failure, system‑down notice, start‑up error with retry; account menu, sign‑out, Escape/focus |
+| `apps/web/test/navigation.test.ts` | navigation filtering and role display helpers |
+| `apps/web/e2e/auth-shell.spec.ts` (Playwright, real API + throwaway DB) | redirect to sign‑in and back; official crest served; validation, loading, generic failures; show/hide password; signed‑in users leave /login; each role sees its role and only existing pages; 404 in shell; temporary‑password flow cannot be bypassed; sign‑out invalidates the server session (cookie replay refused); session ended elsewhere → sign‑in with explanation; desktop/tablet/mobile layouts, drawer keyboard behaviour, no horizontal overflow |
 
 Test fixtures are synthetic and live only in throwaway in‑memory databases. No feature tests exist for features that are not built. Every later business rule should be traceable to a test by its BR‑ID.
 
@@ -180,6 +196,8 @@ Test fixtures are synthetic and live only in throwaway in‑memory databases. No
 | `pnpm test` / `pnpm test:watch` | all test suites |
 | `pnpm typecheck` / `pnpm lint` / `pnpm format` / `pnpm format:check` | static checks |
 | `pnpm check` | lint + format check + typecheck + tests |
+| `pnpm --filter @ttlmhss/web test:e2e` | browser end‑to‑end tests (starts its own API + web server on ports 3101/5174 with a throwaway database; needs Playwright's Chromium or `CHROMIUM_PATH`) |
+| `pnpm --filter @ttlmhss/web brand:assets` | regenerate the web logo/favicons from the official logo |
 
 ## 8. Deviations from Phase 0 (and why)
 
@@ -190,7 +208,6 @@ Test fixtures are synthetic and live only in throwaway in‑memory databases. No
 
 ## 9. Still proposals (not implemented)
 - PDF via HTML/CSS + headless Chromium; Excel via ExcelJS (D‑19, Phase 11).
-- Playwright E2E tests (from Phase 3, once there is UI to test).
 - Hosting target (D‑20).
 
 ## 10. Authentication & RBAC (Phase 2)
@@ -242,11 +259,68 @@ Built on every request by `SessionAuthenticator`: `userId, username, displayName
 ### Account operations
 `AccountCredentialsService` (create account with temporary password, issue temporary password, activate/deactivate) is ready for the Admin phases; it checks `users.create` / `users.reset_password` / `users.edit` when called by a signed‑in user. Today it is used by the `pnpm account` CLI (actor `system`), which is how the first Administrator is created — there is no public registration.
 
-### Frontend (minimal)
-`AuthProvider` asks `/auth/me` on load; `AuthGate` renders the sign‑in page, the mandatory change‑password page, or a minimal signed‑in page with sign‑out. The browser never sees the session token. Final login design and the app shell are Phase 3.
+### Frontend
+`AuthProvider` asks `/auth/me` on load; route guards render sign‑in, the mandatory password change, or the shell (§11). The browser never sees the session token.
 
 ### Known limitations
 - Login throttle state is **in memory** (single API process). Multiple instances would need a shared store.
 - Without `SESSION_SECRET` in development/test, a per‑process secret is generated: everyone is signed out when the API restarts (a startup warning says so).
 - Argon2 parameters are fixed in code; a "rehash on next login when parameters increase" step is not implemented yet.
 - A plain subject teacher has no record‑level scope until the timetable exists (Phase 6).
+
+## 11. Branding, sign-in and application shell (Phase 3)
+
+### Brand assets
+| What | Where | Notes |
+|---|---|---|
+| Official logo (source of truth) | `assets/brand/ttlmhss-logo-official.jpg` | Stored exactly as supplied (SHA‑256 checked). Never edited. |
+| Web logo | `apps/web/public/brand/ttlmhss-logo.webp` (512 px) | Generated by `brand:assets` — **resize only** |
+| Favicon / home‑screen icon | `apps/web/public/brand/favicon-32.png`, `apple-touch-icon.png` | Generated the same way |
+| Database reference | `school_settings.logo_path = /brand/ttlmhss-logo.webp` (migration 0004) | `GET /school/branding` returns it as `logoUrl` |
+| Future PDFs (Phase 11) | read the official file from `assets/brand/` | |
+
+The crest is circular and fills its square image edge to edge, so the UI shows it with `border-radius: 50%` — this hides only the image's white corners, never part of the crest (`brand/SchoolLogo.tsx`). The school name and short name come from `GET /school/branding` via `BrandingProvider`; `brand/brand.ts` holds the one fallback copy used until that response arrives. Components never hard‑code the names.
+
+### Colour and type system (`styles/tokens.css`)
+- **Forest `#003300`**: sidebar, sign‑in identity panel, primary buttons, page titles, active states. Hover/pressed `#002600`; tints `#E7EFE5` (selected/subtle fills), `#F1F6F0` (hover on light).
+- **Neutrals**: white surfaces, cool green‑grey canvas `#F5F7F4`, ink `#18211B`, muted `#556259`. Large areas other than the sidebar and the sign‑in panel stay light.
+- **Crest gold `#F6CB17`**: only the 4 px active‑page marker on the green sidebar and keyboard focus on the sidebar (provisional, D‑35).
+- Feedback colours (success/danger/warning/info) always come with an icon or text.
+- **Type**: Public Sans (UI, tabular numbers) and Source Serif 4 (school name and page titles only), self‑hosted; Noto Tamil families are listed as fallbacks for Tamil text. Scale 12/14/16/18/22/28 px.
+- Contrast (measured): body text 15.3:1, muted text ≥ 5.9:1, white on forest 14.3:1, sidebar muted text ≥ 6.4:1, alert/error/success text ≥ 5.4:1.
+
+### Routing (`app/AppRoutes.tsx`)
+| Path | Guard | Behaviour |
+|---|---|---|
+| `/login` | `PublicOnly` | signed‑in users are sent to where they were going (or `/`), or to the password change |
+| `/change-password` | `RequirePasswordChange` | only for users with a temporary password; outside the shell |
+| everything else | `RequireAuth` → `AppShell` | signed out → `/login` (remembering the page); temporary password → `/change-password` |
+| each shell page | `RequirePermission` | missing permission/role → "no access" page |
+| unknown path | — | "page not found" inside the shell |
+
+**Single source for pages and menu**: `app/routes.tsx` (`SHELL_ROUTES`). Each page declares its `permission`/`roles` and optional `nav` entry; the sidebar is generated from the same list, so it can only link to pages that exist and that the user may open. Phase 3 pages: Home and Change password. **These checks are UX only** — every API behind a page enforces permission and scope itself (§10, docs/permissions.md).
+
+Deep links need the web server to serve `index.html` for unknown paths (SPA fallback). Vite does this in development; production hosting must be configured to do the same, with `/api` proxied to the API on the same origin.
+
+### Session handling in the UI
+- `lib/api-client.ts` emits an event whenever the API answers `UNAUTHORIZED` or `PASSWORD_CHANGE_REQUIRED`. `AuthProvider` listens: a signed‑in user who gets `UNAUTHORIZED` (expired, revoked, deactivated) is signed out with reason `expired` and the sign‑in page says "Your session has ended"; `PASSWORD_CHANGE_REQUIRED` re‑reads the user so the forced change appears.
+- When the tab becomes visible again after ≥ 60 s, the session is re‑checked (one `/auth/me` call).
+- Only the non‑secret user summary is kept, in memory. Nothing is written to localStorage/sessionStorage.
+
+### Shell layout (`shell/`)
+| Width | Sidebar | Header |
+|---|---|---|
+| ≥ 1024 px | persistent 248 px column (crest, menu sections, school name footer) | breadcrumb, account menu |
+| 768–1023 px | 72 px icon rail (labels kept for screen readers and as tooltips); menu button opens the full sidebar over the page | menu button, breadcrumb, account menu |
+| < 768 px | hidden; menu button opens a drawer | menu button, crest + TTLMHSS, account menu |
+
+When the sidebar is open as a drawer it is a modal dialog: focus moves to its close button, Escape/backdrop/link click close it, focus returns to the menu button, the rest of the page is `inert`, and page scrolling is locked. The account menu (disclosure pattern) shows name, username, roles, "Change password" and "Sign out"; Escape and outside clicks close it.
+
+### Reusable UI (`components/`)
+`Button` (primary/secondary/ghost/danger, loading state with `aria-busy`), `TextField`, `PasswordField` (show/hide toggle), `Alert` (role alert/status by tone), `LoadingState`, `EmptyState`, `ErrorState` (retry), `ConfirmDialog` (native `<dialog>`), toasts (`ToastProvider`/`useToast`, polite live region), `PageHeader`, `Panel`. Kept deliberately small.
+
+### Accessibility
+Semantic landmarks (banner, navigation "Main" and "Breadcrumb", main with skip link), labelled inputs with errors linked by `aria-describedby`, focus moved to the first invalid field, visible focus rings, 44 px touch targets, 16 px inputs (no iOS zoom), `prefers-reduced-motion` respected, state never conveyed by colour alone.
+
+### Performance
+One `/auth/me`, one `/school/branding` and (on sign‑in only) one `/health` request per page load. JS bundle 384 KB (119 KB gzipped). Fonts load per script via `unicode-range` (Latin pages fetch only the Latin files).
