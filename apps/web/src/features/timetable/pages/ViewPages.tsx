@@ -6,6 +6,8 @@ import { Panel } from '../../../components/layout/Page';
 import { Badge, EmptyState, ErrorState, LoadingState, SelectField } from '../../../components/ui';
 import { formatDateTime } from '../../../lib/format';
 import { useResource } from '../../../lib/use-resource';
+import { useAuth } from '../../auth/auth-context';
+import { TodayLessons } from '../../attendance/LessonList';
 import { timetableApi } from '../api';
 import {
   TimetableLayout,
@@ -58,6 +60,8 @@ const isCurrent = (status: string) => status === 'CURRENT';
 /** The signed-in teacher's published week, across all their classes. */
 export function MyTimetablePage() {
   const selection = useTimetableYear();
+  const { user } = useAuth();
+  const canTakeAttendance = user?.permissions.includes('attendance.mark') ?? false;
   return (
     <TimetableLayout
       title="My timetable"
@@ -69,6 +73,7 @@ export function MyTimetablePage() {
             <div className={styles.toolbar}>
               <YearSelect years={years} year={year} onChange={selection.select} />
             </div>
+            {isCurrent(year.status) && canTakeAttendance && <TodayLessons />}
             <MyWeek yearId={year.id} yearLabel={year.label} current={isCurrent(year.status)} />
           </>
         )}

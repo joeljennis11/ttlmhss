@@ -1,5 +1,6 @@
 import type { FeatureModule } from './core/http/module.js';
 import type { AppDependencies } from './app-dependencies.js';
+import { attendanceModule } from './modules/attendance/attendance.module.js';
 import { authModule } from './modules/auth/auth.module.js';
 import { configModule } from './modules/config/config.module.js';
 import { peopleModule } from './modules/people/people.module.js';
@@ -19,5 +20,6 @@ export function featureModules(deps: AppDependencies): FeatureModule[] {
     configModule(deps),
     peopleModule(deps),
     timetableModule(deps),
+    attendanceModule(deps),
   ];
 }

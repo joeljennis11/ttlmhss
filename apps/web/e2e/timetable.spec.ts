@@ -44,8 +44,12 @@ test.beforeAll(async () => {
   await ok('post', '/auth/login', { username: 'e2e.admin', password: PASSWORD });
   const years = (await ok('get', '/admin/academic-years')) as any[];
   const year = years.find((y) => y.status === 'CURRENT');
+  // Add Monday–Friday, keeping any days other test files already use (removing a day another
+  // spec has lessons on would — correctly — block publishing).
+  const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  const wanted = new Set([...(year.workingDays ?? []), 'MON', 'TUE', 'WED', 'THU', 'FRI']);
   await ok('put', `/admin/academic-years/${year.id}/working-days`, {
-    workingDays: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
+    workingDays: days.filter((d) => wanted.has(d)),
   });
   // Periods 7 and 8 with a break between, late in the day (clear of other test files' periods).
   const day = await ok('get', `/admin/academic-years/${year.id}/day-structure`);
@@ -109,8 +113,9 @@ test('administrator: draft, add, clash refused, drag to move, remove, save and p
     .click();
   await page.getByLabel('Class and section').selectOption({ label: 'TEST-CLASS A' });
 
-  await page.getByRole('button', { name: 'Create draft' }).click();
-  await expect(toast(page, 'Draft started')).toBeVisible();
+  // "Create draft" on a fresh database; "Edit timetable (new draft)" when another spec published one.
+  await page.getByRole('button', { name: /^(Create draft|Edit timetable \(new draft\))$/ }).click();
+  await expect(toast(page, /Draft started/)).toBeVisible();
   const grid = page.getByRole('table', { name: /Draft timetable of TEST-CLASS A/ });
   await expect(grid.getByRole('columnheader', { name: /Tea break/ })).toBeVisible();
 
@@ -138,7 +143,9 @@ test('administrator: draft, add, clash refused, drag to move, remove, save and p
   await expect(edit.getByText(/TEST-CLASS A already has E2E TT Maths/)).toBeVisible();
   await edit.getByRole('button', { name: 'Cancel' }).click();
 
-  // Drag the Monday lesson to Wednesday, Period 8 (validated by the server first).
+  // Drag the Monday lesson to Wednesday, Period 8 (validated by the server first). A tall window
+  // keeps both cells on screen: headless HTML5 drag-and-drop cannot scroll mid-drag.
+  await page.setViewportSize({ width: 1440, height: 1600 });
   await grid
     .getByRole('button', { name: /E2E TT Maths, Test Subject Teacher, Monday, Period 7/ })
     .dragTo(grid.getByRole('button', { name: 'Free — add a lesson on Wednesday, Period 8' }));
@@ -172,7 +179,7 @@ test('administrator: draft, add, clash refused, drag to move, remove, save and p
     .getByRole('dialog', { name: /Publish the TEST-CURRENT timetable/ })
     .getByRole('button', { name: 'Publish' })
     .click();
-  await expect(toast(page, 'Timetable published (version 1)')).toBeVisible();
+  await expect(toast(page, /Timetable published \(version \d+\)/)).toBeVisible();
   await expect(page.getByRole('table', { name: 'Timetable versions' })).toContainText('Published');
 
   await page
@@ -195,7 +202,7 @@ test('a teacher sees their own published week and cannot edit', async ({ page })
   await expect(page).toHaveURL(/\/timetable\/my/);
   const week = page.getByRole('table', { name: /Timetable of Test Subject Teacher/ });
   await expect(week.getByText('E2E TT Maths')).toBeVisible();
-  await expect(week.getByText('TEST-CLASS A')).toBeVisible();
+  await expect(week.getByText('TEST-CLASS A').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Edit timetable' })).toHaveCount(0);
   await page.goto('/timetable/edit');
   await expect(page.getByText("You don't have access to this page")).toBeVisible();

@@ -92,6 +92,11 @@ Admin configures:
 - **R‑8.6** Configurable locking cutoff; Admin override; every override audited.
 - **R‑8.7** Full audit trail on every change (user, timestamp, student, date, period, old, new, reason).
 - **R‑8.8** Student view: matrix with date rows × period columns, cells P/A/L/C/-.
+- **R‑8.9** *(Phase 7)* `C` = **Permission / conditionally excused** for one student (Phase 7 instruction; replaces the earlier "Cancelled" wording, D‑51). Class Teachers apply Leave or C to several periods of one student's day at once.
+- **R‑8.10** *(Phase 7)* One record per Academic Year + Date + Period + Student (database‑enforced); saving again updates it. Unmarked students stay `-`; nothing is converted to P or A automatically.
+- **R‑8.11** *(Phase 7)* Today's timetable shows **Take attendance** only for the teacher's own published lessons (not breaks, free periods or other teachers' lessons); once saved it opens the saved register.
+- **R‑8.12** *(Phase 7)* Class‑teacher views: class day (period × student matrix, absentees, leave, unmarked periods, %) and totals over a date range; administrator register search with filters and paging; student "My attendance" with date range and totals.
+- **R‑8.13** *(Phase 7)* Two people saving the same register: the second save is refused with a "reload" message (no silent overwrite).
 
 ## 9. Exams, marks & results (Phase 8)
 

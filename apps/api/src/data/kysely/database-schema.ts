@@ -38,6 +38,9 @@ export interface Database {
   // Phase 6 — timetable
   timetable_versions: TimetableVersionsTable;
   timetable_entries: TimetableEntriesTable;
+  // Phase 7 — attendance
+  attendance_sessions: AttendanceSessionsTable;
+  attendance_records: AttendanceRecordsTable;
 }
 
 export interface AttendancePolicyTable extends Timestamps {
@@ -313,6 +316,38 @@ export interface TimetableEntriesTable extends Timestamps {
   section_id: string;
   subject_id: string;
   teacher_id: string;
+  created_by: string | null;
+  updated_by: string | null;
+}
+
+// Phase 7 (0008) — attendance
+export interface AttendanceSessionsTable extends Timestamps {
+  id: string;
+  academic_year_id: string;
+  date: string;
+  day: string;
+  period_id: string;
+  section_id: string;
+  timetable_entry_id: string;
+  timetable_version_id: string;
+  subject_id: string;
+  teacher_id: string;
+  revision: number;
+  created_by: string | null;
+  updated_by: string | null;
+}
+
+export interface AttendanceRecordsTable extends Timestamps {
+  id: string;
+  session_id: string;
+  academic_year_id: string;
+  date: string;
+  period_id: string;
+  enrolment_id: string;
+  student_id: string;
+  status: string;
+  leave_reason: string | null;
+  note: string | null;
   created_by: string | null;
   updated_by: string | null;
 }

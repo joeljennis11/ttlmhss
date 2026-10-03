@@ -32,7 +32,7 @@ Development happens in explicit, user‑unlocked phases:
 - Do not silently introduce major new requirements.
 - Do not make irreversible architectural decisions the spec leaves open — ask. Open decisions are tracked in `docs/decisions.md`.
 
-**Current phase status:** Phase 6 complete (timetable). Waiting for Phase 7 instruction.
+**Current phase status:** Phase 7 complete (period‑wise attendance). Waiting for Phase 8 instruction.
 
 ## 2. Workflow for every phase
 
@@ -60,9 +60,9 @@ Accounts: Teacher and Student accounts are created automatically when Admin adds
 ## 4. Critical business rules (summary — full text in `docs/business-rules.md`)
 
 - **Timetable:** assignment = Teacher + Subject + Class + Section + Day + Period. *Enter once → reflects everywhere* (class, teacher, student timetables, attendance context). Teacher double‑booking and class period collisions are **blocked**. Workflow **DRAFT → SAVE → PUBLISH**; only published versions are live. A period's primary action is **Take Attendance**. Marks are **not** period‑based.
-- **Attendance is period‑wise**: Date + Class/Section + Period + Student. Statuses `-` Not Marked, `P` Present, `A` Absent, `L` Leave, `C` Cancelled.
+- **Attendance is period‑wise**: Date + Class/Section + Period + Student. Statuses `-` Not Marked, `P` Present, `A` Absent, `L` Leave, `C` Permission / conditionally excused (per student; Phase 7, D‑51).
 - **Attendance % = P / (P + A).** L, C and `-` are excluded from numerator and denominator.
-- Subject Teacher marks P/A only for their own assigned periods. Class Teacher can view the whole day, edit authorized periods, apply Leave (reason: Medical / Personal / School Activity / Other → description required) and mark Cancelled.
+- Subject Teacher marks P/A only for their own assigned periods. Class Teacher can view the whole day, edit authorized periods, and apply Leave (reason: Medical / Personal / School Activity / Other → description required) or C across several periods of a student's day.
 - **Attendance locking** is configurable (e.g. September editable until 7 October). Admin can override; every override is audited.
 - **Attendance audit:** user, timestamp, student, date, period, old status, new status, reason.
 - **Marks are subject‑wise**: Exam → Subject → Class/Section. `0` = actual zero/absent; `-` = not entered. **Do not use "AB"** as the primary absent representation. Save Draft → Submit; submission **locks**. Admin / authorized Class Teacher can unlock; corrections audited.
@@ -109,6 +109,7 @@ Real generated documents only: A4, official logo, school name, academic year, st
 - **Configuration (Phase 4):** school structure and rules come from the Admin‑configured tables (`modules/config/`), read through repositories — never hard‑code them. Permission grants: code defaults in `core/auth/role-permissions.ts`, Admin overrides clipped to the ceilings in `@ttlmhss/shared` `PERMISSION_INFO`; never widen a ceiling to `ADMIN`‑only permissions. Admin pages are registered in `features/admin/admin-pages.ts`.
 - **People (Phase 5):** a student's class/section/roll lives only in `enrolments` (one ACTIVE per year); never add a class column to `students` and never edit/delete past enrolments — close and open. Later attendance/marks/behaviour rows reference `enrolments.id`. Teacher → Subject (`teacher_subjects`), class‑teacher assignments and Phase 6 timetable assignments stay separate tables. Accounts are created only through `AccountCredentialsService` with a fixed role (STUDENT/TEACHER); temporary passwords are issued on demand and never stored or logged.
 - **Timetable (Phase 6):** Teacher → Subject (`teacher_subjects`) is only what a teacher can teach; a timetable entry (Teacher + Subject + Class/Section + Day + Period in a `timetable_versions` row) is the only teacher↔class link. Every view and the future attendance context read the **PUBLISHED** version (`TimetableRepository`); never store a second class/teacher/student timetable. All rules live in `modules/timetable/timetable-rules.ts`; changes go through the year's single draft as an all‑or‑nothing batch; publishing is atomic and keeps the old version as SUPERSEDED history. Editing needs `timetable.manage` (Class Teachers: own section only, checked per operation); publishing needs `timetable.publish` (administrators only).
+- **Attendance (Phase 7):** a register (`attendance_sessions`) is resolved by the server from date + period + section against the timetable version in force that day and keeps a snapshot of that lesson; never accept teacher/subject/class from the request. Records (`attendance_records`) reference `enrolments.id`, one per (year, date, period, student). Subject‑teacher scope = their own published lesson only; class‑teacher scope = their section in that year; L/C only for class teachers/admins. Every change is audited per record; saves are one transaction with a revision check; locked dates need `attendance.override` + a reason. Use `countAttendance` from `@ttlmhss/shared` for every percentage (P ÷ (P + A); null when none).
 - Run `pnpm check` (lint + format + typecheck + tests) before finishing a phase; run `pnpm --filter @ttlmhss/web test:e2e` when UI flows change.
 
 ## 9. Documentation map

@@ -113,12 +113,12 @@ export const PERMISSION_INFO: Readonly<Record<Permission, PermissionInfo>> = Obj
   },
   'attendance.view': { label: 'View attendance', group: 'Attendance', grantableTo: ALL },
   'attendance.mark': {
-    label: 'Mark attendance (present / absent)',
+    label: 'Mark attendance (present / absent) for their own timetabled lessons',
     group: 'Attendance',
     grantableTo: STAFF,
   },
   'attendance.manage': {
-    label: 'Apply leave and cancel periods',
+    label: 'Manage their class attendance (all periods, leave and excused)',
     group: 'Attendance',
     grantableTo: CT,
   },

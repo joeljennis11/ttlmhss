@@ -202,6 +202,25 @@ Two relationships that must never be confused:
 - **History protection:** a period, section, subject or teacher used by any version (history included) cannot be deleted (FK RESTRICT; the services explain it). A Teacher → Subject pair used by the draft or live timetable cannot be removed. Academic years with a timetable count as "in use".
 - **Derived, never stored twice:** class, teacher and student timetables are queries over the PUBLISHED version (student → ACTIVE enrolment → section → entries). The Phase 7 attendance context (Date + Period + Class/Section + Subject + Teacher) is derived from the published entry for the date's weekday; attendance will snapshot teacher/subject (D‑05).
 
+### 5d. Phase 7 additions (`0008_attendance`)
+
+```
+published timetable (version in force on the date)
+  → Date + Period → Teacher + Subject + Class/Section   = attendance_sessions (one register)
+  → students placed in that section on that date        = enrolments (Phase 5)
+  → one status per student per period                   = attendance_records
+```
+
+| Table | Columns | Rules |
+|---|---|---|
+| `attendance_sessions` (register) | id, academic_year_id, date, day, period_id, section_id, **timetable_entry_id, timetable_version_id, subject_id, teacher_id** (snapshot of the lesson), revision ≥ 1, created_by / updated_by, timestamps | Unique (year, date, period, section). Indexes (section, date), (teacher, date). `revision` increases on every save (optimistic locking). |
+| `attendance_records` | id, session_id, academic_year_id, date, period_id, **enrolment_id**, student_id, status ∈ `- P A L C`, leave_reason, note, created_by / updated_by, timestamps | **Unique (academic year, date, period, student)** and (session, student). CHECK: `L` needs a leave reason ∈ MEDICAL/PERSONAL/SCHOOL_ACTIVITY/OTHER; any other status has none. Index (student, date). |
+
+- All references are ON DELETE RESTRICT: attendance is history. A student with attendance cannot be deleted; academic years with registers count as in use.
+- **History:** a register keeps the lesson it was taken for. Re-publishing the timetable never changes it, and registers for a date are resolved against the version in force on that date, so moving a lesson later does not move past attendance.
+- **Not marked** is stored as status `-` once a register is saved, or simply no record; both read as `-`.
+- **Percentage:** P ÷ (P + A) × 100; L, C and `-` excluded; null when P + A = 0 (computed in `@ttlmhss/shared` `countAttendance`, used by every API and screen).
+
 ## 6. Mapping of the functional entity list to the schema
 
 | Functional entity | Representation | When |
@@ -217,7 +236,7 @@ Two relationships that must never be confused:
 | Configurable student profile fields | Not built (fixed groups, D‑41); would be `student_field_definitions` + values | Open |
 | AuditLog | `audit_logs` | Phase 1 ✔ |
 | Timetable, TimetableAssignment | `timetable_versions` (DRAFT/PUBLISHED/SUPERSEDED, published at = effective from) + `timetable_entries` with unique (version, section, day, period) and (version, teacher, day, period) (§5c) | Phase 6 ✔ |
-| AttendanceRecord, AttendanceAudit | `attendance_sessions` (date + section + period, snapshot of teacher/subject, cancelled flag) + `attendance_records` (session + enrolment + status ∈ `- P A L C`, leave reason) + `attendance_audit` | Phase 7 |
+| AttendanceRecord, AttendanceAudit | `attendance_sessions` (date + section + period, snapshot of lesson/teacher/subject, revision) + `attendance_records` (session + enrolment + status ∈ `- P A L C`, leave reason, note); the audit trail uses `audit_logs` (`attendance.marked` / `attendance.override`) (§5d) | Phase 7 ✔ |
 | Exam, ExamSubject, Mark, GradeRule, ExamWeightage | **Phase 4 ✔:** `exams` (incl. weightage), `exam_subjects` (per exam × class × subject), `grade_schemes`/`grade_bands`. **Phase 8:** `mark_sheets` (DRAFT/SUBMITTED/UNLOCKED — drives subject‑wise visibility), `mark_entries` (raw marks; NULL = `-`), `grade_schemes`/`grade_bands`, `mark_audit` | Phase 8 |
 | BehaviourCategory, BehaviourRating, BehaviourAssessment | **Phase 4 ✔:** `behaviour_categories`, `behaviour_rating_labels`. **Phase 9:** `behaviour_assessments` (enrolment × exam, remark) + `behaviour_ratings` (category, 1–5 CHECK) | Phase 9 |
 | AchievementCategory, Achievement | **Phase 4 ✔:** `achievement_categories` (configurable; the six specified categories are offered as an explicit "add suggested" choice, not seeded). **Phase 9:** `achievements` | Phase 4 / 9 |

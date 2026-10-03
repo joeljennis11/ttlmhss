@@ -58,20 +58,27 @@ Authoritative definitions of the domain rules. Each rule has an ID so code, test
   | `P` | Present | Numerator & denominator |
   | `A` | Absent | Denominator |
   | `L` | Leave | Excluded |
-  | `C` | Cancelled | Excluded |
+  | `C` | Permission / conditionally excused (Phase 7; formerly "Cancelled", D‑51) | Excluded |
 
 - **BR‑ATT‑03** **Attendance % = P ÷ (P + A) × 100.** If P + A = 0, the percentage is "not available", never 0% or 100%.
 - **BR‑ATT‑04** Subject Teacher opens attendance from a published timetable period. Date, period, class, section, subject and teacher are fixed by the system, not chosen freely.
 - **BR‑ATT‑05** Subject Teacher may set only `P` or `A` (or revert to `-`), only for periods they are assigned, only for the day (dates on which that period occurs), and only before the lock cutoff. *Mark All Present* sets every currently unmarked student to `P`.
-- **BR‑ATT‑06** Class Teacher may view all periods of the day for their own class‑section, edit any period of their class (before cutoff), select multiple periods at once, apply **Leave** and mark **Cancelled**.
+- **BR‑ATT‑06** Class Teacher may view all periods of the day for their own class‑section, edit any period of their class (before cutoff), select multiple periods of one student's day at once and apply **Leave** or **C** (permission / conditionally excused).
 - **BR‑ATT‑07** **Leave** (per student, per period(s)) requires a reason: Medical, Personal, School Activity, Other. **Other requires a free‑text description.**
-- **BR‑ATT‑08** **Cancelled** applies to a whole period for a class‑section on a date (all students in it), not to a single student. Default proposal: a reason note is optional.
+- **BR‑ATT‑08** *(Phase 7, replaces the "Cancelled" rule)* **C** applies to one student for one or more periods. A note is optional; there is no separate reason list (D‑51). Cancelling a whole lesson for a class is not modelled.
 - **BR‑ATT‑09** Precedence: `L` and `C` set by Class Teacher/Admin cannot be overwritten by a Subject Teacher. A Subject Teacher sees them as read‑only. **⚠ Open (D‑06)**
 - **BR‑ATT‑10** Only students actively enrolled in the class‑section on that date appear in the register.
 - **BR‑ATT‑11** **Locking** is configurable. Default model: attendance for month *M* is editable until day *N* of month *M+1* (example: September editable until 7 October, locked from 8 October). Future dates cannot be marked.
 - **BR‑ATT‑12** After lock, only Admin can change attendance (**override**). An override requires a reason.
 - **BR‑ATT‑13** **Every** attendance change (including the first marking and every override) writes an audit entry: user, timestamp, student, date, period, old status, new status, reason.
 - **BR‑ATT‑14** Student view is a matrix: rows = dates, columns = periods, cells = `P / A / L / C / -`.
+- **BR‑ATT‑15 (Phase 7) Architecture:** Published timetable (the version in force on that date) → Date + Period → Teacher + Subject + Class/Section → students placed in that section on that date → one record per student per period. A **register** (`attendance_sessions`) keeps a snapshot of the lesson it was taken for (timetable entry and version, subject, teacher), so later timetable changes never rewrite history; a record references the student's **enrolment**.
+- **BR‑ATT‑16 (Phase 7) Subject‑teacher scope** comes only from the teacher's actual published timetable lesson for that date and period. Teaching a subject (Teacher → Subject) or teaching a class in another period gives no access. Request ids for teacher, subject or class are never trusted: the server resolves the lesson from date + period + section and checks it belongs to the signed‑in teacher.
+- **BR‑ATT‑17 (Phase 7) Class‑teacher scope:** every period of their own section(s) in that academic year (view, edit, Leave/C across periods, student day, class totals) — never another class.
+- **BR‑ATT‑18 (Phase 7)** Registers exist only for real lessons: a working day of the date's academic year, a teaching period (not a break) holding a published lesson for that section. No register for free periods, breaks, non‑working days, dates outside a year, or future dates.
+- **BR‑ATT‑19 (Phase 7)** Saving a register is all‑or‑nothing (one transaction) and uses optimistic locking on the register's revision.
+- **BR‑ATT‑20 (Phase 7)** A register lists students placed in the section on that date (placement dates respected; on a class‑change day the new class wins; deactivated students excluded). A student with a record who is no longer placed stays visible read‑only.
+- **BR‑ATT‑21 (Phase 7)** The cutoff comes from the Phase 4 attendance policy (`MONTHLY_CUTOFF` day N, or `NO_LOCK`; no saved policy = no locking). After the cutoff, teachers and class teachers can view only; an administrator may change it only with an explicit override and a reason, audited as `attendance.override` with the reason.
 
 ## Exams (BR‑EX)
 

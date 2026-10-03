@@ -1,4 +1,4 @@
-import { useState, type DragEvent } from 'react';
+import { useRef, useState, type DragEvent } from 'react';
 import type {
   TimetableEntryView,
   TimetableIssue,
@@ -81,14 +81,18 @@ function LessonCard({
 function Grid({ periods, workingDays, entries, show, caption, today, issues, editing }: GridProps) {
   const lessonAt = useLessonAt(entries);
   const flagged = new Set((issues ?? []).map((i) => i.entryId));
-  const [dragging, setDragging] = useState<TimetableEntryView | null>(null);
+  // The lesson being dragged lives in a ref (set synchronously on dragstart) so drop targets work
+  // even before React re-renders; `over` is only the visual highlight.
+  const dragging = useRef<TimetableEntryView | null>(null);
   const [over, setOver] = useState<string | null>(null);
+  const byId = new Map(entries.map((e) => [e.id, e]));
 
   const dropProps = (day: Weekday, p: TimetablePeriodView) => {
-    if (!editing || !dragging || !canHoldLesson(p)) return {};
+    if (!editing || !canHoldLesson(p)) return {};
     const key = `${day}|${p.id}`;
     return {
       onDragOver: (e: DragEvent) => {
+        if (!dragging.current) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         if (over !== key) setOver(key);
@@ -96,8 +100,8 @@ function Grid({ periods, workingDays, entries, show, caption, today, issues, edi
       onDragLeave: () => setOver((current) => (current === key ? null : current)),
       onDrop: (e: DragEvent) => {
         e.preventDefault();
-        const entry = dragging;
-        setDragging(null);
+        const entry = dragging.current ?? byId.get(e.dataTransfer.getData('text/plain')) ?? null;
+        dragging.current = null;
         setOver(null);
         if (entry && (entry.day !== day || entry.periodId !== p.id)) editing.onMove(entry, day, p);
       },
@@ -185,10 +189,10 @@ function Grid({ periods, workingDays, entries, show, caption, today, issues, edi
                         onDragStart={(e) => {
                           e.dataTransfer.effectAllowed = 'move';
                           e.dataTransfer.setData('text/plain', entry.id);
-                          setDragging(entry);
+                          dragging.current = entry;
                         }}
                         onDragEnd={() => {
-                          setDragging(null);
+                          dragging.current = null;
                           setOver(null);
                         }}
                         onClick={() => editing.onOpen(entry)}

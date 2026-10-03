@@ -421,3 +421,33 @@ A refused change answers 409 with the reason and `details[].path = body.operatio
 - `WeekGrid`: wide screens show days × configured periods (times from the configuration, breaks shaded and narrow, empty periods "Free"); the grid scrolls inside its own box if needed, never the page. Phones (< 768 px) show one day at a time as a list with day tabs.
 - Editor: unsaved changes are held in the page and **validated by the server (dry run) before they are shown**, so a refused drop/edit never changes the grid. Desktop drag-and-drop uses native HTML5 drag events (no library); every action is also available by click/tap through the lesson form (class/section → day → period → subject → teacher filtered by Teacher → Subject). Save draft sends the batch for real; Publish requires no unsaved changes and asks for confirmation; problems reported by the server are listed. Remove asks first. A version history table shows who created and published each version.
 - No "Take Attendance" action yet — it is added in Phase 7 together with attendance (no placeholder screens).
+
+## 15. Period‑wise attendance (Phase 7)
+
+```
+Published timetable (version in force on the date)
+  → Date + Period → Teacher + Subject + Class/Section      (register = attendance_sessions)
+  → students placed in that section on that date            (enrolments)
+  → one record per student per period                       (attendance_records: - P A L C)
+```
+
+### API (`modules/attendance/`)
+- `AttendanceServiceBase` (`attendance-service.ts`): authorize + one‑transaction `write` with audit; `resolveLesson(date, period, section)` — the saved register's snapshot, else the timetable version in force at the end of that school day (`TimetableRepository.versionInForce`); rejects breaks, free periods, non‑working days and dates outside a year. `accessFor` decides view / mark / manage / locked / override per user. Roster helpers follow placement dates (`placementOn`, `rosterOn`).
+- `AttendanceRegisterService`: open a register; **save** (changed students only, one transaction, revision check, subject teachers limited to P/A/-, each record audited); student day (class teacher) and multi‑period Leave / C.
+- `AttendanceViewService`: a teacher's lessons on a date with register state; class day; class totals over a range; a student's own attendance (dates × periods + totals); manageable classes; administrator register search (paged). These are the reporting foundation for Phase 11.
+- Repository `AttendanceRepository` (`attendance.repository.ts`; Kysely in `data/kysely/repositories/attendance/`).
+- Percentage: `countAttendance` / `attendancePercentage` in `@ttlmhss/shared` (P ÷ (P + A); null when no P/A).
+
+### Endpoints
+| Area | Endpoints | Permission |
+|---|---|---|
+| Register | `GET /attendance/register?date&periodId&sectionId`, `PUT /attendance/register` `{ date, periodId, sectionId, revision, marks[], override? }` | view / mark (+ scope) |
+| Student day | `GET /attendance/student-day?date&studentId`, `PUT /attendance/student-day` `{ studentId, date, periodIds[], status: L|C, leaveReason?, note?, override? }` | view / manage |
+| Views | `GET /attendance/lessons?date[&teacherId]`, `/attendance/classes?academicYearId`, `/attendance/class-day?date&sectionId`, `/attendance/class-summary?sectionId&from&to`, `/attendance/students/:id?from&to`, `/attendance/me?from&to`, `/attendance/sessions?…&page&pageSize` (admin) | view + scope |
+
+Errors: 409 with `details[].path = body.marks.<i>.studentId` for a student not on the roll, `body.override` when an administrator must confirm an override, and a "reload" message for a stale revision.
+
+### Web (`features/attendance/`)
+- Sidebar **Attendance** → *My lessons* (teachers: a date's lessons with Take / Open attendance and complete/incomplete state), *Class attendance* (class teachers, admins: day matrix with absentees, leave, unmarked periods and %, totals tab, student‑day dialog for multi‑period Leave / C with reasons), *All registers* (admin search), *My attendance* (students: date range, totals, day‑by‑period list). *My timetable* shows **Today's lessons** with the same action.
+- Register: lesson header (class, subject, teacher, date, period and time) from the server; roster with roll, admission number, name; segmented radio controls (P A L C -, letters plus labels, 44 px targets); Mark all present (unmarked only); unsaved marker and leave‑page warning; Save attendance; admin override dialog with reason; conflict message with Reload. Phones: one card per student.
+- Statuses never rely on colour: each shows its letter and a text label.

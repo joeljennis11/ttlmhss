@@ -200,3 +200,19 @@ View scope (`timetable.view`):
 - Lessons on a date (`/timetable/lessons`) — a teacher sees only their own; an administrator may name any teacher.
 
 Draft data is visible only to holders of `timetable.manage` (scoped as above); every view for everyone else reads the published version.
+
+## 11. Attendance (Phase 7)
+
+| Permission | Default holders | Ceiling | Used for |
+|---|---|---|---|
+| `attendance.view` | Admin, Teacher, Class Teacher, Student | all | open registers / views — always narrowed by scope below |
+| `attendance.mark` | Admin, Teacher (+ Class Teacher) | staff | save a register (P / A / -) |
+| `attendance.manage` | Admin, Class Teacher | Class Teacher | whole class, any period, L and C, multi‑period student day |
+| `attendance.override` | Admin | **none** (administrators only) | change locked attendance, with a reason |
+
+Scope (server‑side, from the signed‑in user — never from request ids):
+- **Subject teacher** — only the register of **their own published lesson** for that date + period + section (resolved from the timetable in force that day, or the saved register's snapshot). Another period, another class, another teacher's lesson → 403. Body fields such as `teacherId`, `subjectId` or `classId` are ignored; a student not placed in that section is refused. They set P / A / - only and see L / C as read‑only.
+- **Class teacher** — every register, the class day, student days, multi‑period L / C and class totals of the section(s) they are class teacher of **in that academic year**; nothing for other classes.
+- **Administrator** — everything, including the paginated register search; locked dates need an explicit override with a reason.
+- **Student** — `GET /attendance/me` (and `/attendance/students/:own id`) only; another id → 403 without revealing whether it exists; never writes.
+- **Cutoff** — after the configured cutoff the register is read‑only for teachers and class teachers, whatever the URL.

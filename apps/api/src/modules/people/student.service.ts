@@ -150,6 +150,7 @@ export class StudentService extends PeopleService {
   /** BR-ST-10: only a record created by mistake — at most its admission placement, account never used. */
   private async isDeletable(student: StudentRecord, placements: number): Promise<boolean> {
     if (placements > 1) return false;
+    if ((await this.repos.attendance.countForStudent(student.id)) > 0) return false;
     return this.repos.personAccounts.isUnused(student.userId);
   }
 
@@ -456,9 +457,13 @@ export class StudentService extends PeopleService {
     await this.write(ctx, 'students.delete', async ({ repos, audit }) => {
       const student = required(await repos.students.find(id), 'student');
       const placements = await repos.enrolments.countForStudent(id);
-      if (placements > 1 || !(await repos.personAccounts.isUnused(student.userId))) {
+      if (
+        placements > 1 ||
+        (await repos.attendance.countForStudent(id)) > 0 ||
+        !(await repos.personAccounts.isUnused(student.userId))
+      ) {
         throw new ConflictError(
-          `${student.fullName} already has school history or has used their account, so the record cannot be deleted. Deactivate it instead.`,
+          `${student.fullName} already has school history (placements, attendance) or has used their account, so the record cannot be deleted. Deactivate it instead.`,
         );
       }
       await repos.enrolments.deleteForStudent(id);

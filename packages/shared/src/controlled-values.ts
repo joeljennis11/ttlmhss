@@ -77,8 +77,18 @@ export const ATTENDANCE_STATUS_LABELS: Readonly<Record<AttendanceStatus, string>
   P: 'Present',
   A: 'Absent',
   L: 'Leave',
-  C: 'Cancelled',
+  C: 'Excused',
 });
+
+/** Longer wording for help text and screen readers (Phase 7: C = permission / conditionally excused). */
+export const ATTENDANCE_STATUS_DESCRIPTIONS: Readonly<Record<AttendanceStatus, string>> =
+  Object.freeze({
+    '-': 'Not marked',
+    P: 'Present',
+    A: 'Absent',
+    L: 'Leave',
+    C: 'Permission / conditionally excused',
+  });
 
 /** BR-ATT-07. OTHER requires a free-text description. */
 export const LeaveReason = controlledValues(['MEDICAL', 'PERSONAL', 'SCHOOL_ACTIVITY', 'OTHER']);

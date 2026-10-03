@@ -99,6 +99,18 @@ export class KyselyTimetableRepository implements TimetableRepository {
     });
   }
 
+  versionInForce(academicYearId: string, beforeIso: string) {
+    return guard(async () => {
+      const row = await this.versions()
+        .where('v.academic_year_id', '=', academicYearId)
+        .where('v.status', 'in', ['PUBLISHED', 'SUPERSEDED'])
+        .where('v.published_at', '<', beforeIso)
+        .orderBy('v.version_number', 'desc')
+        .executeTakeFirst();
+      return row ? this.toVersion(row) : null;
+    });
+  }
+
   listVersions(academicYearId: string) {
     return guard(async () => {
       const rows = await this.versions()

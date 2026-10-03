@@ -42,7 +42,8 @@ test.describe('sign-in and protected routes', () => {
     await page.goto('/login');
     const crest = page.locator('img[src="/brand/ttlmhss-logo.webp"]').first();
     await expect(crest).toBeVisible();
-    expect(await crest.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(512);
+    // Wait for the image to finish decoding (under load it may still be loading).
+    await expect.poll(() => crest.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(512);
     const asset = await request.get('/brand/ttlmhss-logo.webp');
     expect(asset.headers()['content-type']).toContain('image/webp');
     const icon = await request.get('/brand/favicon-32.png');
@@ -120,10 +121,18 @@ test.describe('roles in the shell', () => {
       // timetable (Phase 6); students get nothing more until their portal is built.
       await expect(nav.getByRole('link')).toHaveText(
         username === 'e2e.admin'
-          ? ['Home', 'Timetable', 'Students', 'Teachers', 'School setup', 'Change password']
+          ? [
+              'Home',
+              'Timetable',
+              'Attendance',
+              'Students',
+              'Teachers',
+              'School setup',
+              'Change password',
+            ]
           : username === 'e2e.student'
-            ? ['Home', 'Change password']
-            : ['Home', 'Timetable', 'Change password'],
+            ? ['Home', 'Attendance', 'Change password']
+            : ['Home', 'Timetable', 'Attendance', 'Change password'],
       );
     });
   }

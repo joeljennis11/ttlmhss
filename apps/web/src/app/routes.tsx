@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import type { EffectiveRole, Permission } from '@ttlmhss/shared';
 import {
   CalendarDays,
+  ClipboardCheck,
   GraduationCap,
   House,
   KeyRound,
@@ -33,6 +34,12 @@ import { StudentsPage } from '../features/people/pages/StudentsPage';
 import { TeacherFormPage } from '../features/people/pages/TeacherFormPage';
 import { TeacherProfilePage } from '../features/people/pages/TeacherProfilePage';
 import { TeachersPage } from '../features/people/pages/TeachersPage';
+import { AttendanceHome } from '../features/attendance/attendance-shared';
+import { ClassAttendancePage } from '../features/attendance/pages/ClassAttendancePage';
+import { MyAttendancePage } from '../features/attendance/pages/MyAttendancePage';
+import { MyLessonsPage } from '../features/attendance/pages/MyLessonsPage';
+import { RegisterPage } from '../features/attendance/pages/RegisterPage';
+import { RegistersPage } from '../features/attendance/pages/RegistersPage';
 import { TimetableHome } from '../features/timetable/TimetableLayout';
 import { TimetableEditorPage } from '../features/timetable/pages/EditorPage';
 import { ClassTimetablePage, MyTimetablePage } from '../features/timetable/pages/ViewPages';
@@ -111,6 +118,48 @@ export const SHELL_ROUTES: readonly ShellRoute[] = [
     title: 'Edit timetable',
     element: <TimetableEditorPage />,
     permission: 'timetable.manage',
+  },
+  // Phase 7 — Attendance (period-wise; scope is decided by the API from the timetable).
+  {
+    path: 'attendance',
+    title: 'Attendance',
+    element: <AttendanceHome />,
+    permission: 'attendance.view',
+    nav: { label: 'Attendance', icon: ClipboardCheck, section: 'main', end: false },
+  },
+  {
+    path: 'attendance/lessons',
+    title: 'My lessons',
+    element: <MyLessonsPage />,
+    permission: 'attendance.mark',
+    roles: ['TEACHER'],
+  },
+  {
+    path: 'attendance/register',
+    title: 'Attendance register',
+    element: <RegisterPage />,
+    permission: 'attendance.view',
+    roles: ['ADMIN', 'TEACHER'],
+  },
+  {
+    path: 'attendance/class',
+    title: 'Class attendance',
+    element: <ClassAttendancePage />,
+    permission: 'attendance.manage',
+  },
+  {
+    path: 'attendance/registers',
+    title: 'All registers',
+    element: <RegistersPage />,
+    permission: 'attendance.view',
+    roles: ['ADMIN'],
+  },
+  {
+    path: 'attendance/me',
+    title: 'My attendance',
+    element: <MyAttendancePage />,
+    permission: 'attendance.view',
+    roles: ['STUDENT'],
   },
   // Phase 5 — Student & teacher management (administrator screens; permissions are admin-only
   // management actions, so the menu shows them to administrators).

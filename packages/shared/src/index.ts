@@ -1,4 +1,5 @@
 export * from './api-contract.js';
+export * from './attendance.js';
 export * from './auth.js';
 export * from './config.js';
 export * from './controlled-values.js';

@@ -64,6 +64,7 @@ describe('routing and role-aware navigation', () => {
     expect(navLinks()).toEqual([
       'Home',
       'Timetable',
+      'Attendance',
       'Accounts',
       'Students',
       'Teachers',

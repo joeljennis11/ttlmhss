@@ -73,6 +73,11 @@ export interface TimetableRepository {
     academicYearId: string,
     status: 'DRAFT' | 'PUBLISHED',
   ): Promise<TimetableVersionRecord | null>;
+  /**
+   * The version that was live at a moment: the newest PUBLISHED or SUPERSEDED version published
+   * before `beforeIso` (Phase 7 — attendance for a date uses the timetable in force on that date).
+   */
+  versionInForce(academicYearId: string, beforeIso: string): Promise<TimetableVersionRecord | null>;
   /** Newest first. */
   listVersions(academicYearId: string): Promise<TimetableVersionRecord[]>;
   nextVersionNumber(academicYearId: string): Promise<number>;
