@@ -26,6 +26,16 @@ import {
   KyselyPeriodRepository,
   KyselySubjectRepository,
 } from './repositories/config/structure.repositories.js';
+import {
+  KyselyEnrolmentRepository,
+  KyselyStudentRepository,
+} from './repositories/people/student.repositories.js';
+import {
+  KyselyClassTeacherRepository,
+  KyselyPersonAccountRepository,
+  KyselyTeacherRepository,
+  KyselyTeacherSubjectRepository,
+} from './repositories/people/teacher.repositories.js';
 import { KyselySchemaManager } from './schema-manager.js';
 
 function createRepositories(db: Kysely<Database>): Repositories {
@@ -47,6 +57,12 @@ function createRepositories(db: Kysely<Database>): Repositories {
     achievementCategories: new KyselyCategoryRepository(db, 'achievement_categories'),
     ratingLabels: new KyselyRatingLabelRepository(db),
     rolePermissions: new KyselyRolePermissionRepository(db),
+    students: new KyselyStudentRepository(db),
+    enrolments: new KyselyEnrolmentRepository(db),
+    teachers: new KyselyTeacherRepository(db),
+    teacherSubjects: new KyselyTeacherSubjectRepository(db),
+    classTeachers: new KyselyClassTeacherRepository(db),
+    personAccounts: new KyselyPersonAccountRepository(db),
   });
 }
 

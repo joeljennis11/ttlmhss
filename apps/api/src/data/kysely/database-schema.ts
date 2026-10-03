@@ -208,6 +208,13 @@ export interface TeachersTable extends Timestamps {
   phone: string | null;
   email: string | null;
   status: string;
+  // Phase 5 (0006)
+  gender: string | null;
+  date_of_birth: string | null;
+  address: string | null;
+  designation: string | null;
+  qualification: string | null;
+  joining_date: string | null;
 }
 
 export interface TeacherSubjectsTable {
@@ -234,6 +241,23 @@ export interface StudentsTable extends Timestamps {
   date_of_birth: string | null;
   photo_path: string | null;
   status: string;
+  // Phase 5 (0006)
+  gender: string | null;
+  father_name: string | null;
+  mother_name: string | null;
+  guardian_name: string | null;
+  guardian_relation: string | null;
+  guardian_phone: string | null;
+  phone: string | null;
+  email: string | null;
+  emergency_phone: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
+  admission_date: string | null;
+  exit_reason: string | null;
+  exit_date: string | null;
 }
 
 export interface EnrolmentsTable extends Timestamps {
@@ -245,6 +269,10 @@ export interface EnrolmentsTable extends Timestamps {
   status: string;
   started_on: string;
   ended_on: string | null;
+  // Phase 5 (0006)
+  note: string | null;
+  created_by: string | null;
+  closed_by: string | null;
 }
 
 export interface AuditLogsTable {

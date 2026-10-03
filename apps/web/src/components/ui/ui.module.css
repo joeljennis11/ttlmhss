@@ -507,3 +507,38 @@
     max-height: calc(100dvh - 2 * var(--space-4));
   }
 }
+
+.requiredMark {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* ---------- Pagination (Phase 5) ---------- */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.paginationButtons {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ---------- Avatar ---------- */
+.avatar {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--leaf);
+  color: var(--forest);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}

@@ -21,7 +21,8 @@ export function installFetch(handlers: Handlers) {
     const url = String(input);
     const key = `${init?.method ?? 'GET'} ${url.replace('/api/v1', '')}`;
     calls.push(key);
-    const handler = handlers[key];
+    // Exact match first; otherwise the same path ignoring the query string.
+    const handler = handlers[key] ?? handlers[key.split('?')[0]!];
     const reply: Reply = handler
       ? await handler(init)
       : { status: 404, body: { error: { code: 'NOT_FOUND', message: 'Not found' } } };

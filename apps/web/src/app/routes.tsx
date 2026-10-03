@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import type { EffectiveRole, Permission } from '@ttlmhss/shared';
-import { House, KeyRound, Settings, type LucideIcon } from 'lucide-react';
+import { GraduationCap, House, KeyRound, Settings, Users, type LucideIcon } from 'lucide-react';
 import { HomePage } from '../pages/HomePage';
 import { AccountPasswordPage } from '../pages/AccountPasswordPage';
 import { ADMIN_PAGES, type AdminPageId } from '../features/admin/admin-pages';
@@ -17,8 +17,16 @@ import { PeriodsPage } from '../features/admin/pages/PeriodsPage';
 import { PermissionsPage } from '../features/admin/pages/PermissionsPage';
 import { SchoolSettingsPage } from '../features/admin/pages/SchoolSettingsPage';
 import { SubjectsPage } from '../features/admin/pages/SubjectsPage';
+import { ClassTeachersPage } from '../features/people/pages/ClassTeachersPage';
+import { PromotionPage } from '../features/people/pages/PromotionPage';
+import { StudentFormPage } from '../features/people/pages/StudentFormPage';
+import { StudentProfilePage } from '../features/people/pages/StudentProfilePage';
+import { StudentsPage } from '../features/people/pages/StudentsPage';
+import { TeacherFormPage } from '../features/people/pages/TeacherFormPage';
+import { TeacherProfilePage } from '../features/people/pages/TeacherProfilePage';
+import { TeachersPage } from '../features/people/pages/TeachersPage';
 
-export type NavSection = 'main' | 'admin' | 'account';
+export type NavSection = 'main' | 'management' | 'admin' | 'account';
 
 /**
  * A page inside the authenticated shell. This list is the single source for BOTH routing and
@@ -63,6 +71,70 @@ export const SHELL_ROUTES: readonly ShellRoute[] = [
     title: 'Home',
     element: <HomePage />,
     nav: { label: 'Home', icon: House, section: 'main' },
+  },
+  // Phase 5 — Student & teacher management (administrator screens; permissions are admin-only
+  // management actions, so the menu shows them to administrators).
+  {
+    path: 'students',
+    title: 'Students',
+    element: <StudentsPage />,
+    permission: 'students.create',
+    nav: { label: 'Students', icon: Users, section: 'management' },
+  },
+  {
+    path: 'students/new',
+    title: 'Admit student',
+    element: <StudentFormPage />,
+    permission: 'students.create',
+  },
+  {
+    path: 'students/promotion',
+    title: 'Promote students',
+    element: <PromotionPage />,
+    permission: 'students.promote',
+  },
+  {
+    path: 'students/:id',
+    title: 'Student',
+    element: <StudentProfilePage />,
+    permission: 'students.create',
+  },
+  {
+    path: 'students/:id/edit',
+    title: 'Edit student',
+    element: <StudentFormPage />,
+    permission: 'students.edit',
+  },
+  {
+    path: 'teachers',
+    title: 'Teachers',
+    element: <TeachersPage />,
+    permission: 'teachers.create',
+    nav: { label: 'Teachers', icon: GraduationCap, section: 'management' },
+  },
+  {
+    path: 'teachers/new',
+    title: 'Add teacher',
+    element: <TeacherFormPage />,
+    permission: 'teachers.create',
+  },
+  {
+    path: 'teachers/:id',
+    title: 'Teacher',
+    element: <TeacherProfilePage />,
+    permission: 'teachers.create',
+  },
+  {
+    path: 'teachers/:id/edit',
+    title: 'Edit teacher',
+    element: <TeacherFormPage />,
+    permission: 'teachers.edit',
+  },
+  {
+    path: 'class-teachers',
+    title: 'Class teachers',
+    element: <ClassTeachersPage />,
+    permission: 'class_teacher_assignments.manage',
   },
   // Phase 4 — Admin configuration
   {

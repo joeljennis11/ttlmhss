@@ -15,8 +15,8 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑18 | Session strategy | **Server‑side sessions** (HMAC‑hashed token in DB) in an HttpOnly, SameSite=Lax cookie; idle + absolute timeouts. Rationale: real logout, immediate deactivation/scope changes (architecture.md §10) | Adopted in Phase 2 |
 | D‑19 | PDF generation approach | HTML/CSS → headless Chromium (Playwright); good Tamil script support | Proposed |
 | D‑20 | Hosting / deployment target | Depends on school's IT setup (cloud VM, PaaS, on‑premise). Also affects D‑04 | Open |
-| D‑22 | Student/teacher login identifier | Auth accepts any lowercase username (letters, digits, `. _ @ -`). Recommendation for Phase 5: students = admission number, teachers = staff code | Open |
-| D‑23 | Photo/certificate file storage | Local disk behind an interface (swap to object storage later) | Proposed |
+| D‑22 | Student/teacher login identifier | Default username = admission number / staff ID, lower‑cased, other characters → "-" (e.g. `2026/015` → `2026-015`); the administrator may type a different one at creation | Adopted in Phase 5 |
+| D‑23 | Photo/certificate file storage | Still proposed (local disk behind an interface). Phase 5 shows initials; `students.photo_path` exists but no upload is built | Proposed |
 | D‑27 | Frontend UI libraries | **Adopted in Phase 3:** React Router 8, CSS Modules + design tokens, lucide‑react icons, self‑hosted Public Sans / Source Serif 4. Not adopted: Tailwind, Radix, TanStack Query (unnecessary for the shell; revisit for data‑heavy modules) | Adopted — please confirm |
 | D‑28 | TypeScript version | Pinned `~6.0.3` because typescript‑eslint does not yet support TS 7 | Adopted |
 
@@ -27,7 +27,7 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑05 | How do mid‑year timetable changes relate to past attendance? | Versioned timetable with effective‑from date; attendance snapshots teacher/subject | Proposed |
 | D‑06 | Can a Subject Teacher overwrite `L`/`C` set by the Class Teacher? | No — L/C are read‑only to subject teachers | Proposed |
 | D‑07 | `0` represents both "scored zero" and "absent" — should absence be distinguishable in reports? | Keep `0` as the visible value; optionally store an internal absent flag so reports can count absentees. Needs user decision | Open |
-| D‑08 | Class‑teacher cardinality | Schema enforces **one ACTIVE class teacher per section per year** (spec says "a class/section"). "A teacher holds at most one class" is **not** enforced yet — awaiting confirmation | Partly adopted |
+| D‑08 | Class‑teacher cardinality | **One ACTIVE class teacher per section per year** (enforced; replacing is deliberate). A teacher may be class teacher of several sections (Phase 5 spec: do not assume one) | Adopted in Phase 5 |
 | D‑09 | Higher‑secondary groups/streams & electives (XI–XII groups, optional languages) — not every student in a section takes every subject | Support per‑student subject enrolment for exams/marks where needed | **Open — important** |
 | D‑10 | Rounding of percentages / normalized marks | Round half up to 2 dp for display; store raw | Open |
 | D‑11 | What students see when a submitted sheet is unlocked for correction | Keep showing last submitted values until resubmitted | Proposed |
@@ -35,7 +35,7 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑13 | Who records behaviour ratings | Class Teacher (+ Admin) | Proposed |
 | D‑14 | Request routing | Class Teacher of the student's section; Admin sees all | Proposed |
 | D‑15 | "Permissions" management: fixed role map or Admin‑editable toggles; Class Teacher audit visibility | Phase 2: code‑defined defaults. **Phase 4:** Admin can adjust Teacher / Class Teacher / Student grants within fixed per‑permission ceilings (no escalation; ADMIN fixed); stored as overrides. Class Teacher has no `audit.view` by default (grantable). User‑specific permissions not implemented (needs Phase 5 account management) | Adopted in Phase 4 — please confirm |
-| D‑16 | Class Teacher student‑management scope (edit which fields? promote?) | View all + edit non‑protected contact fields; promotion proposed by CT, confirmed by Admin | Open |
+| D‑16 | Class Teacher student‑management scope (edit which fields? promote?) | Phase 5: Class Teachers may view and edit the details (not identifiers or placement) of students in their own section through the API; admission, class changes, promotion, deactivation and deletion are administrator‑only (ceilings). No CT screens yet | Adopted — please confirm |
 | D‑17 | Can Class Teacher edit the class timetable or only view? | View only; Admin edits (avoids cross‑class teacher conflicts) | Open |
 | D‑21 | Are sections defined per academic year or permanently? | Schema: sections are permanent (with status); the per‑year link comes from enrolments and class‑teacher assignments. Revisit if sections must differ by year | Adopted provisionally |
 | D‑29 | Period structure scope | Periods/breaks belong to an academic year, so next year's timings can change without rewriting history | Adopted |
@@ -68,6 +68,15 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑38 | Attendance cutoff day range | 1–28 so it exists in every month; unconfigured = no locking until the Admin saves a rule | Adopted — please confirm |
 | D‑39 | Pass marks per component (D‑25) | Phase 4 stores one pass mark against the total; per‑component pass marks can be added in Phase 8 if needed | Open (D‑25) |
 | D‑40 | Web logo source | The enhanced 8000 px logo supplied with Phase 4 (`assets/brand/ttlmhss-logo-enhanced.jpg`) is now the master for web and PDF; the original is kept unchanged for reference | Adopted |
+
+## Added in Phase 5
+
+| ID | Question | Current default | Status |
+|---|---|---|---|
+| D‑41 | Configurable student profile fields (R‑4.8 / R‑5.2) | Not built: fixed groups Personal, Parent/Guardian, Contact, Address, Academic. Adding definitions + values tables is possible later without changing the identity/history model | Open — confirm whether needed |
+| D‑42 | How first passwords reach students/teachers | New accounts get a random temporary password that is hashed and never shown (nobody knows it); the administrator presses "Issue temporary password", sees it once and hands it over. No email/SMS | Adopted — please confirm |
+| D‑43 | Promotion dates | Promoted/not promoted: source placement ends on the source year's last day, new one starts on the target year's first day. Leavers: today (or source year end) | Adopted — please confirm |
+| D‑44 | Mid‑year transfer across academic years | Not allowed: class changes stay within one year; moving into another year is promotion | Adopted |
 
 ## Pending inputs from the user
 

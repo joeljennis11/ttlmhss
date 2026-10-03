@@ -140,6 +140,7 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) =
       '0003_authentication',
       '0004_school_logo',
       '0005_school_configuration',
+      '0006_people',
     ];
 
     it('migrates an empty database to the latest version', async () => {
@@ -151,6 +152,7 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) =
     });
 
     it('every migration rolls back cleanly and re-applies (schema is reproducible)', async () => {
+      expect(await store.schema.rollbackLast()).toBe('0006_people');
       expect(await store.schema.rollbackLast()).toBe('0005_school_configuration');
       expect(await store.schema.rollbackLast()).toBe('0004_school_logo');
       expect((await store.repositories.schoolSettings.get())?.logoPath).toBeNull();

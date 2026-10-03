@@ -41,8 +41,14 @@ Legend: ✅ granted · — not granted. CLASS_TEACHER grants are **added** to TE
 | students.view | ✅ | ✅ *scoped* | (✅) | ✅ *self* |
 | students.create | ✅ | — | — | — |
 | students.edit | ✅ | — | ✅ *own class* ⚠ D‑16 | — |
-| students.promote | ✅ | — | — ⚠ D‑16 | — |
+| students.promote | ✅ | — | — (admin‑only since Phase 5, D‑16) | — |
+| students.transfer / deactivate / delete *(Phase 5)* | ✅ | — | — | — |
 | teachers.view / create / edit | ✅ | — | — | — |
+| teachers.deactivate / delete *(Phase 5)* | ✅ | — | — | — |
+| teacher_subjects.view *(Phase 5)* | ✅ | — | — | — |
+| teacher_subjects.manage *(Phase 5)* | ✅ | — | — | — |
+| class_teacher_assignments.view *(Phase 5)* | ✅ | — | — | — |
+| class_teacher_assignments.manage *(Phase 5)* | ✅ | — | — | — |
 | timetable.view | ✅ | ✅ | (✅) | ✅ *own class* |
 | timetable.manage | ✅ | — | — ⚠ D‑17 | — |
 | attendance.view | ✅ | ✅ *scoped* | (✅) | ✅ *self* |
@@ -133,9 +139,9 @@ async getProfile(principal: Principal | null, studentId: string) {
 
 | Ceiling | Permissions |
 |---|---|
-| Administrators only (never grantable) | `users.*`, `config.manage`, `permissions.manage`, `students.create`, `teachers.create`, `teachers.edit`, `attendance.override`, `exams.manage` |
-| Class Teacher only | `students.edit`, `students.promote`, `timetable.manage`, `attendance.manage`, `marks.edit`, `achievements.manage` (BR‑ACH‑01), `announcements.manage`, `requests.handle`, `audit.view` |
-| Teacher and Class Teacher | `teachers.view`, `attendance.mark`, `marks.enter`, `marks.submit`, `behaviour.manage`, `reports.generate` |
+| Administrators only (never grantable) | `users.*`, `config.manage`, `permissions.manage`, `students.create`, `students.promote`, `students.transfer`, `students.deactivate`, `students.delete`, `teachers.create`, `teachers.edit`, `teachers.deactivate`, `teachers.delete`, `teacher_subjects.manage`, `class_teacher_assignments.manage`, `attendance.override`, `exams.manage` |
+| Class Teacher only | `students.edit`, `timetable.manage`, `attendance.manage`, `marks.edit`, `achievements.manage` (BR‑ACH‑01), `announcements.manage`, `requests.handle`, `audit.view` |
+| Teacher and Class Teacher | `teachers.view`, `teacher_subjects.view`, `class_teacher_assignments.view`, `attendance.mark`, `marks.enter`, `marks.submit`, `behaviour.manage`, `reports.generate` |
 | Student only | `requests.create` |
 | Any role | the remaining `*.view` permissions |
 
@@ -152,3 +158,27 @@ The ceiling is enforced twice: a save that includes anything above it is **rejec
 **User‑specific permissions** are **not** implemented: there is no user‑management screen yet (accounts are created in Phase 5), and the spec asks for them only "if supported". The same override + ceiling design can be extended per user once Phase 5 exists.
 
 **Phase 4 configuration endpoints** (`/api/v1/admin/...`) all require `config.manage` — reads included, because the screens show draft structure — except `/admin/permissions*`, which require `permissions.manage`. Every service method re‑checks the permission (`ConfigService.authorize`).
+
+## 9. Student & teacher management (Phase 5)
+
+Endpoints under `/api/v1/admin/students|promotions|teachers|class-teachers` use the permissions above; every service method re‑checks them (`PeopleService.authorize`).
+
+| Action | Permission | Scope applied by the service |
+|---|---|---|
+| Student list | `students.view` | Admin: whole school. Class Teacher: only their own section(s) in that year. Anyone else: 403 (there is no school‑wide list for teachers or students) |
+| Student detail | `students.view` | `checkStudentScope` (admin; class teacher of the student's section; the student themself) |
+| Edit student details | `students.edit` | `checkStudentScope` (so a class teacher may only edit their own students — the CT default grant, D‑16) |
+| Admit | `students.create` (+ `users.create` for the account) | admin‑only |
+| Change class / place in class | `students.transfer` | admin‑only |
+| Promote / record outcome | `students.promote` | admin‑only |
+| Deactivate / reactivate | `students.deactivate` | admin‑only |
+| Delete (unused records only) | `students.delete` | admin‑only |
+| Issue temporary password | `users.reset_password` | admin‑only |
+| Teacher list / detail | `teachers.view` (+ `teacher_subjects.view`, `class_teacher_assignments.view` to include those parts) | — |
+| Add / edit / (de)activate / delete teacher | `teachers.create` / `teachers.edit` / `teachers.deactivate` / `teachers.delete` | admin‑only |
+| Teacher → Subject | `teacher_subjects.manage` | admin‑only |
+| Class teacher board / assign / end | `class_teacher_assignments.view` / `.manage` | admin‑only |
+
+**Role assignment is fixed by the workflow:** admission always creates a `STUDENT` account and "Add teacher" always a `TEACHER` account; there is no role field (an extra `role` in the request is ignored — tested). Administrator accounts are created only by the server CLI. Class Teacher is not a role anyone is given: it is derived on each request from an ACTIVE class‑teacher assignment in the current year, so assigning, replacing or ending an assignment changes the teacher's scope on their next request.
+
+**Web screens** (Students, Teachers, Class teachers, Promotion) are shown to users holding the admin‑only management permissions; the API enforces the same rules independently.

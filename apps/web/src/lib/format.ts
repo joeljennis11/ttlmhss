@@ -20,10 +20,15 @@ const monthFormat = new Intl.DateTimeFormat('en-GB', {
 
 const parse = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00Z`);
 
-/** "2026-06-01" → "1 Jun 2026". */
-export const formatDate = (iso: string) => dateFormat.format(parse(iso));
+const safe = (format: Intl.DateTimeFormat, iso: string) => {
+  const date = parse(iso);
+  return Number.isNaN(date.getTime()) ? iso : format.format(date);
+};
+
+/** "2026-06-01" → "1 Jun 2026" (an unreadable value is shown as it is). */
+export const formatDate = (iso: string) => safe(dateFormat, iso);
 /** "2026-06-01" → "1 June 2026". */
-export const formatLongDate = (iso: string) => longDateFormat.format(parse(iso));
+export const formatLongDate = (iso: string) => safe(longDateFormat, iso);
 /** (2026, 9) → "September 2026". */
 export const formatMonth = (year: number, month: number) =>
   monthFormat.format(new Date(Date.UTC(year, month - 1, 1)));

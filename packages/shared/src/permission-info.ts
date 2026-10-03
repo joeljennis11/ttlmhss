@@ -45,14 +45,61 @@ export const PERMISSION_INFO: Readonly<Record<Permission, PermissionInfo>> = Obj
   'students.view': { label: 'View students', group: 'Students & teachers', grantableTo: ALL },
   'students.create': { label: 'Admit students', group: 'Students & teachers', grantableTo: NONE },
   'students.edit': { label: 'Edit student details', group: 'Students & teachers', grantableTo: CT },
+  // Phase 5: promotion changes several classes at once, so it is administrator-only (D-16).
   'students.promote': {
-    label: 'Promote or transfer students',
+    label: 'Promote students to the next year',
     group: 'Students & teachers',
-    grantableTo: CT,
+    grantableTo: NONE,
   },
   'teachers.view': { label: 'View teachers', group: 'Students & teachers', grantableTo: STAFF },
   'teachers.create': { label: 'Add teachers', group: 'Students & teachers', grantableTo: NONE },
   'teachers.edit': { label: 'Edit teachers', group: 'Students & teachers', grantableTo: NONE },
+  // Phase 5 — management actions on people are administrator-only; views can be shared with staff.
+  'students.transfer': {
+    label: 'Move students to another class or section',
+    group: 'Students & teachers',
+    grantableTo: NONE,
+  },
+  'students.deactivate': {
+    label: 'Deactivate or reactivate students',
+    group: 'Students & teachers',
+    grantableTo: NONE,
+  },
+  'students.delete': {
+    label: 'Delete student records created by mistake',
+    group: 'Students & teachers',
+    grantableTo: NONE,
+  },
+  'teachers.deactivate': {
+    label: 'Deactivate or reactivate teachers',
+    group: 'Students & teachers',
+    grantableTo: NONE,
+  },
+  'teachers.delete': {
+    label: 'Delete teacher records created by mistake',
+    group: 'Students & teachers',
+    grantableTo: NONE,
+  },
+  'teacher_subjects.view': {
+    label: 'View teachers’ subjects',
+    group: 'Students & teachers',
+    grantableTo: STAFF,
+  },
+  'teacher_subjects.manage': {
+    label: 'Assign subjects to teachers',
+    group: 'Students & teachers',
+    grantableTo: NONE,
+  },
+  'class_teacher_assignments.view': {
+    label: 'View class teacher assignments',
+    group: 'Students & teachers',
+    grantableTo: STAFF,
+  },
+  'class_teacher_assignments.manage': {
+    label: 'Assign class teachers',
+    group: 'Students & teachers',
+    grantableTo: NONE,
+  },
   'timetable.view': { label: 'View timetables', group: 'Timetable', grantableTo: ALL },
   'timetable.manage': { label: 'Edit and publish timetables', group: 'Timetable', grantableTo: CT },
   'attendance.view': { label: 'View attendance', group: 'Attendance', grantableTo: ALL },

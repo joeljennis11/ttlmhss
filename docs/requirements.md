@@ -50,6 +50,8 @@ Admin configures:
 
 ## 5. Student management (Phase 5)
 
+> **Status (Phase 5):** R‑5.1, R‑5.3–R‑5.5 implemented; R‑5.6 implemented for administrators without photo and statistics (no photo upload yet; attendance/marks/behaviour/achievements arrive in later phases). R‑5.2 / R‑4.8 configurable fields: **not implemented** — the profile uses fixed field groups (D‑41). R‑5.7 out of scope.
+
 - **R‑5.1** Add/admit, edit, view, search, filter, deactivate students. Delete only when no dependent records exist.
 - **R‑5.2** Configurable profile fields per R‑4.8.
 - **R‑5.3** Promotion: whole class/section and individual. Outcome statuses: Promoted, Transferred, Not Promoted, Left.
@@ -59,6 +61,8 @@ Admin configures:
 - **R‑5.7** Student document management is **out of scope** for now.
 
 ## 6. Teacher management (Phase 5)
+
+> **Status (Phase 5):** R‑6.1–R‑6.4 implemented.
 
 - **R‑6.1** Add, edit, view, search, filter, deactivate teachers.
 - **R‑6.2** Assign subjects from the subject master (Teacher → Subject, many‑to‑many).

@@ -116,10 +116,10 @@ test.describe('roles in the shell', () => {
       await expect(page.locator('header').getByText(role, { exact: true }).first()).toBeVisible();
 
       const nav = page.getByRole('navigation', { name: 'Main' });
-      // Only administrators get the Phase 4 School setup area.
+      // Only administrators get Management (Phase 5) and School setup (Phase 4).
       await expect(nav.getByRole('link')).toHaveText(
         username === 'e2e.admin'
-          ? ['Home', 'School setup', 'Change password']
+          ? ['Home', 'Students', 'Teachers', 'School setup', 'Change password']
           : ['Home', 'Change password'],
       );
     });
@@ -129,7 +129,7 @@ test.describe('roles in the shell', () => {
     await page.goto('/login');
     await signIn(page, 'e2e.student');
     await expect(page.getByRole('heading', { level: 1, name: /Welcome/ })).toBeVisible();
-    await page.goto('/students');
+    await page.goto('/no-such-page');
     await expect(page.locator('#main').getByText('Page not found')).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeAttached();
   });

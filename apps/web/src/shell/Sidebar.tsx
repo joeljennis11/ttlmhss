@@ -9,6 +9,7 @@ import styles from './Sidebar.module.css';
 
 const SECTION_TITLES: Record<NavSection, string | null> = {
   main: null,
+  management: 'Management',
   admin: 'Administration',
   account: 'Account',
 };

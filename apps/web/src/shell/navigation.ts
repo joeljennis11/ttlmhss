@@ -25,7 +25,12 @@ export function navigationFor(
   user: Pick<AuthUser, 'permissions' | 'roles'>,
   routes: readonly ShellRoute[],
 ): Record<NavSection, NavLinkItem[]> {
-  const sections: Record<NavSection, NavLinkItem[]> = { main: [], admin: [], account: [] };
+  const sections: Record<NavSection, NavLinkItem[]> = {
+    main: [],
+    management: [],
+    admin: [],
+    account: [],
+  };
   for (const route of routes) {
     if (!route.nav || !canAccessRoute(user, route)) continue;
     sections[route.nav.section].push({

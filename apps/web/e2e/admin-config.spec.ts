@@ -236,7 +236,7 @@ test.describe('admin configuration', () => {
     await expect(
       page.getByRole('checkbox', { name: 'Change school configuration' }),
     ).toBeDisabled();
-    await page.getByRole('checkbox', { name: 'View teachers' }).check();
+    await page.getByRole('checkbox', { name: 'View teachers', exact: true }).check();
     await page.getByRole('button', { name: 'Save Teacher permissions' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Save permissions' }).click();
     await expect(toast(page, 'Teacher permissions saved')).toBeVisible();

@@ -118,7 +118,7 @@ erDiagram
 
 ## 5. Implemented schema (Phase 1)
 
-Created by `apps/api/src/data/kysely/migrations/0001_foundation.ts`, `0002_school_identity.ts` (Phase 1) and `0003_authentication.ts` (Phase 2) and `0004_school_logo.ts` (Phase 3: sets `school_settings.logo_path` to the official web logo `/brand/ttlmhss-logo.webp` when unset) and `0005_school_configuration.ts` (Phase 4, §5a). Row types: `database-schema.ts`.
+Created by `apps/api/src/data/kysely/migrations/0001_foundation.ts`, `0002_school_identity.ts` (Phase 1) and `0003_authentication.ts` (Phase 2) and `0004_school_logo.ts` (Phase 3: sets `school_settings.logo_path` to the official web logo `/brand/ttlmhss-logo.webp` when unset) and `0005_school_configuration.ts` (Phase 4, §5a) and `0006_people.ts` (Phase 5, §5b). Row types: `database-schema.ts`.
 
 ### Storage conventions (portable)
 | Kind | Stored as |
@@ -170,6 +170,20 @@ Promotion and mid‑year transfer **close** the current enrolment (set status + 
 
 Percentages are stored as integer **basis points** so 33.33 % is exact on every provider. All FKs remain RESTRICT. `down` drops the new tables and columns.
 
+### 5b. Phase 5 additions (`0006_people`)
+| Change | Details |
+|---|---|
+| `students` + columns | `gender` (CHECK MALE/FEMALE/OTHER or NULL), `father_name`, `mother_name`, `guardian_name`, `guardian_relation`, `guardian_phone`, `phone`, `email`, `emergency_phone`, `address`, `city`, `state`, `pincode`, `admission_date`, `exit_reason` (CHECK TRANSFERRED/LEFT or NULL), `exit_date` |
+| `teachers` + columns | `gender`, `date_of_birth`, `address`, `designation`, `qualification`, `joining_date` |
+| `enrolments` + columns | `note`, `created_by`, `closed_by` (FK users, RESTRICT) — who placed / moved the student |
+| Indexes | unique `lower(admission_number)`, unique `lower(staff_code)`, `students(status)`, `teachers(status)`, `enrolments(academic_year_id, status)` |
+
+**User ↔ Student/Teacher.** `users` holds only login identity (username, role, status); `user_credentials` the hash; `students.user_id` / `teachers.user_id` (unique, RESTRICT) link the profile. No password, role or name is copied into the profile tables or vice versa. Profile status and account status are changed together.
+
+**Academic history** = `enrolments` (student × year × section, roll number, status ACTIVE/PROMOTED/NOT_PROMOTED/TRANSFERRED/LEFT, started_on/ended_on, who). "Current class" = the ACTIVE enrolment of the current year. Later attendance, marks and behaviour rows must reference `enrolments.id` so the year/section context is exact.
+
+**Teacher → Subject** = `teacher_subjects` (teacher, subject) only. **Class teacher** = `class_teacher_assignments` (teacher, year, section, status, assigned_on, ended_on). **Timetable assignment** (Phase 6) will be a separate table: teacher + subject + section + day + period in a timetable version. The three are deliberately not merged.
+
 ## 6. Mapping of the functional entity list to the schema
 
 | Functional entity | Representation | When |
@@ -180,9 +194,9 @@ Percentages are stored as integer **basis points** so 33.33 % is exact on every 
 | User | `users` (identity) + `user_credentials` (password) + `sessions` | Phase 1 ✔ / Phase 2 ✔ |
 | Role | Controlled value `users.role` (ADMIN/TEACHER/STUDENT). **CLASS_TEACHER is never stored** — it is derived per request from ACTIVE `class_teacher_assignments` in the CURRENT year | Phase 1 ✔ / Phase 2 ✔ |
 | Permission | Code‑defined catalogue and default grants; Admin adjustments in `role_permission_overrides`, clipped to fixed ceilings (D‑15, permissions.md §8) | Phase 2 ✔ / Phase 4 ✔ |
-| Student, Teacher, TeacherSubject, ClassTeacherAssignment | Tables above | Phase 1 ✔ |
+| Student, Teacher, TeacherSubject, ClassTeacherAssignment | Tables above (+ Phase 5 details, §5b) | Phase 1 ✔ / Phase 5 ✔ |
 | StudentAcademicHistory | `enrolments` | Phase 1 ✔ |
-| Configurable student profile fields | `student_field_definitions` + values | Phase 4/5 |
+| Configurable student profile fields | Not built (fixed groups, D‑41); would be `student_field_definitions` + values | Open |
 | AuditLog | `audit_logs` | Phase 1 ✔ |
 | Timetable, TimetableAssignment | `timetable_versions` (DRAFT/PUBLISHED/SUPERSEDED, effective‑from) + `timetable_slots` with unique (version, section, day, period) and (version, teacher, day, period) | Phase 6 |
 | AttendanceRecord, AttendanceAudit | `attendance_sessions` (date + section + period, snapshot of teacher/subject, cancelled flag) + `attendance_records` (session + enrolment + status ∈ `- P A L C`, leave reason) + `attendance_audit` | Phase 7 |

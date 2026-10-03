@@ -77,6 +77,7 @@ apps/
         school/              GET /api/v1/school/branding (+ SchoolSettingsRepository interface)
         auth/                login/logout/me/change-password, sessions, hashing, throttle, account credentials
         config/              Phase 4 Admin configuration: ConfigService base, services, repository interfaces, /admin routes
+        people/              Phase 5 students, enrolments, promotion, teachers, Teacher → Subject, class teachers
       scripts/db.ts          migrate / rollback / status CLI
       scripts/accounts.ts    create-admin / reset-password / activate / deactivate CLI
     test/                    config, HTTP foundation, data layer (SQLite + PostgreSQL), authentication, authorization;
@@ -95,6 +96,7 @@ apps/
                              ConfirmDialog, Toasts (ui.module.css)
       components/layout/     PageHeader, Panel
       features/admin/        Phase 4 School setup: admin-pages registry, AdminLayout, api.ts, pages/*, CategoryManager
+      features/people/       Phase 5 Students, Teachers, Class teachers, Promotion (api.ts, pages/*, shared helpers)
       lib/                   api-client (+ auth-failure events), roles, use-media-query, use-resource, use-form-submit, format
       styles/                tokens.css (design tokens), base.css (fonts, reset)
     public/brand/            web copies of the official logo (generated; see §11)
@@ -359,3 +361,28 @@ One `/auth/me`, one `/school/branding` and (on sign‑in only) one `/health` req
 - New UI kit pieces: `SelectField`, `TextAreaField`, `CheckboxField`, `Badge`/`StatusBadge`, `FormDialog` (native `<dialog>`); `PageHeader`/`Panel` gained actions.
 - Per‑year pages keep the chosen year in the address (`?year=`). Tables become stacked cards below 768 px; the exam marks grid scrolls sideways inside its panel.
 - `BrandingProvider.refresh()` reloads the identity after School details are saved.
+
+## 13. Student & teacher management (Phase 5)
+
+### API (`modules/people/`)
+- `PeopleService` base: `authorize(ctx, permission)` and `write(ctx, permission, work)` — the change and its audit entries in **one transaction**; validation reads inside use the transaction's repositories.
+- `StudentService` (list with server‑side search/filter/sort/paging and scope, detail, admit, edit, (de)activate, class change, place, delete, issue password), `PromotionService` (candidates, promote), `TeacherService` (list, detail, create, edit, (de)activate, delete, Teacher → Subject, issue password), `ClassTeacherService` (board, assign/replace, end).
+- Accounts use the Phase 2 `AccountCredentialsService` inside the same transaction (`createAccount(…, repos)`), so record + account + placement commit together or not at all. Temporary passwords come only from `issueTemporaryPassword` (response `Cache-Control: no-store`).
+- Repositories (`people.repository.ts`; Kysely in `data/kysely/repositories/people/`): students (list via one indexed query with a correlated sub‑query choosing each student's placement for the year; `LIKE` wildcards escaped), enrolments, teachers, teacher subjects, class teachers, person accounts (read‑only account status, "unused" check, delete of unused accounts).
+- Validation: shared Zod schemas in `@ttlmhss/shared/people` (identifiers, phone/email/PIN, dates, promotion request) — the same rules run in the browser before sending.
+
+### Endpoints
+| Area | Endpoints |
+|---|---|
+| Students | `GET/POST /admin/students`, `GET/PUT/DELETE /admin/students/:id`, `POST …/:id/status`, `POST …/:id/transfer`, `POST …/:id/placements`, `POST …/:id/temporary-password` |
+| Promotion | `GET /admin/promotions/candidates?sourceAcademicYearId&sourceSectionId&targetAcademicYearId`, `POST /admin/promotions` |
+| Teachers | `GET/POST /admin/teachers`, `GET /admin/teachers/designations`, `GET/PUT/DELETE /admin/teachers/:id`, `POST …/:id/status`, `POST …/:id/subjects`, `DELETE …/:id/subjects/:subjectId`, `POST …/:id/temporary-password` |
+| Class teachers | `GET /admin/class-teachers?academicYearId=`, `POST /admin/class-teachers`, `POST /admin/class-teachers/:id/end` |
+
+Lists return `{ items, page, pageSize, total }` (page size ≤ 100).
+
+### Web (`features/people/`)
+- Sidebar section **Management**: Students, Teachers (Class teachers and Promotion are reached from those pages). Routes: `/students`, `/students/new`, `/students/:id`, `/students/:id/edit`, `/students/promotion`, `/teachers`, `/teachers/new`, `/teachers/:id`, `/teachers/:id/edit`, `/class-teachers`.
+- Lists keep search/filter/sort/page in the address; tables become stacked cards on phones. Profiles are compact (initials avatar, identifiers, placement, status and account badges, actions) with "All details" in a dialog; academic history is a table that only grows.
+- Forms are grouped (Admission, Personal, Parent/guardian, Contact, Address, Sign‑in account) with required marks; promotion is a three‑step page with per‑student outcome, bulk "next class", review and confirmation.
+- `CredentialNotice` shows a temporary password once with a copy button; it is held only in component state.

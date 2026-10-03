@@ -29,6 +29,16 @@ function errorList(error: TextFieldProps['error']): readonly string[] {
 }
 
 /** Labelled input with hint and error text wired up via aria-describedby. */
+/** Visible "*" after the label of a required field (the input itself carries `required`). */
+function RequiredMark({ show }: { show: boolean | undefined }) {
+  return show ? (
+    <span className={styles.requiredMark} aria-hidden="true">
+      {' '}
+      *
+    </span>
+  ) : null;
+}
+
 export function TextField({ label, error, hint, className, ref, ...input }: TextFieldProps) {
   const id = useId();
   const errors = errorList(error);
@@ -38,6 +48,7 @@ export function TextField({ label, error, hint, className, ref, ...input }: Text
     <div className={[styles.field, className ?? ''].join(' ')}>
       <label htmlFor={id} className={styles.label}>
         {label}
+        <RequiredMark show={input.required} />
       </label>
       <input
         id={id}
@@ -118,6 +129,7 @@ function FieldFrame({
   hint,
   errors,
   className,
+  required,
   children,
 }: {
   id: string;
@@ -125,6 +137,7 @@ function FieldFrame({
   hint?: string | undefined;
   errors: readonly string[];
   className?: string | undefined;
+  required?: boolean | undefined;
   children: (aria: { describedBy: string | undefined; invalid: true | undefined }) => ReactNode;
 }) {
   const hintId = hint ? `${id}-hint` : undefined;
@@ -133,6 +146,7 @@ function FieldFrame({
     <div className={[styles.field, className ?? ''].join(' ')}>
       <label htmlFor={id} className={styles.label}>
         {label}
+        <RequiredMark show={required} />
       </label>
       {children({
         describedBy: describedBy(hintId, errorId),
@@ -173,7 +187,14 @@ export function SelectField({
 }: SelectFieldProps) {
   const id = useId();
   return (
-    <FieldFrame id={id} label={label} hint={hint} errors={errorList(error)} className={className}>
+    <FieldFrame
+      id={id}
+      label={label}
+      hint={hint}
+      errors={errorList(error)}
+      className={className}
+      required={select.required}
+    >
       {({ describedBy: ids, invalid }) => (
         <select
           id={id}

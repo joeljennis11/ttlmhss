@@ -67,7 +67,7 @@ describe('auth request schemas', () => {
 describe('permission catalogue', () => {
   it('keys are unique resource.action strings', () => {
     expect(new Set(PERMISSIONS).size).toBe(PERMISSIONS.length);
-    for (const key of PERMISSIONS) expect(key).toMatch(/^[a-z]+\.[a-z_]+$/);
+    for (const key of PERMISSIONS) expect(key).toMatch(/^[a-z_]+\.[a-z_]+$/);
     expect(isPermission('students.view')).toBe(true);
     expect(isPermission('students.destroy')).toBe(false);
   });

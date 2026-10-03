@@ -17,6 +17,14 @@ import type {
   RolePermissionRepository,
   SubjectRepository,
 } from '../modules/config/config.repository.js';
+import type {
+  ClassTeacherRepository,
+  EnrolmentRepository,
+  PersonAccountRepository,
+  StudentRepository,
+  TeacherRepository,
+  TeacherSubjectRepository,
+} from '../modules/people/people.repository.js';
 import type { SchoolSettingsRepository } from '../modules/school/school-settings.repository.js';
 
 /**
@@ -48,6 +56,13 @@ export interface Repositories {
   readonly achievementCategories: CategoryRepository;
   readonly ratingLabels: RatingLabelRepository;
   readonly rolePermissions: RolePermissionRepository;
+  // Phase 5 — students & teachers
+  readonly students: StudentRepository;
+  readonly enrolments: EnrolmentRepository;
+  readonly teachers: TeacherRepository;
+  readonly teacherSubjects: TeacherSubjectRepository;
+  readonly classTeachers: ClassTeacherRepository;
+  readonly personAccounts: PersonAccountRepository;
 }
 
 export interface MigrationState {

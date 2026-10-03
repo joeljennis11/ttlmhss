@@ -32,7 +32,7 @@ Development happens in explicit, user‑unlocked phases:
 - Do not silently introduce major new requirements.
 - Do not make irreversible architectural decisions the spec leaves open — ask. Open decisions are tracked in `docs/decisions.md`.
 
-**Current phase status:** Phase 4 complete (Admin + school configuration). Waiting for Phase 5 instruction.
+**Current phase status:** Phase 5 complete (student + teacher management). Waiting for Phase 6 instruction.
 
 ## 2. Workflow for every phase
 
@@ -107,6 +107,7 @@ Real generated documents only: A4, official logo, school name, academic year, st
 - **Security (Phase 2):** every protected route uses `access: requires('<permission>')`; every service method re‑checks with `deps.authorization.authorize(principal, '<permission>')` and applies a scope check (`checkStudentScope`, `checkSectionScope`, …) before reading or writing records. Student‑facing data uses `principal.studentId`, never an id from the request. Permissions are granted only in `core/auth/role-permissions.ts`. Never return or log passwords, hashes or session tokens.
 - **UI (Phase 3):** add pages to `apps/web/src/app/routes.tsx` (`SHELL_ROUTES`) with `permission`/`roles` and an optional `nav` entry — the menu is generated from it; never add menu entries for unbuilt modules. Use the tokens in `styles/tokens.css` and the components in `components/ui` and `components/layout`; school name and logo come from `useBranding()` / `<SchoolLogo>`, never hard-coded. Each page calls `usePageTitle()`. Frontend gating is UX only.
 - **Configuration (Phase 4):** school structure and rules come from the Admin‑configured tables (`modules/config/`), read through repositories — never hard‑code them. Permission grants: code defaults in `core/auth/role-permissions.ts`, Admin overrides clipped to the ceilings in `@ttlmhss/shared` `PERMISSION_INFO`; never widen a ceiling to `ADMIN`‑only permissions. Admin pages are registered in `features/admin/admin-pages.ts`.
+- **People (Phase 5):** a student's class/section/roll lives only in `enrolments` (one ACTIVE per year); never add a class column to `students` and never edit/delete past enrolments — close and open. Later attendance/marks/behaviour rows reference `enrolments.id`. Teacher → Subject (`teacher_subjects`), class‑teacher assignments and Phase 6 timetable assignments stay separate tables. Accounts are created only through `AccountCredentialsService` with a fixed role (STUDENT/TEACHER); temporary passwords are issued on demand and never stored or logged.
 - Run `pnpm check` (lint + format + typecheck + tests) before finishing a phase; run `pnpm --filter @ttlmhss/web test:e2e` when UI flows change.
 
 ## 9. Documentation map
