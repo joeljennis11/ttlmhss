@@ -29,6 +29,7 @@ export function authModule(deps: AppDependencies): FeatureModule {
     hasher: deps.passwordHasher,
     sessions: deps.sessions,
     throttle: deps.loginThrottle,
+    rolePermissions: deps.rolePermissions,
     clock: deps.clock,
   });
   const cookieConfig = deps.config.auth;

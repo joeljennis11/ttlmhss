@@ -5,6 +5,18 @@ import type {
   SessionRepository,
   UserAccountRepository,
 } from '../modules/auth/auth.repository.js';
+import type {
+  AcademicYearRepository,
+  AttendancePolicyRepository,
+  CategoryRepository,
+  ClassRepository,
+  ExamRepository,
+  GradeSchemeRepository,
+  PeriodRepository,
+  RatingLabelRepository,
+  RolePermissionRepository,
+  SubjectRepository,
+} from '../modules/config/config.repository.js';
 import type { SchoolSettingsRepository } from '../modules/school/school-settings.repository.js';
 
 /**
@@ -24,6 +36,18 @@ export interface Repositories {
   readonly credentials: CredentialRepository;
   readonly sessions: SessionRepository;
   readonly authScope: AuthScopeRepository;
+  // Phase 4 — school configuration
+  readonly academicYears: AcademicYearRepository;
+  readonly classes: ClassRepository;
+  readonly subjects: SubjectRepository;
+  readonly periods: PeriodRepository;
+  readonly attendancePolicy: AttendancePolicyRepository;
+  readonly gradeSchemes: GradeSchemeRepository;
+  readonly exams: ExamRepository;
+  readonly behaviourCategories: CategoryRepository;
+  readonly achievementCategories: CategoryRepository;
+  readonly ratingLabels: RatingLabelRepository;
+  readonly rolePermissions: RolePermissionRepository;
 }
 
 export interface MigrationState {

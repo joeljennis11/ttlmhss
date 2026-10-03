@@ -3,7 +3,9 @@
  *
  *   pnpm --filter @ttlmhss/web brand:assets
  *
- * Source (never edited): assets/brand/ttlmhss-logo-official.jpg
+ * Source (never edited): assets/brand/ttlmhss-logo-enhanced.jpg — the enhanced official artwork
+ *                        supplied by the school (8000×8000). The first supplied file,
+ *                        ttlmhss-logo-official.jpg, is kept unchanged for reference.
  * Output:                apps/web/public/brand/
  *
  * Only resizing / format conversion is applied — no cropping, recolouring, filters or redrawing.
@@ -17,9 +19,9 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const source = path.resolve(here, '../../../assets/brand/ttlmhss-logo-official.jpg');
+const source = path.resolve(here, '../../../assets/brand/ttlmhss-logo-enhanced.jpg');
 const outDir = path.resolve(here, '../public/brand');
-const EXPECTED_SHA256 = 'e99c0f341a9e0871a88cb5a9215cfc0019777158291356138e0e708818e51d64';
+const EXPECTED_SHA256 = 'd4b01519e9e15fea8d9184f872270faa0bef70a0d05368287b137ef7107720fe';
 
 const input = readFileSync(source);
 const digest = createHash('sha256').update(input).digest('hex');

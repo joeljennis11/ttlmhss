@@ -61,7 +61,7 @@ describe('routing and role-aware navigation', () => {
     installFetch(signedInAs(admin()));
     renderApp('/test-accounts', TEST_ROUTES);
     expect(await screen.findByText('accounts module content')).toBeInTheDocument();
-    expect(navLinks()).toEqual(['Home', 'Accounts', 'Change password']);
+    expect(navLinks()).toEqual(['Home', 'Accounts', 'School setup', 'Change password']);
   });
 
   it('role-restricted pages follow the effective role (class teacher)', async () => {

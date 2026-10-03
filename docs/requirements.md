@@ -33,6 +33,8 @@ Domain rules referenced here are defined authoritatively in [business-rules.md](
 
 ## 4. Admin & school configuration (Phase 4)
 
+> **Status (Phase 4):** R‑4.1–R‑4.7, R‑4.9 implemented (School setup area, `/admin`). R‑4.8 (student profile fields) moves to Phase 5 with student management; R‑4.10 (audit log viewer) is not built — configuration changes are written to the audit log. Role permissions are configurable within fixed ceilings (permissions.md §8).
+
 Admin configures:
 
 - **R‑4.1** Academic years (create, set current, close/archive).

@@ -25,6 +25,87 @@ export interface Database {
   audit_logs: AuditLogsTable;
   user_credentials: UserCredentialsTable;
   sessions: SessionsTable;
+  // Phase 4 — school configuration
+  attendance_policy: AttendancePolicyTable;
+  grade_schemes: GradeSchemesTable;
+  grade_bands: GradeBandsTable;
+  exams: ExamsTable;
+  exam_subjects: ExamSubjectsTable;
+  behaviour_categories: CategoriesTable;
+  achievement_categories: CategoriesTable;
+  behaviour_rating_labels: BehaviourRatingLabelsTable;
+  role_permission_overrides: RolePermissionOverridesTable;
+}
+
+export interface AttendancePolicyTable extends Timestamps {
+  id: string;
+  mode: string;
+  cutoff_day: number;
+}
+
+export interface GradeSchemesTable extends Timestamps {
+  id: string;
+  name: string;
+  status: string;
+}
+
+export interface GradeBandsTable {
+  id: string;
+  grade_scheme_id: string;
+  label: string;
+  /** Hundredths of a percent (9000 = 90 %). */
+  min_bp: number;
+  remark: string | null;
+}
+
+export interface ExamsTable extends Timestamps {
+  id: string;
+  academic_year_id: string;
+  grade_scheme_id: string | null;
+  name: string;
+  start_date: string | null;
+  end_date: string | null;
+  weightage_bp: number;
+  rank_scope: string;
+  display_order: number;
+  status: string;
+}
+
+export interface ExamSubjectsTable extends Timestamps {
+  id: string;
+  exam_id: string;
+  class_id: string;
+  subject_id: string;
+  grade_scheme_id: string | null;
+  theory_max: number;
+  internal_max: number | null;
+  practical_max: number | null;
+  pass_marks: number;
+  normalized_max: number | null;
+  include_in_result: number;
+}
+
+export interface CategoriesTable extends Timestamps {
+  id: string;
+  name: string;
+  description: string | null;
+  display_order: number;
+  status: string;
+}
+
+export interface BehaviourRatingLabelsTable {
+  rating: number;
+  label: string;
+  description: string | null;
+  updated_at: string;
+}
+
+export interface RolePermissionOverridesTable {
+  role: string;
+  permission: string;
+  effect: string;
+  updated_by: string | null;
+  updated_at: string;
 }
 
 export interface UserCredentialsTable {
@@ -64,6 +145,9 @@ export interface SchoolSettingsTable extends Timestamps {
   address: string | null;
   phone: string | null;
   email: string | null;
+  motto: string | null;
+  website: string | null;
+  principal_name: string | null;
 }
 
 export interface AcademicYearsTable extends Timestamps {
@@ -72,6 +156,7 @@ export interface AcademicYearsTable extends Timestamps {
   start_date: string;
   end_date: string;
   status: string;
+  working_days: string | null;
 }
 
 export interface ClassesTable extends Timestamps {
@@ -92,6 +177,7 @@ export interface SubjectsTable extends Timestamps {
   id: string;
   name: string;
   code: string | null;
+  display_order: number;
   status: string;
 }
 

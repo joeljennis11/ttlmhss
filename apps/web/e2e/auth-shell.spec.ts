@@ -116,7 +116,12 @@ test.describe('roles in the shell', () => {
       await expect(page.locator('header').getByText(role, { exact: true }).first()).toBeVisible();
 
       const nav = page.getByRole('navigation', { name: 'Main' });
-      await expect(nav.getByRole('link')).toHaveText(['Home', 'Change password']);
+      // Only administrators get the Phase 4 School setup area.
+      await expect(nav.getByRole('link')).toHaveText(
+        username === 'e2e.admin'
+          ? ['Home', 'School setup', 'Change password']
+          : ['Home', 'Change password'],
+      );
     });
   }
 

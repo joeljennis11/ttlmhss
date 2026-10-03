@@ -34,7 +34,7 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑12 | Rank ties and who is ranked (e.g. students with an absent subject) | Competition ranking (1,2,2,4); all enrolled students ranked once all subjects are final | Open |
 | D‑13 | Who records behaviour ratings | Class Teacher (+ Admin) | Proposed |
 | D‑14 | Request routing | Class Teacher of the student's section; Admin sees all | Proposed |
-| D‑15 | "Permissions" management: fixed role map or Admin‑editable toggles; Class Teacher audit visibility | **Code‑defined catalogue + per‑role grants** (no permission tables); Class Teacher has no `audit.view`. Admin‑editable toggles can be added later without changing feature code | Adopted in Phase 2 — please confirm |
+| D‑15 | "Permissions" management: fixed role map or Admin‑editable toggles; Class Teacher audit visibility | Phase 2: code‑defined defaults. **Phase 4:** Admin can adjust Teacher / Class Teacher / Student grants within fixed per‑permission ceilings (no escalation; ADMIN fixed); stored as overrides. Class Teacher has no `audit.view` by default (grantable). User‑specific permissions not implemented (needs Phase 5 account management) | Adopted in Phase 4 — please confirm |
 | D‑16 | Class Teacher student‑management scope (edit which fields? promote?) | View all + edit non‑protected contact fields; promotion proposed by CT, confirmed by Admin | Open |
 | D‑17 | Can Class Teacher edit the class timetable or only view? | View only; Admin edits (avoids cross‑class teacher conflicts) | Open |
 | D‑21 | Are sections defined per academic year or permanently? | Schema: sections are permanent (with status); the per‑year link comes from enrolments and class‑teacher assignments. Revisit if sections must differ by year | Adopted provisionally |
@@ -56,11 +56,21 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 
 | ID | Question | Notes | Status |
 |---|---|---|---|
-| D‑34 | Higher‑resolution / vector logo for print | Supplied file is a 556 × 556 JPEG with a white background: fine on screen, may look soft on A4 PDFs | Open — optional input |
+| D‑34 | Higher‑resolution / vector logo for print | First file was 556 × 556. An enhanced 8000 × 8000 JPEG was supplied with Phase 4 and is now the master (D‑40). A vector original would still be ideal but is not needed | Resolved in Phase 4 |
 | D‑35 | Logo green vs brand colour | The logo's green measures ≈ `#345729`, lighter than the specified brand colour `#003300`; it also uses gold ≈ `#F6CB17`. Phase 3 keeps `#003300` as primary everywhere and uses the crest gold **only** as the active‑page marker / focus colour on the green sidebar | Provisional — please confirm |
+
+## Added in Phase 4
+
+| ID | Question | Current default | Status |
+|---|---|---|---|
+| D‑36 | Must active exam weightages total exactly 100%? | Total may never exceed 100%; the screen marks it "complete" at 100%. Phase 8 should require 100% before annual results (BR‑EX‑03) | Adopted — please confirm |
+| D‑37 | Grade scale shape | Grades defined by minimum percentage only (contiguous by construction), two decimals; one scale per exam with optional per‑subject override | Adopted — please confirm |
+| D‑38 | Attendance cutoff day range | 1–28 so it exists in every month; unconfigured = no locking until the Admin saves a rule | Adopted — please confirm |
+| D‑39 | Pass marks per component (D‑25) | Phase 4 stores one pass mark against the total; per‑component pass marks can be added in Phase 8 if needed | Open (D‑25) |
+| D‑40 | Web logo source | The enhanced 8000 px logo supplied with Phase 4 (`assets/brand/ttlmhss-logo-enhanced.jpg`) is now the master for web and PDF; the original is kept unchanged for reference | Adopted |
 
 ## Pending inputs from the user
 
-- ~~Official school logo file~~ — **received 2026‑10‑03**, stored unmodified at `assets/brand/ttlmhss-logo-official.jpg` (not yet used by the app; Phase 3). Optional: a higher‑resolution or vector original for sharp A4 printing (D‑34).
+- ~~Official school logo file~~ — **received 2026‑10‑03** (`assets/brand/ttlmhss-logo-official.jpg`); an enhanced 8000 px version followed with Phase 4 (`ttlmhss-logo-enhanced.jpg`, now the master — D‑34 resolved for print size).
 - School address, contact details, and signatory names/titles for PDFs.
-- Current class/section list, subject list and period timings (for Phase 4 configuration — entered as data, not code).
+- Current class/section list, subject list, period timings, exams, grade scale, motto and principal's name — the Phase 4 screens are ready; the school (or the developer with the school's data) enters them. Nothing has been pre‑filled.

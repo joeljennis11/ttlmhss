@@ -2,6 +2,7 @@ import type { AppDependencies } from './app-dependencies.js';
 import type { AppConfig } from './config/config.js';
 import { permissionPolicy } from './core/auth/access.js';
 import { AuthorizationService } from './core/auth/authorization.service.js';
+import { RolePermissionService } from './core/auth/role-permissions.js';
 import { systemClock, type Clock } from './core/utils/clock.js';
 import type { DataStore } from './data/data-store.js';
 import { AccountCredentialsService } from './modules/auth/account-credentials.service.js';
@@ -18,6 +19,9 @@ export function createAppDependencies(
 ): AppDependencies {
   const clock: Clock = overrides.clock ?? systemClock;
   const sessions = overrides.sessions ?? new SessionManager(config.auth, clock);
+  const rolePermissions =
+    overrides.rolePermissions ??
+    new RolePermissionService(() => dataStore.repositories.rolePermissions.list());
   return {
     config,
     dataStore,
@@ -31,7 +35,9 @@ export function createAppDependencies(
         lockoutMs: config.auth.lockoutMs,
       }),
     authenticator:
-      overrides.authenticator ?? new SessionAuthenticator(config.auth, dataStore, sessions),
+      overrides.authenticator ??
+      new SessionAuthenticator(config.auth, dataStore, sessions, rolePermissions),
+    rolePermissions,
     accessPolicy: overrides.accessPolicy ?? permissionPolicy,
     authorization:
       overrides.authorization ?? new AuthorizationService(dataStore.repositories.authScope),

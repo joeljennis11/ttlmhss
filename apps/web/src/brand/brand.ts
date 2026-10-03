@@ -11,6 +11,6 @@ export const DEFAULT_BRANDING: SchoolBranding = Object.freeze({
   shortName: 'TTLMHSS',
   fullName: 'Thiruthangal Lions Matriculation Higher Secondary School',
   primaryColor: '#003300',
-  /** Web copy of the official logo, generated from assets/brand/ttlmhss-logo-official.jpg. */
+  /** Web copy of the official logo, resized from assets/brand/ttlmhss-logo-enhanced.jpg (artwork unchanged). */
   logoUrl: '/brand/ttlmhss-logo.webp',
 });

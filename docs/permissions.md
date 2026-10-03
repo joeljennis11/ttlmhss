@@ -37,6 +37,7 @@ Legend: ✅ granted · — not granted. CLASS_TEACHER grants are **added** to TE
 | users.view / create / edit / delete / reset_password | ✅ | — | — | — |
 | config.view | ✅ | ✅ | (✅) | — |
 | config.manage | ✅ | — | — | — |
+| permissions.manage *(Phase 4)* | ✅ | — | — | — |
 | students.view | ✅ | ✅ *scoped* | (✅) | ✅ *self* |
 | students.create | ✅ | — | — | — |
 | students.edit | ✅ | — | ✅ *own class* ⚠ D‑16 | — |
@@ -69,7 +70,7 @@ Legend: ✅ granted · — not granted. CLASS_TEACHER grants are **added** to TE
 
 "(✅)" = already held through TEACHER. *Italic* notes are scope rules applied by services. ⚠ marks open decisions (docs/decisions.md); the conservative choice was taken until they are confirmed.
 
-**Permission model decision (D‑15):** grants are **code‑defined and version‑controlled**, not Admin‑editable data. Changing a grant is a reviewed code change with tests. Admin‑editable permission toggles remain possible later without changing how features check permissions.
+**Permission model (D‑15, updated in Phase 4):** the table above is the set of **built‑in defaults**, defined in code (`core/auth/role-permissions.ts`). Since Phase 4 an administrator can adjust the Teacher, Class Teacher and Student grants on the *Role permissions* page — see §8. Features still check permissions exactly the same way.
 
 ## 4. Scope rules (implemented)
 
@@ -123,3 +124,31 @@ async getProfile(principal: Principal | null, studentId: string) {
 - Inactive accounts cannot sign in, and an existing session stops working on the next request.
 - Deactivation, password reset and password change revoke the user's sessions.
 - There is no HTTP endpoint for creating accounts, resetting passwords or changing status yet: the services exist (`AccountCredentialsService`) and Admin screens/endpoints arrive in Phases 4–5, protected by `users.create`, `users.reset_password`, `users.edit`. Until then operators use the `pnpm account` CLI.
+
+## 8. Administrator‑adjusted role permissions (Phase 4)
+
+**What can be changed.** `PUT /admin/permissions/:role` for `TEACHER`, `CLASS_TEACHER`, `STUDENT` (requires `permissions.manage`, which only ADMIN holds). ADMIN is **not editable** and always holds every permission, so nobody can lock the school out of its own settings.
+
+**Ceilings — no privilege escalation.** Every permission has a fixed ceiling in `@ttlmhss/shared` (`PERMISSION_INFO[p].grantableTo`): the only non‑admin roles that may ever hold it.
+
+| Ceiling | Permissions |
+|---|---|
+| Administrators only (never grantable) | `users.*`, `config.manage`, `permissions.manage`, `students.create`, `teachers.create`, `teachers.edit`, `attendance.override`, `exams.manage` |
+| Class Teacher only | `students.edit`, `students.promote`, `timetable.manage`, `attendance.manage`, `marks.edit`, `achievements.manage` (BR‑ACH‑01), `announcements.manage`, `requests.handle`, `audit.view` |
+| Teacher and Class Teacher | `teachers.view`, `attendance.mark`, `marks.enter`, `marks.submit`, `behaviour.manage`, `reports.generate` |
+| Student only | `requests.create` |
+| Any role | the remaining `*.view` permissions |
+
+The ceiling is enforced twice: a save that includes anything above it is **rejected** (400, nothing stored), and the runtime table is **clipped** to the ceiling when permissions are evaluated, so even a row edited directly in the database cannot grant more. A test checks that every built‑in default sits inside its ceiling.
+
+**Storage.** `role_permission_overrides` (role, permission, GRANT/REVOKE, updated_by, updated_at) — only the *differences* from the defaults. Effective = (defaults ∪ grants − revokes) ∩ ceiling. Saving the defaults removes all rows for the role.
+
+**When it takes effect.** `RolePermissionService` caches the table for 30 s and is invalidated on save, so changes apply to the **next request** in the same API process. With several API processes, others pick it up within 30 s.
+
+**Audit.** Every save writes `config.permissions.updated` with the previous and new overrides.
+
+**Scope rules are unchanged.** A granted permission still only says *what kind* of action is allowed; services keep applying scope (own periods, own class, self). Class Teacher grants still only apply within the assigned section.
+
+**User‑specific permissions** are **not** implemented: there is no user‑management screen yet (accounts are created in Phase 5), and the spec asks for them only "if supported". The same override + ceiling design can be extended per user once Phase 5 exists.
+
+**Phase 4 configuration endpoints** (`/api/v1/admin/...`) all require `config.manage` — reads included, because the screens show draft structure — except `/admin/permissions*`, which require `permissions.manage`. Every service method re‑checks the permission (`ConfigService.authorize`).

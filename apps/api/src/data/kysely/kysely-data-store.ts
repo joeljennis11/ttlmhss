@@ -12,6 +12,20 @@ import {
   KyselyUserAccountRepository,
 } from './repositories/user-account.repository.js';
 import { KyselySchoolSettingsRepository } from './repositories/school-settings.repository.js';
+import {
+  KyselyAttendancePolicyRepository,
+  KyselyCategoryRepository,
+  KyselyExamRepository,
+  KyselyGradeSchemeRepository,
+  KyselyRatingLabelRepository,
+  KyselyRolePermissionRepository,
+} from './repositories/config/rules.repositories.js';
+import {
+  KyselyAcademicYearRepository,
+  KyselyClassRepository,
+  KyselyPeriodRepository,
+  KyselySubjectRepository,
+} from './repositories/config/structure.repositories.js';
 import { KyselySchemaManager } from './schema-manager.js';
 
 function createRepositories(db: Kysely<Database>): Repositories {
@@ -22,6 +36,17 @@ function createRepositories(db: Kysely<Database>): Repositories {
     credentials: new KyselyCredentialRepository(db),
     sessions: new KyselySessionRepository(db),
     authScope: new KyselyAuthScopeRepository(db),
+    academicYears: new KyselyAcademicYearRepository(db),
+    classes: new KyselyClassRepository(db),
+    subjects: new KyselySubjectRepository(db),
+    periods: new KyselyPeriodRepository(db),
+    attendancePolicy: new KyselyAttendancePolicyRepository(db),
+    gradeSchemes: new KyselyGradeSchemeRepository(db),
+    exams: new KyselyExamRepository(db),
+    behaviourCategories: new KyselyCategoryRepository(db, 'behaviour_categories'),
+    achievementCategories: new KyselyCategoryRepository(db, 'achievement_categories'),
+    ratingLabels: new KyselyRatingLabelRepository(db),
+    rolePermissions: new KyselyRolePermissionRepository(db),
   });
 }
 

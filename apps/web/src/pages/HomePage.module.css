@@ -38,6 +38,27 @@
   padding: 0;
 }
 
+.cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-sm);
+  background: var(--forest);
+  color: var(--on-forest);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cta:hover {
+  background: var(--forest-deep);
+}
+
+.cta:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 @media (max-width: 899px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);

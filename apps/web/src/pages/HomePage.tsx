@@ -1,4 +1,5 @@
-import { BookOpen } from 'lucide-react';
+import { Link } from 'react-router';
+import { BookOpen, Settings } from 'lucide-react';
 import { usePageTitle } from '../app/page-meta';
 import { PageHeader, Panel } from '../components/layout/Page';
 import { EmptyState } from '../components/ui';
@@ -50,12 +51,29 @@ export function HomePage() {
             )}
           </dl>
         </Panel>
-        <Panel className={styles.next}>
-          <EmptyState icon={BookOpen} title="Your school tools will appear here">
-            TTLMHSS is being built step by step. Pages for your role, such as timetable, attendance
-            and results, will be added to the menu as each one is ready.
-          </EmptyState>
-        </Panel>
+        {user.permissions.includes('config.manage') ? (
+          <Panel className={styles.next}>
+            <EmptyState
+              icon={Settings}
+              title="Set up the school"
+              action={
+                <Link to="/admin" className={styles.cta}>
+                  Open school setup
+                </Link>
+              }
+            >
+              Academic years, classes and sections, subjects, the school day, grading, exams,
+              behaviour and achievement categories, and role permissions.
+            </EmptyState>
+          </Panel>
+        ) : (
+          <Panel className={styles.next}>
+            <EmptyState icon={BookOpen} title="Your school tools will appear here">
+              TTLMHSS is being built step by step. Pages for your role, such as timetable,
+              attendance and results, will be added to the menu as each one is ready.
+            </EmptyState>
+          </Panel>
+        )}
       </div>
     </>
   );

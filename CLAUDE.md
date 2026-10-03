@@ -32,7 +32,7 @@ Development happens in explicit, user‑unlocked phases:
 - Do not silently introduce major new requirements.
 - Do not make irreversible architectural decisions the spec leaves open — ask. Open decisions are tracked in `docs/decisions.md`.
 
-**Current phase status:** Phase 3 complete (branding, sign-in, application shell). Waiting for Phase 4 instruction.
+**Current phase status:** Phase 4 complete (Admin + school configuration). Waiting for Phase 5 instruction.
 
 ## 2. Workflow for every phase
 
@@ -86,7 +86,7 @@ Accounts: Teacher and Student accounts are created automatically when Admin adds
 
 - **Primary brand colour: Dark Green `#003300` (RGB 0, 51, 0).** Use for sidebar, primary buttons, active navigation, headers, key accents, login branding, dashboard highlights, PDF branding. Derive lighter/darker shades for hover/selected/borders/highlights.
 - Content on white/light neutral backgrounds. **Do not make the whole UI green.** Maintain accessible contrast (WCAG AA minimum).
-- **Logo:** the user will supply the official school logo. Use it as‑is. **Never generate, redraw, invent, or substitute a placeholder logo.** The official logo was received on 2026‑10‑03 and is stored unmodified at `assets/brand/ttlmhss-logo-official.jpg` (see `assets/brand/README.md`). Never edit that file; generate any needed sizes from it.
+- **Logo:** the user will supply the official school logo. Use it as‑is. **Never generate, redraw, invent, or substitute a placeholder logo.** The official logo was received on 2026‑10‑03 (`assets/brand/ttlmhss-logo-official.jpg`); an enhanced version supplied with Phase 4 (`assets/brand/ttlmhss-logo-enhanced.jpg`) is the master for web and PDFs (see `assets/brand/README.md`). Never edit either file; generate any needed sizes from the master by resizing only.
 - UI must be responsive (desktop + mobile), with consistent components, loading / empty / error states, confirmations for destructive actions, toast feedback, search, filters and pagination where useful.
 - Student profile is **compact** (photo, name, admission/roll, class, section, year, basic contact, quick stats) with detail in a modal/drawer — not a giant tab‑heavy page.
 - Requests and announcements stay **simple** — no chat system, no ticketing platform, no complex notification infrastructure.
@@ -106,6 +106,7 @@ Real generated documents only: A4, official logo, school name, academic year, st
 - No sample/fake school data. Test fixtures are synthetic and live in throwaway databases.
 - **Security (Phase 2):** every protected route uses `access: requires('<permission>')`; every service method re‑checks with `deps.authorization.authorize(principal, '<permission>')` and applies a scope check (`checkStudentScope`, `checkSectionScope`, …) before reading or writing records. Student‑facing data uses `principal.studentId`, never an id from the request. Permissions are granted only in `core/auth/role-permissions.ts`. Never return or log passwords, hashes or session tokens.
 - **UI (Phase 3):** add pages to `apps/web/src/app/routes.tsx` (`SHELL_ROUTES`) with `permission`/`roles` and an optional `nav` entry — the menu is generated from it; never add menu entries for unbuilt modules. Use the tokens in `styles/tokens.css` and the components in `components/ui` and `components/layout`; school name and logo come from `useBranding()` / `<SchoolLogo>`, never hard-coded. Each page calls `usePageTitle()`. Frontend gating is UX only.
+- **Configuration (Phase 4):** school structure and rules come from the Admin‑configured tables (`modules/config/`), read through repositories — never hard‑code them. Permission grants: code defaults in `core/auth/role-permissions.ts`, Admin overrides clipped to the ceilings in `@ttlmhss/shared` `PERMISSION_INFO`; never widen a ceiling to `ADMIN`‑only permissions. Admin pages are registered in `features/admin/admin-pages.ts`.
 - Run `pnpm check` (lint + format + typecheck + tests) before finishing a phase; run `pnpm --filter @ttlmhss/web test:e2e` when UI flows change.
 
 ## 9. Documentation map

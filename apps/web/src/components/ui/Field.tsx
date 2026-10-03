@@ -1,4 +1,12 @@
-import { useId, useState, type InputHTMLAttributes, type Ref } from 'react';
+import {
+  useId,
+  useState,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type Ref,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import styles from './ui.module.css';
 
@@ -99,6 +107,151 @@ export function PasswordField({ label, error, hint, className, ref, ...input }: 
           {errors.join(' ')}
         </p>
       )}
+    </div>
+  );
+}
+
+/** Shared label / hint / error frame for the other field types. */
+function FieldFrame({
+  id,
+  label,
+  hint,
+  errors,
+  className,
+  children,
+}: {
+  id: string;
+  label: string;
+  hint?: string | undefined;
+  errors: readonly string[];
+  className?: string | undefined;
+  children: (aria: { describedBy: string | undefined; invalid: true | undefined }) => ReactNode;
+}) {
+  const hintId = hint ? `${id}-hint` : undefined;
+  const errorId = errors.length ? `${id}-error` : undefined;
+  return (
+    <div className={[styles.field, className ?? ''].join(' ')}>
+      <label htmlFor={id} className={styles.label}>
+        {label}
+      </label>
+      {children({
+        describedBy: describedBy(hintId, errorId),
+        invalid: errors.length > 0 || undefined,
+      })}
+      {hint && (
+        <p id={hintId} className={styles.hint}>
+          {hint}
+        </p>
+      )}
+      {errorId && (
+        <p id={errorId} className={styles.fieldError}>
+          {errors.join(' ')}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'id'> {
+  label: string;
+  error?: string | readonly string[] | null;
+  hint?: string;
+  options: readonly { value: string; label: string; disabled?: boolean }[];
+  /** Adds a first, empty option with this text (e.g. "Choose…"). */
+  placeholder?: string;
+}
+
+/** Native select (keyboard, screen-reader and mobile friendly). */
+export function SelectField({
+  label,
+  error,
+  hint,
+  options,
+  placeholder,
+  className,
+  ...select
+}: SelectFieldProps) {
+  const id = useId();
+  return (
+    <FieldFrame id={id} label={label} hint={hint} errors={errorList(error)} className={className}>
+      {({ describedBy: ids, invalid }) => (
+        <select
+          id={id}
+          className={`${styles.input} ${styles.select}`}
+          aria-invalid={invalid}
+          aria-describedby={ids}
+          {...select}
+        >
+          {placeholder !== undefined && <option value="">{placeholder}</option>}
+          {options.map((o) => (
+            <option key={o.value} value={o.value} disabled={o.disabled}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      )}
+    </FieldFrame>
+  );
+}
+
+export interface TextAreaFieldProps extends Omit<
+  TextareaHTMLAttributes<HTMLTextAreaElement>,
+  'id'
+> {
+  label: string;
+  error?: string | readonly string[] | null;
+  hint?: string;
+}
+
+export function TextAreaField({ label, error, hint, className, ...area }: TextAreaFieldProps) {
+  const id = useId();
+  return (
+    <FieldFrame id={id} label={label} hint={hint} errors={errorList(error)} className={className}>
+      {({ describedBy: ids, invalid }) => (
+        <textarea
+          id={id}
+          rows={3}
+          className={`${styles.input} ${styles.textarea}`}
+          aria-invalid={invalid}
+          aria-describedby={ids}
+          {...area}
+        />
+      )}
+    </FieldFrame>
+  );
+}
+
+export interface CheckboxFieldProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'id' | 'type'
+> {
+  label: ReactNode;
+  hint?: ReactNode;
+}
+
+/** A checkbox with its label to the right; the whole row is clickable. */
+export function CheckboxField({ label, hint, className, ...input }: CheckboxFieldProps) {
+  const id = useId();
+  const hintId = hint ? `${id}-hint` : undefined;
+  return (
+    <div className={[styles.checkRow, className ?? ''].join(' ')}>
+      <input
+        id={id}
+        type="checkbox"
+        className={styles.checkbox}
+        aria-describedby={hintId}
+        {...input}
+      />
+      <div>
+        <label htmlFor={id} className={styles.checkLabel}>
+          {label}
+        </label>
+        {hint && (
+          <p id={hintId} className={styles.hint}>
+            {hint}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

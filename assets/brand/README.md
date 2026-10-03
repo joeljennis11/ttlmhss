@@ -1,12 +1,17 @@
 # Official school logo — source of truth
 
-`ttlmhss-logo-official.jpg` is the official logo of Thiruthangal Lions Matriculation Higher Secondary School, supplied by the school on 2026‑10‑03.
+Two files supplied by the school are stored here **exactly as received**. Do not edit, redraw, recolour, crop or replace either.
 
-- **Stored exactly as supplied** (SHA‑256 `e99c0f341a9e0871a88cb5a9215cfc0019777158291356138e0e708818e51d64`). Do not edit, redraw, recolour, crop or replace this file.
-- Web copies are generated **from this file** by `pnpm --filter @ttlmhss/web brand:assets` (resize only) into `apps/web/public/brand/`: `ttlmhss-logo.webp` (512 px), `favicon-32.png`, `apple-touch-icon.png`. The script refuses to run if this file's checksum changes unexpectedly.
-- Used in: sign‑in page, sidebar, phone header, favicon (Phase 3). PDFs (Phase 11) will read this original.
+| File | Supplied | Details | Role |
+|---|---|---|---|
+| `ttlmhss-logo-enhanced.jpg` | 2026‑10‑03 (with Phase 4) | JPEG, **8000 × 8000 px**, sRGB, ~2 MB, crest centred on white with a ~5 % white margin. SHA‑256 `d4b01519e9e15fea8d9184f872270faa0bef70a0d05368287b137ef7107720fe` | **Current master** for all web copies and (Phase 11) PDFs |
+| `ttlmhss-logo-official.jpg` | 2026‑10‑03 (before Phase 3) | JPEG, 556 × 556 px, crest fills the square. SHA‑256 `e99c0f341a9e0871a88cb5a9215cfc0019777158291356138e0e708818e51d64` | Kept for reference; no longer used to generate assets |
 
-Facts about the supplied file (for later phases):
-- JPEG, 556 × 556 px, ~100 KB, white square background (no transparency).
-- Main colours measured from the image: green ≈ `#345729`, gold ≈ `#F6CB17`, white.
-- 556 px is enough for screens and the favicon. A higher‑resolution or vector original (SVG/PDF/AI) would print more sharply on A4 report headers.
+The enhanced file is the same artwork at print resolution, without the small stray mark visible in the first file. Measured colours: green ≈ `#335729`, gold ≈ `#FBCB0F`, white.
+
+## How the application uses it
+- `pnpm --filter @ttlmhss/web brand:assets` generates, by **resizing only** (deterministic, no AI), into `apps/web/public/brand/`: `ttlmhss-logo.webp` (512 px), `favicon-32.png`, `apple-touch-icon.png`. The script verifies the master's checksum first and refuses to run if the file changed unexpectedly.
+- The school settings (`school_settings.logo_path`, editable by Admin) point at `/brand/ttlmhss-logo.webp`; every screen reads the logo from there (sign‑in, sidebar, phone header). The favicon is linked from `apps/web/index.html`.
+- Report/PDF branding (Phase 11) should read `ttlmhss-logo-enhanced.jpg` directly for sharp A4 printing.
+
+If the school supplies a newer official file: add it here unchanged, update the source path and `EXPECTED_SHA256` in `apps/web/scripts/build-brand-assets.mjs`, update this table, and re-run the script.

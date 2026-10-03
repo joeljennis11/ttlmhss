@@ -22,6 +22,18 @@ if (typeof window !== 'undefined') {
     });
   }
 
+  // jsdom does not implement modal <dialog>; a minimal stand-in (open attribute only) lets tests
+  // see dialog content. Focus trapping and inertness are covered by the browser e2e tests.
+  const dialogProto = window.HTMLDialogElement?.prototype;
+  if (dialogProto && !dialogProto.showModal) {
+    dialogProto.showModal = function (this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    };
+    dialogProto.close = function (this: HTMLDialogElement) {
+      this.removeAttribute('open');
+    };
+  }
+
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();

@@ -1,6 +1,7 @@
 import type { AppConfig } from './config/config.js';
 import type { AccessPolicy, Authenticator } from './core/auth/access.js';
 import type { AuthorizationService } from './core/auth/authorization.service.js';
+import type { RolePermissionService } from './core/auth/role-permissions.js';
 import type { Clock } from './core/utils/clock.js';
 import type { DataStore } from './data/data-store.js';
 import type { LoginThrottle } from './modules/auth/login-throttle.js';
@@ -21,6 +22,8 @@ export interface AppDependencies {
   loginThrottle: LoginThrottle;
   authenticator: Authenticator;
   accessPolicy: AccessPolicy;
+  /** Role → permission table with administrator adjustments (Phase 4). */
+  rolePermissions: RolePermissionService;
   /** Record-level authorization (permission + scope) for feature services. */
   authorization: AuthorizationService;
 }

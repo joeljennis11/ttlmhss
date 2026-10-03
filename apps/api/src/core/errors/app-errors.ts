@@ -68,9 +68,18 @@ export class NotFoundError extends AppError {
 export class ConflictError extends AppError {
   readonly code = ErrorCode.CONFLICT;
   readonly statusCode = 409;
-  constructor(message = 'This change conflicts with existing data.', cause?: unknown) {
-    super(message, { cause });
+  constructor(
+    message = 'This change conflicts with existing data.',
+    cause?: unknown,
+    details?: FieldIssue[],
+  ) {
+    super(message, { cause, ...(details ? { details } : {}) });
   }
+}
+
+/** Conflict tied to one input field (e.g. a duplicate name), so forms can show it in place. */
+export function fieldConflict(field: string, message: string): ConflictError {
+  return new ConflictError(message, undefined, [{ path: `body.${field}`, message }]);
 }
 
 export class ServiceUnavailableError extends AppError {

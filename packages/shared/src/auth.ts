@@ -45,6 +45,7 @@ export const PERMISSIONS = [
   // School configuration (years, classes, sections, subjects, periods, rules)
   'config.view',
   'config.manage',
+  'permissions.manage',
   // People
   'students.view',
   'students.create',

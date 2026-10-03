@@ -7,7 +7,11 @@ import type { NavSection } from '../app/routes';
 import type { NavLinkItem } from './navigation';
 import styles from './Sidebar.module.css';
 
-const SECTION_TITLES: Record<NavSection, string | null> = { main: null, account: 'Account' };
+const SECTION_TITLES: Record<NavSection, string | null> = {
+  main: null,
+  admin: 'Administration',
+  account: 'Account',
+};
 
 /**
  * School-branded navigation. One element serves all breakpoints: a persistent column on desktop,
@@ -78,11 +82,11 @@ export function Sidebar({
                 className={styles.list}
                 {...(SECTION_TITLES[section] ? { 'aria-labelledby': `nav-${section}` } : {})}
               >
-                {sections[section].map(({ to, label, icon: Icon }) => (
+                {sections[section].map(({ to, label, icon: Icon, end }) => (
                   <li key={to}>
                     <NavLink
                       to={to}
-                      end={to === '/'}
+                      end={end}
                       title={label}
                       onClick={onClose}
                       className={({ isActive }) =>

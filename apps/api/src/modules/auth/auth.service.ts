@@ -8,6 +8,7 @@ import {
 } from '../../core/errors/app-errors.js';
 import { toTimestamp, type Clock } from '../../core/utils/clock.js';
 import type { DataStore, Repositories } from '../../data/data-store.js';
+import type { RolePermissionService } from '../../core/auth/role-permissions.js';
 import type { LoginThrottle } from './login-throttle.js';
 import type { PasswordHasher } from './password-hasher.js';
 import { buildPrincipal, toAuthUser } from './principal.js';
@@ -34,6 +35,7 @@ export interface AuthServiceDeps {
   hasher: PasswordHasher;
   sessions: SessionManager;
   throttle: LoginThrottle;
+  rolePermissions: RolePermissionService;
   clock: Clock;
 }
 
@@ -121,7 +123,13 @@ export class AuthService {
       return session;
     });
 
-    const principal = await buildPrincipal(account, credential, repos.authScope, issued.session.id);
+    const principal = await buildPrincipal(
+      account,
+      credential,
+      repos.authScope,
+      issued.session.id,
+      await this.deps.rolePermissions.table(),
+    );
     return {
       token: issued.token,
       expiresAt: issued.session.expiresAt,
@@ -207,7 +215,13 @@ export class AuthService {
     const account = await repos.userAccounts.findById(principal.userId);
     const updated = await repos.credentials.find(principal.userId);
     if (!account || !updated) throw new UnauthorizedError();
-    const refreshed = await buildPrincipal(account, updated, repos.authScope, issued.session.id);
+    const refreshed = await buildPrincipal(
+      account,
+      updated,
+      repos.authScope,
+      issued.session.id,
+      await this.deps.rolePermissions.table(),
+    );
     return {
       token: issued.token,
       expiresAt: issued.session.expiresAt,

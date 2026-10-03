@@ -1,6 +1,7 @@
 import type { FastifyRequest } from 'fastify';
 import type { AuthConfig } from '../../config/config.js';
 import type { Authenticator, Principal } from '../../core/auth/access.js';
+import type { RolePermissionService } from '../../core/auth/role-permissions.js';
 import type { DataStore } from '../../data/data-store.js';
 import { buildPrincipal } from './principal.js';
 import { readSessionCookie } from './session-cookie.js';
@@ -12,6 +13,7 @@ export class SessionAuthenticator implements Authenticator {
     private readonly config: AuthConfig,
     private readonly dataStore: DataStore,
     private readonly sessions: SessionManager,
+    private readonly rolePermissions: RolePermissionService,
   ) {}
 
   async authenticate(request: FastifyRequest): Promise<Principal | null> {
@@ -25,6 +27,7 @@ export class SessionAuthenticator implements Authenticator {
       resolved.credential,
       repos.authScope,
       resolved.session.id,
+      await this.rolePermissions.table(),
     );
   }
 }

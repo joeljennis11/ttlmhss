@@ -16,6 +16,8 @@ export interface NavLinkItem {
   label: string;
   icon: NonNullable<ShellRoute['nav']>['icon'];
   section: NavSection;
+  /** Active only on the exact path. */
+  end: boolean;
 }
 
 /** Navigation for this user: only existing pages, only those they may open, in config order. */
@@ -23,7 +25,7 @@ export function navigationFor(
   user: Pick<AuthUser, 'permissions' | 'roles'>,
   routes: readonly ShellRoute[],
 ): Record<NavSection, NavLinkItem[]> {
-  const sections: Record<NavSection, NavLinkItem[]> = { main: [], account: [] };
+  const sections: Record<NavSection, NavLinkItem[]> = { main: [], admin: [], account: [] };
   for (const route of routes) {
     if (!route.nav || !canAccessRoute(user, route)) continue;
     sections[route.nav.section].push({
@@ -31,6 +33,7 @@ export function navigationFor(
       label: route.nav.label,
       icon: route.nav.icon,
       section: route.nav.section,
+      end: route.nav.end ?? route.path === '',
     });
   }
   return sections;

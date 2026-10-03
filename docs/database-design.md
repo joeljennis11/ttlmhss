@@ -118,7 +118,7 @@ erDiagram
 
 ## 5. Implemented schema (Phase 1)
 
-Created by `apps/api/src/data/kysely/migrations/0001_foundation.ts`, `0002_school_identity.ts` (Phase 1) and `0003_authentication.ts` (Phase 2) and `0004_school_logo.ts` (Phase 3: sets `school_settings.logo_path` to the official web logo `/brand/ttlmhss-logo.webp` when unset). Row types: `database-schema.ts`.
+Created by `apps/api/src/data/kysely/migrations/0001_foundation.ts`, `0002_school_identity.ts` (Phase 1) and `0003_authentication.ts` (Phase 2) and `0004_school_logo.ts` (Phase 3: sets `school_settings.logo_path` to the official web logo `/brand/ttlmhss-logo.webp` when unset) and `0005_school_configuration.ts` (Phase 4, §5a). Row types: `database-schema.ts`.
 
 ### Storage conventions (portable)
 | Kind | Stored as |
@@ -152,25 +152,43 @@ Created by `apps/api/src/data/kysely/migrations/0001_foundation.ts`, `0002_schoo
 
 Promotion and mid‑year transfer **close** the current enrolment (set status + `ended_on`) and **open** a new one; previous rows are never rewritten. This is tested.
 
+### 5a. Phase 4 additions (`0005_school_configuration`)
+| Change | Details |
+|---|---|
+| `school_settings` + columns | `motto`, `website`, `principal_name` (nullable; nothing invented) |
+| `academic_years.working_days` | CSV of weekday codes (`MON,…`), NULL = not set |
+| `subjects.display_order` | integer, default 0 |
+| Case‑insensitive uniqueness | unique indexes on `lower(label)` (years), `lower(name)` (classes, subjects), (`class_id`, `lower(name)`) (sections) |
+| `attendance_policy` | singleton `id='default'`; `mode` ∈ MONTHLY_CUTOFF/NO_LOCK; `cutoff_day` CHECK 1–28. **No row inserted** = unconfigured = never locks |
+| `grade_schemes` | name (unique `lower(name)`), status |
+| `grade_bands` | FK scheme; `label`; `min_bp` CHECK 0–10000 (hundredths of a percent); unique (scheme, min_bp), (scheme, lower(label)); optional remark. Upper bounds are derived, not stored |
+| `exams` | FK academic year; name (unique per year, case‑insensitive); optional start/end (CHECK start ≤ end); `weightage_bp` 0–10000; optional FK grade scheme; `rank_scope` ∈ SECTION/CLASS; display order; status |
+| `exam_subjects` | FK exam, class, subject, optional grade scheme; `theory_max`, `internal_max`, `practical_max`, `pass_marks`, `normalized_max`, `include_in_result` (0/1); CHECKs: maxima ≥ 0, total > 0, pass ≤ total; unique (exam, class, subject) |
+| `behaviour_categories`, `achievement_categories` | name (unique `lower(name)`), description, display order, status |
+| `behaviour_rating_labels` | PK `rating` CHECK 1–5; label; description |
+| `role_permission_overrides` | PK (role, permission); `effect` ∈ GRANT/REVOKE; FK `updated_by` users. Only differences from the code defaults (permissions.md §8) |
+
+Percentages are stored as integer **basis points** so 33.33 % is exact on every provider. All FKs remain RESTRICT. `down` drops the new tables and columns.
+
 ## 6. Mapping of the functional entity list to the schema
 
 | Functional entity | Representation | When |
 |---|---|---|
 | AcademicYear, Class, Section, Subject, Period | Tables above | Phase 1 ✔ |
 | Break | `periods` row with `kind='BREAK'` (one ordered day structure, so breaks sit between periods) | Phase 1 ✔ |
-| SchoolConfiguration | `school_settings` (identity/contact). Other settings (attendance cutoff, grade rules, behaviour labels …) get **typed tables in their own phase**, not a generic key/value bag | Phase 1 ✔ / Phase 4+ |
+| SchoolConfiguration | `school_settings` (identity/contact) plus typed Phase 4 tables (`attendance_policy`, grade, exam, behaviour, achievement tables) — no generic key/value bag | Phase 1 ✔ / Phase 4 ✔ |
 | User | `users` (identity) + `user_credentials` (password) + `sessions` | Phase 1 ✔ / Phase 2 ✔ |
 | Role | Controlled value `users.role` (ADMIN/TEACHER/STUDENT). **CLASS_TEACHER is never stored** — it is derived per request from ACTIVE `class_teacher_assignments` in the CURRENT year | Phase 1 ✔ / Phase 2 ✔ |
-| Permission | **No tables.** Permissions are a code‑defined catalogue with per‑role grants (D‑15, docs/permissions.md). Tables would only be added if Admin‑editable permissions are requested | Phase 2 ✔ |
+| Permission | Code‑defined catalogue and default grants; Admin adjustments in `role_permission_overrides`, clipped to fixed ceilings (D‑15, permissions.md §8) | Phase 2 ✔ / Phase 4 ✔ |
 | Student, Teacher, TeacherSubject, ClassTeacherAssignment | Tables above | Phase 1 ✔ |
 | StudentAcademicHistory | `enrolments` | Phase 1 ✔ |
 | Configurable student profile fields | `student_field_definitions` + values | Phase 4/5 |
 | AuditLog | `audit_logs` | Phase 1 ✔ |
 | Timetable, TimetableAssignment | `timetable_versions` (DRAFT/PUBLISHED/SUPERSEDED, effective‑from) + `timetable_slots` with unique (version, section, day, period) and (version, teacher, day, period) | Phase 6 |
 | AttendanceRecord, AttendanceAudit | `attendance_sessions` (date + section + period, snapshot of teacher/subject, cancelled flag) + `attendance_records` (session + enrolment + status ∈ `- P A L C`, leave reason) + `attendance_audit` | Phase 7 |
-| Exam, ExamSubject, Mark, GradeRule, ExamWeightage | `exams` (incl. weightage column — weightage is a property of an exam, not a separate entity unless Phase 8 needs per‑class weightage), `exam_subjects`, `mark_sheets` (DRAFT/SUBMITTED/UNLOCKED — drives subject‑wise visibility), `mark_entries` (raw marks; NULL = `-`), `grade_schemes`/`grade_bands`, `mark_audit` | Phase 8 |
-| BehaviourCategory, BehaviourRating, BehaviourAssessment | `behaviour_categories`, `behaviour_scale_labels`, `behaviour_assessments` (enrolment × exam, remark) + `behaviour_ratings` (category, 1–5 CHECK) | Phase 9 |
-| AchievementCategory, Achievement | `achievement_categories` (configurable, seeded with the six specified categories) + `achievements` | Phase 9 |
+| Exam, ExamSubject, Mark, GradeRule, ExamWeightage | **Phase 4 ✔:** `exams` (incl. weightage), `exam_subjects` (per exam × class × subject), `grade_schemes`/`grade_bands`. **Phase 8:** `mark_sheets` (DRAFT/SUBMITTED/UNLOCKED — drives subject‑wise visibility), `mark_entries` (raw marks; NULL = `-`), `grade_schemes`/`grade_bands`, `mark_audit` | Phase 8 |
+| BehaviourCategory, BehaviourRating, BehaviourAssessment | **Phase 4 ✔:** `behaviour_categories`, `behaviour_rating_labels`. **Phase 9:** `behaviour_assessments` (enrolment × exam, remark) + `behaviour_ratings` (category, 1–5 CHECK) | Phase 9 |
+| AchievementCategory, Achievement | **Phase 4 ✔:** `achievement_categories` (configurable; the six specified categories are offered as an explicit "add suggested" choice, not seeded). **Phase 9:** `achievements` | Phase 4 / 9 |
 | Announcement, StudentRequest | `announcements`, `student_requests` | Phase 10 |
 
 ### Why feature tables are not created yet

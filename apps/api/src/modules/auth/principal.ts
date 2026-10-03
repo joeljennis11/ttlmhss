@@ -1,6 +1,9 @@
 import type { AuthUser, EffectiveRole, ScopeRef } from '@ttlmhss/shared';
 import type { Principal } from '../../core/auth/access.js';
-import { permissionsFor } from '../../core/auth/role-permissions.js';
+import {
+  effectivePermissions,
+  type RolePermissionTable,
+} from '../../core/auth/role-permissions.js';
 import type { AuthScopeRepository } from '../../core/auth/scope.repository.js';
 import type { StoredCredential, UserAccount } from './auth.repository.js';
 
@@ -14,6 +17,7 @@ export async function buildPrincipal(
   credential: StoredCredential,
   scopes: AuthScopeRepository,
   sessionId: string | null,
+  permissionTable: RolePermissionTable,
 ): Promise<Principal> {
   let classTeacherOf: ScopeRef[] = [];
   let enrolledIn: ScopeRef[] = [];
@@ -33,7 +37,7 @@ export async function buildPrincipal(
     displayName: account.displayName,
     accountRole: account.role,
     roles: Object.freeze(roles),
-    permissions: permissionsFor(roles),
+    permissions: effectivePermissions(permissionTable, roles),
     // Links only make sense for the matching account role.
     teacherId: account.role === 'TEACHER' ? account.teacherId : null,
     studentId: account.role === 'STUDENT' ? account.studentId : null,
