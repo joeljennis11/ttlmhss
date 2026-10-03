@@ -49,8 +49,9 @@ Legend: ✅ granted · — not granted. CLASS_TEACHER grants are **added** to TE
 | teacher_subjects.manage *(Phase 5)* | ✅ | — | — | — |
 | class_teacher_assignments.view *(Phase 5)* | ✅ | — | — | — |
 | class_teacher_assignments.manage *(Phase 5)* | ✅ | — | — | — |
-| timetable.view | ✅ | ✅ | (✅) | ✅ *own class* |
-| timetable.manage | ✅ | — | — ⚠ D‑17 | — |
+| timetable.view | ✅ | ✅ *own + classes taught* | ✅ *+ own class* | ✅ *own class* |
+| timetable.manage *(edit the draft)* | ✅ | — (ceiling: never) | — by default; grantable, then *own class only* (D‑17) | — |
+| timetable.publish *(Phase 6: publish / discard draft)* | ✅ | — | — (ceiling: never) | — |
 | attendance.view | ✅ | ✅ *scoped* | (✅) | ✅ *self* |
 | attendance.mark (P/A) | ✅ | ✅ *own periods* | (✅) | — |
 | attendance.manage (leave, cancel, whole day) | ✅ | — | ✅ *own class* | — |
@@ -182,3 +183,20 @@ Endpoints under `/api/v1/admin/students|promotions|teachers|class-teachers` use 
 **Role assignment is fixed by the workflow:** admission always creates a `STUDENT` account and "Add teacher" always a `TEACHER` account; there is no role field (an extra `role` in the request is ignored — tested). Administrator accounts are created only by the server CLI. Class Teacher is not a role anyone is given: it is derived on each request from an ACTIVE class‑teacher assignment in the current year, so assigning, replacing or ending an assignment changes the teacher's scope on their next request.
 
 **Web screens** (Students, Teachers, Class teachers, Promotion) are shown to users holding the admin‑only management permissions; the API enforces the same rules independently.
+
+## 10. Timetable (Phase 6)
+
+| Action | Who | Enforced by |
+|---|---|---|
+| See the year list, class/teacher timetables | `timetable.view` + scope below | route + `TimetableViewService` |
+| Edit the draft (create / edit / move / remove lessons, start a draft) | `timetable.manage`: administrators everywhere; a class teacher **only in sections they are class teacher of** (current year), and only if the administrator grants it (default: not granted, D‑17) | route + `TimetableServiceBase.checkManageSection` on **every** operation (both the section of a new lesson and the section of an existing one) |
+| Publish, discard the draft | `timetable.publish` — administrators only; ceiling NONE, so it can never be granted to a teacher or class teacher | route + service |
+
+View scope (`timetable.view`):
+- **Administrator** — every section and every teacher.
+- **Teacher** — their own timetable (`/timetable/me`; another teacher's → 403) and the class timetables of sections they teach in the **published** timetable of that year.
+- **Class teacher** — additionally the section(s) they are class teacher of.
+- **Student** — their own placement's timetable (`/timetable/students/:id` with `checkStudentScope`; another student → 403). No student page yet (portal: Phase 9).
+- Lessons on a date (`/timetable/lessons`) — a teacher sees only their own; an administrator may name any teacher.
+
+Draft data is visible only to holders of `timetable.manage` (scoped as above); every view for everyone else reads the published version.

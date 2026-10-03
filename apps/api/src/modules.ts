@@ -5,6 +5,7 @@ import { configModule } from './modules/config/config.module.js';
 import { peopleModule } from './modules/people/people.module.js';
 import { schoolModule } from './modules/school/school.module.js';
 import { systemModule } from './modules/system/system.module.js';
+import { timetableModule } from './modules/timetable/timetable.module.js';
 
 /**
  * Registered feature modules. Each later phase adds its module here — and only once the feature
@@ -17,5 +18,6 @@ export function featureModules(deps: AppDependencies): FeatureModule[] {
     authModule(deps),
     configModule(deps),
     peopleModule(deps),
+    timetableModule(deps),
   ];
 }

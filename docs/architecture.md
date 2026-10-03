@@ -386,3 +386,38 @@ Lists return `{ items, page, pageSize, total }` (page size ≤ 100).
 - Lists keep search/filter/sort/page in the address; tables become stacked cards on phones. Profiles are compact (initials avatar, identifiers, placement, status and account badges, actions) with "All details" in a dialog; academic history is a table that only grows.
 - Forms are grouped (Admission, Personal, Parent/guardian, Contact, Address, Sign‑in account) with required marks; promotion is a three‑step page with per‑student outcome, bulk "next class", review and confirmation.
 - `CredentialNotice` shows a temporary password once with a copy button; it is held only in component state.
+
+## 14. Timetable (Phase 6)
+
+### The relationship
+`Teacher → Subject` (Phase 5, `teacher_subjects`) says what a teacher **can** teach. A **timetable entry** says where and when they **do**: Teacher + Subject + Class/Section + Day + Period, inside a timetable **version** of one academic year. Class, teacher and student timetables — and from Phase 7 the attendance context — are derived from the **published** version; nothing is stored twice.
+
+```
+Teacher ──(teacher_subjects)──▶ Subject
+   │                               │
+   └──────▶ timetable_entries ◀────┘   (+ section, day, period, version → academic year)
+                     │
+      class / teacher / student timetables  ·  Phase 7: Date + Period + Class/Section + Subject + Teacher
+```
+
+### API (`modules/timetable/`)
+- `TimetableServiceBase` (`timetable-service.ts`): authorize + one-transaction `write` with audit (like Phase 4/5), the week frame (configured working days + periods incl. breaks), view mappers and audit snapshots (`describeEntry`: year, day, period, class/section, subject, teacher — names included).
+- `timetable-rules.ts`: every rule in one place — `checkSlot` (working day; period of this year; not a break; active), `checkTeaching` (subject active; teacher active; Teacher → Subject exists), `checkFree` (conflicts A and B against the draft), `draftIssues` (whole-draft re-check before publishing). Database unique indexes back up A and B.
+- `TimetableEditorService`: editor view per section, options (scoped sections, active subjects, active teachers with their subjects), version history, start draft (copy of the live version), **apply a batch of changes** (create / update / move / remove, in order, in one transaction; `dryRun` validates and rolls back), publish (atomic: supersede + publish), discard draft.
+- `TimetableViewService`: years list, viewable sections, class timetable, teacher timetable (`/timetable/me`), **student timetable foundation** (student → ACTIVE enrolment → section → published entries), **lessons on a date** (Phase 7 foundation).
+- Repository: `TimetableRepository` (`timetable.repository.ts`; Kysely in `data/kysely/repositories/timetable/`). Guards added to Phase 4/5 services: a period used by any timetable cannot be deleted; a Teacher → Subject pair used by the draft or live timetable cannot be removed; a teacher with timetable history cannot be deleted.
+
+### Endpoints
+| Area | Endpoints | Permission |
+|---|---|---|
+| Editing | `GET /timetable/years/:yearId/editor?sectionId=`, `GET …/options`, `GET …/versions`, `POST …/draft`, `POST …/draft/changes` `{ sectionId, operations[], dryRun }` | `timetable.manage` (Class Teacher: own section only) |
+| Publishing | `POST /timetable/years/:yearId/draft/publish`, `DELETE /timetable/years/:yearId/draft` | `timetable.publish` (administrators) |
+| Views | `GET /timetable/years`, `GET /timetable/years/:yearId/sections`, `GET …/sections/:sectionId`, `GET …/teachers/:teacherId`, `GET /timetable/me`, `GET /timetable/students/:studentId`, `GET /timetable/lessons?date=&teacherId=` | `timetable.view` + scope |
+
+A refused change answers 409 with the reason and `details[].path = body.operations.<i>.<field>`; a refused publish answers 409 with one detail per problem lesson (`entries.<entryId>`).
+
+### Web (`features/timetable/`)
+- Sidebar **Timetable** (staff only; students get theirs with the portal) → `/timetable/my` (teachers), `/timetable/classes`, `/timetable/edit` (holders of `timetable.manage`), with a sub-navigation.
+- `WeekGrid`: wide screens show days × configured periods (times from the configuration, breaks shaded and narrow, empty periods "Free"); the grid scrolls inside its own box if needed, never the page. Phones (< 768 px) show one day at a time as a list with day tabs.
+- Editor: unsaved changes are held in the page and **validated by the server (dry run) before they are shown**, so a refused drop/edit never changes the grid. Desktop drag-and-drop uses native HTML5 drag events (no library); every action is also available by click/tap through the lesson form (class/section → day → period → subject → teacher filtered by Teacher → Subject). Save draft sends the batch for real; Publish requires no unsaved changes and asks for confirmation; problems reported by the server are listed. Remove asks first. A version history table shows who created and published each version.
+- No "Take Attendance" action yet — it is added in Phase 7 together with attendance (no placeholder screens).

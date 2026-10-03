@@ -35,6 +35,9 @@ export interface Database {
   achievement_categories: CategoriesTable;
   behaviour_rating_labels: BehaviourRatingLabelsTable;
   role_permission_overrides: RolePermissionOverridesTable;
+  // Phase 6 — timetable
+  timetable_versions: TimetableVersionsTable;
+  timetable_entries: TimetableEntriesTable;
 }
 
 export interface AttendancePolicyTable extends Timestamps {
@@ -286,4 +289,30 @@ export interface AuditLogsTable {
   after_json: string | null;
   reason: string | null;
   request_id: string | null;
+}
+
+// Phase 6 (0007) — timetable
+export interface TimetableVersionsTable extends Timestamps {
+  id: string;
+  academic_year_id: string;
+  version_number: number;
+  status: string;
+  created_by: string | null;
+  updated_by: string | null;
+  published_by: string | null;
+  published_at: string | null;
+  superseded_at: string | null;
+}
+
+export interface TimetableEntriesTable extends Timestamps {
+  id: string;
+  version_id: string;
+  academic_year_id: string;
+  day: string;
+  period_id: string;
+  section_id: string;
+  subject_id: string;
+  teacher_id: string;
+  created_by: string | null;
+  updated_by: string | null;
 }

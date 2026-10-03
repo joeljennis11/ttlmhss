@@ -69,8 +69,8 @@ export function HomePage() {
         ) : (
           <Panel className={styles.next}>
             <EmptyState icon={BookOpen} title="Your school tools will appear here">
-              TTLMHSS is being built step by step. Pages for your role, such as timetable,
-              attendance and results, will be added to the menu as each one is ready.
+              TTLMHSS is being built step by step. Pages for your role, such as attendance and
+              results, will be added to the menu as each one is ready.
             </EmptyState>
           </Panel>
         )}

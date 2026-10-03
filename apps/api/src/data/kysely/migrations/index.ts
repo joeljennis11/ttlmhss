@@ -5,6 +5,7 @@ import { migration0003Authentication } from './0003_authentication.js';
 import { migration0004SchoolLogo } from './0004_school_logo.js';
 import { migration0005SchoolConfiguration } from './0005_school_configuration.js';
 import { migration0006People } from './0006_people.js';
+import { migration0007Timetable } from './0007_timetable.js';
 
 /**
  * Ordered migration registry. Names sort lexically and are applied in that order.
@@ -22,4 +23,5 @@ export const migrations: Record<string, Migration> = {
   '0004_school_logo': migration0004SchoolLogo,
   '0005_school_configuration': migration0005SchoolConfiguration,
   '0006_people': migration0006People,
+  '0007_timetable': migration0007Timetable,
 };

@@ -24,7 +24,7 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 
 | ID | Question | Proposed default | Status |
 |---|---|---|---|
-| D‑05 | How do mid‑year timetable changes relate to past attendance? | Versioned timetable with effective‑from date; attendance snapshots teacher/subject | Proposed |
+| D‑05 | How do mid‑year timetable changes relate to past attendance? | Versioned timetable; attendance snapshots teacher/subject. **Phase 6:** versions implemented (DRAFT/PUBLISHED/SUPERSEDED, effective from the publish moment); the snapshot is built with attendance in Phase 7 | Partly adopted (Phase 6) |
 | D‑06 | Can a Subject Teacher overwrite `L`/`C` set by the Class Teacher? | No — L/C are read‑only to subject teachers | Proposed |
 | D‑07 | `0` represents both "scored zero" and "absent" — should absence be distinguishable in reports? | Keep `0` as the visible value; optionally store an internal absent flag so reports can count absentees. Needs user decision | Open |
 | D‑08 | Class‑teacher cardinality | **One ACTIVE class teacher per section per year** (enforced; replacing is deliberate). A teacher may be class teacher of several sections (Phase 5 spec: do not assume one) | Adopted in Phase 5 |
@@ -36,7 +36,7 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑14 | Request routing | Class Teacher of the student's section; Admin sees all | Proposed |
 | D‑15 | "Permissions" management: fixed role map or Admin‑editable toggles; Class Teacher audit visibility | Phase 2: code‑defined defaults. **Phase 4:** Admin can adjust Teacher / Class Teacher / Student grants within fixed per‑permission ceilings (no escalation; ADMIN fixed); stored as overrides. Class Teacher has no `audit.view` by default (grantable). User‑specific permissions not implemented (needs Phase 5 account management) | Adopted in Phase 4 — please confirm |
 | D‑16 | Class Teacher student‑management scope (edit which fields? promote?) | Phase 5: Class Teachers may view and edit the details (not identifiers or placement) of students in their own section through the API; admission, class changes, promotion, deactivation and deletion are administrator‑only (ceilings). No CT screens yet | Adopted — please confirm |
-| D‑17 | Can Class Teacher edit the class timetable or only view? | View only; Admin edits (avoids cross‑class teacher conflicts) | Open |
+| D‑17 | Can Class Teacher edit the class timetable or only view? | **Phase 6:** view by default. The administrator may grant `timetable.manage` to Class Teachers (Permissions page); they can then edit the **draft** of their own class only (enforced per change on the server). Publishing stays administrator‑only (`timetable.publish`, never grantable) | Adopted — please confirm the default |
 | D‑21 | Are sections defined per academic year or permanently? | Schema: sections are permanent (with status); the per‑year link comes from enrolments and class‑teacher assignments. Revisit if sections must differ by year | Adopted provisionally |
 | D‑29 | Period structure scope | Periods/breaks belong to an academic year, so next year's timings can change without rewriting history | Adopted |
 | D‑24 | Substitute / ad‑hoc teacher for a period (teacher absent) — who takes attendance? | Not in spec. Proposal: Class Teacher or Admin can mark; substitution feature only if requested | Open |
@@ -77,6 +77,17 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑42 | How first passwords reach students/teachers | New accounts get a random temporary password that is hashed and never shown (nobody knows it); the administrator presses "Issue temporary password", sees it once and hands it over. No email/SMS | Adopted — please confirm |
 | D‑43 | Promotion dates | Promoted/not promoted: source placement ends on the source year's last day, new one starts on the target year's first day. Leavers: today (or source year end) | Adopted — please confirm |
 | D‑44 | Mid‑year transfer across academic years | Not allowed: class changes stay within one year; moving into another year is promotion | Adopted |
+
+## Added in Phase 6
+
+| ID | Question | Current default | Status |
+|---|---|---|---|
+| D‑45 | One timetable per year vs per section | One version per **academic year** covering every class (one draft, one live). Publishing is school‑wide, which keeps teacher clashes across classes checkable in one place | Adopted — please confirm |
+| D‑46 | What "Save draft" means | Edits are validated by the server as they are made (dry run) and held in the page; **Save draft** stores the batch atomically; **Publish** needs no unsaved changes. Leaving the page with unsaved changes warns first | Adopted |
+| D‑47 | Empty or invalid drafts | Publishing an empty draft is refused (it would blank the live timetable); lessons made invalid by later configuration changes are listed and block publishing | Adopted — please confirm |
+| D‑48 | Teacher deactivation while timetabled | Allowed (Phase 5 behaviour unchanged); the lessons are flagged in the draft and block the next publish until reassigned. The live timetable keeps showing them until republished | Adopted — please confirm |
+| D‑49 | Teacher access to students of classes they teach | Not widened in Phase 6: the published timetable gives teaching scope for timetable views only; whether it also opens student lists/attendance is decided with attendance in Phase 7 | Open (Phase 7) |
+| D‑50 | Students' timetable page | API foundation only (`/timetable/students/:id`, own placement); the page comes with the student portal (Phase 9) | Adopted |
 
 ## Pending inputs from the user
 

@@ -2,7 +2,7 @@
 
 School Management System for **Thiruthangal Lions Matriculation Higher Secondary School**.
 
-**Status:** Phase 5 complete — foundation, data layer, authentication, role-based access control, school branding, sign-in, the application shell and the Admin **School setup** area (school details, academic years, classes and sections, subjects, periods and breaks, attendance locking, grade scales, exams and exam subjects, behaviour and achievement categories, role permissions). Phase 5 added **student and teacher management**: admission with accounts, academic history, class changes, promotion, teachers with Teacher → Subject, and class‑teacher assignments. Timetable and later modules are not built yet.
+**Status:** Phase 6 complete — foundation, data layer, authentication, role-based access control, school branding, sign-in, the application shell and the Admin **School setup** area (school details, academic years, classes and sections, subjects, periods and breaks, attendance locking, grade scales, exams and exam subjects, behaviour and achievement categories, role permissions). Phase 5 added **student and teacher management**: admission with accounts, academic history, class changes, promotion, teachers with Teacher → Subject, and class‑teacher assignments. Phase 6 added the **timetable**: per‑year draft → publish versions, server‑side conflict prevention, a drag‑and‑drop week grid (day list on phones) and class/teacher timetables derived from the published version. Attendance and later modules are not built yet.
 
 ## Requirements
 - Node.js ≥ 22.12 (`.nvmrc`)

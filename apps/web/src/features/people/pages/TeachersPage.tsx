@@ -72,7 +72,7 @@ export function TeachersPage() {
     <>
       <PageHeader
         title="Teachers"
-        description="Add teachers, the subjects they teach and their class-teacher roles. Which classes they teach comes from the timetable (a later phase)."
+        description="Add teachers, the subjects they teach and their class-teacher roles. Which classes they teach comes from the timetable."
         actions={
           <>
             {can('class_teacher_assignments.manage') && (

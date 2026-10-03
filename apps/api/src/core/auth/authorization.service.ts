@@ -18,8 +18,10 @@ const NO_ACCESS = 'You do not have access to this record.';
  *   ADMIN          — school-wide.
  *   STUDENT        — only their own student record and the section(s) they are enrolled in.
  *   CLASS_TEACHER  — students currently enrolled in, and the sections of, their class(es).
- *   TEACHER        — teaching scope comes from the published timetable (Phase 6). Until then a
- *                    plain teacher has NO student/section scope, so these checks deny.
+ *   TEACHER        — teaching scope comes from the published timetable. Phase 6 uses it for
+ *                    timetable views only (TimetableViewService); widening student/section access
+ *                    to taught classes is decided with attendance in Phase 7. Until then a plain
+ *                    teacher has NO student/section scope here, so these checks deny.
  */
 export class AuthorizationService {
   constructor(private readonly scopes: AuthScopeRepository) {}

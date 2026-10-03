@@ -4,7 +4,8 @@ import type { ScopeRef } from '@ttlmhss/shared';
  * Reads the assignment data that defines a user's record-level scope. Resolved fresh on every
  * request, so assignment changes take effect immediately.
  *
- * Phase 6 adds teaching scope (sections/subjects/periods from the published timetable).
+ * Teaching scope (sections a teacher teaches) is read from the published timetable through
+ * TimetableRepository (Phase 6); Phase 7 decides whether it also widens student access.
  */
 export interface AuthScopeRepository {
   /** Sections the teacher is ACTIVE class teacher of, in the CURRENT academic year. */

@@ -1,6 +1,14 @@
 import type { ReactElement } from 'react';
 import type { EffectiveRole, Permission } from '@ttlmhss/shared';
-import { GraduationCap, House, KeyRound, Settings, Users, type LucideIcon } from 'lucide-react';
+import {
+  CalendarDays,
+  GraduationCap,
+  House,
+  KeyRound,
+  Settings,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 import { HomePage } from '../pages/HomePage';
 import { AccountPasswordPage } from '../pages/AccountPasswordPage';
 import { ADMIN_PAGES, type AdminPageId } from '../features/admin/admin-pages';
@@ -25,6 +33,9 @@ import { StudentsPage } from '../features/people/pages/StudentsPage';
 import { TeacherFormPage } from '../features/people/pages/TeacherFormPage';
 import { TeacherProfilePage } from '../features/people/pages/TeacherProfilePage';
 import { TeachersPage } from '../features/people/pages/TeachersPage';
+import { TimetableHome } from '../features/timetable/TimetableLayout';
+import { TimetableEditorPage } from '../features/timetable/pages/EditorPage';
+import { ClassTimetablePage, MyTimetablePage } from '../features/timetable/pages/ViewPages';
 
 export type NavSection = 'main' | 'management' | 'admin' | 'account';
 
@@ -71,6 +82,35 @@ export const SHELL_ROUTES: readonly ShellRoute[] = [
     title: 'Home',
     element: <HomePage />,
     nav: { label: 'Home', icon: House, section: 'main' },
+  },
+  // Phase 6 — Timetable (staff screens; the student timetable view arrives with the portal).
+  {
+    path: 'timetable',
+    title: 'Timetable',
+    element: <TimetableHome />,
+    permission: 'timetable.view',
+    roles: ['ADMIN', 'TEACHER'],
+    nav: { label: 'Timetable', icon: CalendarDays, section: 'main', end: false },
+  },
+  {
+    path: 'timetable/my',
+    title: 'My timetable',
+    element: <MyTimetablePage />,
+    permission: 'timetable.view',
+    roles: ['TEACHER'],
+  },
+  {
+    path: 'timetable/classes',
+    title: 'Class timetables',
+    element: <ClassTimetablePage />,
+    permission: 'timetable.view',
+    roles: ['ADMIN', 'TEACHER'],
+  },
+  {
+    path: 'timetable/edit',
+    title: 'Edit timetable',
+    element: <TimetableEditorPage />,
+    permission: 'timetable.manage',
   },
   // Phase 5 — Student & teacher management (administrator screens; permissions are admin-only
   // management actions, so the menu shows them to administrators).

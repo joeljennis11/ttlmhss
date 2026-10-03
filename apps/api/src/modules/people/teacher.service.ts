@@ -132,6 +132,7 @@ export class TeacherService extends PeopleService {
   /** Only a record created by mistake: never class teacher, account never used. */
   private async isDeletable(teacher: TeacherRecord): Promise<boolean> {
     if ((await this.repos.classTeachers.countForTeacher(teacher.id)) > 0) return false;
+    if ((await this.repos.timetable.countForTeacher(teacher.id)) > 0) return false;
     return this.repos.personAccounts.isUnused(teacher.userId);
   }
 
@@ -242,10 +243,11 @@ export class TeacherService extends PeopleService {
       const teacher = required(await repos.teachers.find(id), 'teacher');
       if (
         (await repos.classTeachers.countForTeacher(id)) > 0 ||
+        (await repos.timetable.countForTeacher(id)) > 0 ||
         !(await repos.personAccounts.isUnused(teacher.userId))
       ) {
         throw new ConflictError(
-          `${teacher.fullName} already has history (class teacher assignments or account use), so the record cannot be deleted. Deactivate it instead.`,
+          `${teacher.fullName} already has history (class teacher assignments, timetable lessons or account use), so the record cannot be deleted. Deactivate it instead.`,
         );
       }
       const subjects = (await repos.teacherSubjects.forTeachers([id])).get(id) ?? [];
@@ -301,6 +303,13 @@ export class TeacherService extends PeopleService {
         throw required(null, 'subject assignment');
       }
       const subject = await repos.subjects.find(subjectId);
+      // BR-TT-02: the draft or live timetable still has this teacher teaching this subject.
+      const lessons = await repos.timetable.countLiveForTeacherSubject(teacherId, subjectId);
+      if (lessons > 0) {
+        throw new ConflictError(
+          `${subject?.name ?? 'This subject'} is in the timetable for this teacher (${lessons} lesson${lessons === 1 ? '' : 's'}). Change those lessons in the timetable first.`,
+        );
+      }
       await repos.teacherSubjects.remove(teacherId, subjectId);
       await audit({
         action: 'teacher.subject_removed',

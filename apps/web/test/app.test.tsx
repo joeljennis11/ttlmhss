@@ -63,6 +63,7 @@ describe('routing and role-aware navigation', () => {
     expect(await screen.findByText('accounts module content')).toBeInTheDocument();
     expect(navLinks()).toEqual([
       'Home',
+      'Timetable',
       'Accounts',
       'Students',
       'Teachers',

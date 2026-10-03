@@ -220,7 +220,7 @@ function Profile({
       <div className={styles.grid2}>
         <Panel
           title="Subjects"
-          description="Teacher → Subject only. The classes and periods they teach are set in the timetable (a later phase)."
+          description="Teacher → Subject only. The classes and periods they teach are set in the timetable."
         >
           {teacher.subjects.length === 0 ? (
             <p className={admin.muted}>No subjects assigned yet.</p>

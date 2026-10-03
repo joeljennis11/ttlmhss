@@ -23,7 +23,7 @@ Authoritative definitions of the domain rules. Each rule has an ID so code, test
 - **BR‑TCH‑03** A teacher's classes are derived from timetable assignments, not stored as a permanent binding.
 - **BR‑TCH‑04** A teacher becomes a **Class Teacher** by a class‑teacher assignment: (teacher, class‑section, academic year). Default proposal: at most one class teacher per section per year; a teacher may be class teacher of at most one section per year. **⚠ Open (D‑08)**
 
-- **BR‑TCH‑05 (Phase 5) Teacher → Subject** is only teacher + subject (no class, no period). The subject must exist and be active; the same pair cannot be added twice; many teachers may share a subject. Removing a pair is audited. Classes and periods come from timetable assignments (Teacher + Subject + Class/Section + Day + Period) in Phase 6, which must also check that the pair exists (BR‑TT‑02).
+- **BR‑TCH‑05 (Phase 5) Teacher → Subject** is only teacher + subject (no class, no period). The subject must exist and be active; the same pair cannot be added twice; many teachers may share a subject. Removing a pair is audited. Classes and periods come from timetable assignments (Teacher + Subject + Class/Section + Day + Period, Phase 6), which check that the pair exists (BR‑TT‑02); a pair used by the draft or live timetable cannot be removed (BR‑TT‑16).
 - **BR‑TCH‑06 (Phase 5) Class teacher assignment** = teacher + academic year + section. At most one ACTIVE per section per year (database‑enforced). Assigning to a section that already has a class teacher requires an explicit *replace*: the old assignment is ended (kept) and the new one starts. A teacher may hold more than one section (not restricted, D‑08). Only active teachers, active sections and non‑closed years. Deactivating a teacher ends their ACTIVE assignments.
 
 ## Timetable (BR‑TT)
@@ -36,9 +36,16 @@ Authoritative definitions of the domain rules. Each rule has an ID so code, test
 - **BR‑TT‑06** Conflicts are validated in the backend on save **and** on publish; the UI shows them but is not the enforcement point.
 - **BR‑TT‑07** Workflow **DRAFT → SAVE → PUBLISH**. Edits accumulate in a draft; saving persists the draft without affecting live views; publishing makes it live atomically.
 - **BR‑TT‑08** Only the published timetable drives live views and attendance.
-- **BR‑TT‑09** Publishing a new version must not rewrite past attendance. Attendance records keep the teacher/subject context that applied when they were taken (versioned timetable with effective‑from date). **⚠ Open (D‑05)**
-- **BR‑TT‑10** The primary action on a period is **Take Attendance**. Marks are never period‑based.
+- **BR‑TT‑09** Publishing a new version must not rewrite past attendance. Attendance records keep the teacher/subject context that applied when they were taken. *Phase 6:* every publish creates a new version; old versions become SUPERSEDED with their lessons intact, and `published_at` is the version's effective‑from moment. Attendance (Phase 7) snapshots teacher/subject (D‑05).
+- **BR‑TT‑10** The primary action on a period is **Take Attendance**. Marks are never period‑based. *(The action is added with attendance in Phase 7; it is not shown before it works.)*
 - **BR‑TT‑11** Periods (number, start/end time, breaks, active/inactive) are Admin‑configured. Breaks and inactive periods cannot hold assignments.
+- **BR‑TT‑12 (Phase 6)** Teacher → Subject is **not** a timetable: it only says what a teacher can teach. Timetable entries (Teacher + Subject + Class/Section + Day + Period) are the only link between a teacher and a class; the same teacher/subject may appear in many classes and periods.
+- **BR‑TT‑13 (Phase 6)** A lesson needs: an existing, open (not CLOSED) academic year with a draft; a working day of that year; an active teaching period of that year (not a break); an active class and section; an active subject; an active teacher who is assigned that subject. Each is checked on the server for every change (conflicts A–F) and again for the whole draft on publish.
+- **BR‑TT‑14 (Phase 6)** The published timetable is never edited. Changes always go through the year's single draft (copied from the published version); publishing is explicit, validates the whole draft, and replaces the live version atomically (old version → SUPERSEDED). A failed publish changes nothing.
+- **BR‑TT‑15 (Phase 6)** A batch of edits is all‑or‑nothing: changes apply in order and any refused change rejects the whole batch with the reason and its position.
+- **BR‑TT‑16 (Phase 6)** History is protected: a period, section, subject or teacher used by any timetable version cannot be deleted (deactivate instead); a Teacher → Subject pair used by the draft or live timetable cannot be removed; a closed year's timetable cannot change.
+- **BR‑TT‑17 (Phase 6)** If the configuration changes after a lesson was added (period deactivated, working day removed, teacher/subject deactivated, subject unassigned), the lesson is kept and shown, listed as a problem, and blocks publishing until fixed.
+- **BR‑TT‑18 (Phase 6)** The timetable is the future source of the attendance context: for a date, the published entry for that weekday gives Date + Period + Class/Section + Subject + Teacher (`/timetable/lessons`).
 
 ## Attendance (BR‑ATT)
 

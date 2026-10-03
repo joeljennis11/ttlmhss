@@ -101,7 +101,16 @@ export const PERMISSION_INFO: Readonly<Record<Permission, PermissionInfo>> = Obj
     grantableTo: NONE,
   },
   'timetable.view': { label: 'View timetables', group: 'Timetable', grantableTo: ALL },
-  'timetable.manage': { label: 'Edit and publish timetables', group: 'Timetable', grantableTo: CT },
+  'timetable.manage': {
+    label: 'Edit the draft timetable of their own class',
+    group: 'Timetable',
+    grantableTo: CT,
+  },
+  'timetable.publish': {
+    label: 'Publish or discard the timetable',
+    group: 'Timetable',
+    grantableTo: NONE,
+  },
   'attendance.view': { label: 'View attendance', group: 'Attendance', grantableTo: ALL },
   'attendance.mark': {
     label: 'Mark attendance (present / absent)',

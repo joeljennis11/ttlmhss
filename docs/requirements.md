@@ -77,7 +77,10 @@ Admin configures:
 - **R‑7.4** Mandatory conflict prevention: teacher double‑booking; class/section period collision.
 - **R‑7.5** Editing: drag‑and‑drop on desktop; tap period → select assignment → place on mobile.
 - **R‑7.6** Draft → Save → Publish. Many edits before publish; only published timetable is live.
-- **R‑7.7** Each period's primary action is **Take Attendance**.
+- **R‑7.7** Each period's primary action is **Take Attendance**. *(Phase 6: not shown yet — the action appears in Phase 7 when attendance exists; the timetable already exposes the context it needs, R‑7.10.)*
+- **R‑7.8** *(Phase 6)* Timetables belong to an academic year; each year has at most one draft and one published version, and published versions are kept as history (never edited).
+- **R‑7.9** *(Phase 6)* Breaks and inactive periods never hold lessons; the grid uses the Admin‑configured periods, breaks and working days of the year.
+- **R‑7.10** *(Phase 6)* For any calendar date the published timetable yields each lesson's Date + Period + Class/Section + Subject + Teacher (the Phase 7 attendance context).
 
 ## 8. Attendance (Phase 7)
 

@@ -158,10 +158,15 @@ export class DayStructureService extends ConfigService {
     return this.get(ctx, existing.academicYearId);
   }
 
-  /** Removes a period or break. Later phases' timetable/attendance rows will block this (history). */
+  /** Removes a period or break. Not once any timetable (draft, live or history) uses it. */
   async remove(ctx: RequestContext, id: string): Promise<DayStructureView> {
     const existing = required(await this.repos.periods.find(id), 'period');
     await this.write(ctx, async ({ repos, now, audit }) => {
+      if ((await repos.timetable.countForPeriod(id)) > 0) {
+        throw new ConflictError(
+          `${existing.label} is used by a timetable, so it cannot be deleted. Deactivate it instead.`,
+        );
+      }
       await repos.periods.delete(id);
       await repos.periods.resequence(existing.academicYearId, now);
       await audit({

@@ -66,9 +66,9 @@ erDiagram
 - **Enrolment** — Student + Section + AcademicYear + roll number + status (Active, Promoted, Transferred, Not Promoted, Left) + dates. **The key history entity**: attendance, marks and behaviour reference the enrolment, so moving a student never rewrites the past.
 - **PromotionRecord** — from‑enrolment → to‑enrolment, outcome, actor, date (could be folded into Enrolment status + audit).
 
-### Timetable
-- **TimetableVersion** — per AcademicYear (optionally per Section): status Draft / Published / Superseded, effective‑from date, published by/at.
-- **TimetableSlot** — Version + Section + Day + Period + Subject + Teacher. Uniqueness within a published version: (Section, Day, Period) and (Teacher, Day, Period).
+### Timetable (built in Phase 6 — §5c)
+- **TimetableVersion** — per AcademicYear: status Draft / Published / Superseded, version number, created/updated/published by and at, superseded at. The publish time is the version's effective‑from moment.
+- **TimetableEntry** — Version + Day + Period + Section + Subject + Teacher. Uniqueness within a version: (Section, Day, Period) and (Teacher, Day, Period).
 
 ### Attendance
 - **AttendanceSession** — Date + Section + Period; snapshot of Subject + Teacher from the timetable slot in force; cancelled flag + reason; marked‑by/at.
@@ -94,7 +94,7 @@ erDiagram
 ## 3. Key relationships & integrity rules
 
 1. **Student vs Enrolment.** Student is the permanent person; Enrolment is "this student in this section in this year". All academic records hang off Enrolment → history survives promotion and transfer.
-2. **Teacher's classes are derived** from TimetableSlot, not stored on Teacher.
+2. **Teacher's classes are derived** from timetable entries (published version), not stored on Teacher.
 3. **Timetable uniqueness** (no teacher double‑booking, no section collision) is enforced by the service *and* by database unique constraints where the provider allows.
 4. **Attendance snapshots context.** AttendanceSession stores the teacher/subject that applied at the time, so republishing the timetable never alters past attendance.
 5. **Raw marks are immutable inputs**; normalized values and grades are derived from configuration.
@@ -182,7 +182,25 @@ Percentages are stored as integer **basis points** so 33.33 % is exact on every 
 
 **Academic history** = `enrolments` (student × year × section, roll number, status ACTIVE/PROMOTED/NOT_PROMOTED/TRANSFERRED/LEFT, started_on/ended_on, who). "Current class" = the ACTIVE enrolment of the current year. Later attendance, marks and behaviour rows must reference `enrolments.id` so the year/section context is exact.
 
-**Teacher → Subject** = `teacher_subjects` (teacher, subject) only. **Class teacher** = `class_teacher_assignments` (teacher, year, section, status, assigned_on, ended_on). **Timetable assignment** (Phase 6) will be a separate table: teacher + subject + section + day + period in a timetable version. The three are deliberately not merged.
+**Teacher → Subject** = `teacher_subjects` (teacher, subject) only. **Class teacher** = `class_teacher_assignments` (teacher, year, section, status, assigned_on, ended_on). **Timetable assignment** (Phase 6) is a separate table: teacher + subject + section + day + period in a timetable version (§5c). The three are deliberately not merged.
+
+### 5c. Phase 6 additions (`0007_timetable`)
+
+Two relationships that must never be confused:
+
+| Relationship | Table | Meaning |
+|---|---|---|
+| Teacher → Subject | `teacher_subjects` (Phase 5, unchanged) | What a teacher **can** teach. No class, no period, no year. |
+| Teacher + Subject + Class/Section + Day + Period | `timetable_entries` (Phase 6) | Where and when a teacher **does** teach that subject, in one timetable version of one academic year. The only place a teacher meets a class. |
+
+| Table | Columns | Rules |
+|---|---|---|
+| `timetable_versions` | id, academic_year_id → academic_years, version_number, status ∈ DRAFT/PUBLISHED/SUPERSEDED, created_by / updated_by / published_by → users, published_at, superseded_at, timestamps | Unique (year, version_number). **Partial unique indexes: at most one DRAFT and one PUBLISHED version per year.** CHECK: a DRAFT has no published_at; PUBLISHED/SUPERSEDED have one. |
+| `timetable_entries` | id, version_id → timetable_versions, academic_year_id → academic_years, day ∈ MON…SUN, period_id → periods, section_id → sections, subject_id → subjects, teacher_id → teachers, created_by / updated_by → users, timestamps | **Unique (version, section, day, period)** — no class collision (BR‑TT‑05). **Unique (version, teacher, day, period)** — no teacher double‑booking (BR‑TT‑04). Indexes on (teacher, subject) and (period). All FKs ON DELETE RESTRICT. |
+
+- **Workflow:** a draft is created as a copy of the published entries (new ids) or empty; edits change only the draft; publishing marks the old PUBLISHED version SUPERSEDED and the draft PUBLISHED in one transaction. Versions are never rewritten afterwards, so the history of what was live, when and by whom, is complete. Only an unpublished draft can be deleted ("discard draft", audited with its lessons).
+- **History protection:** a period, section, subject or teacher used by any version (history included) cannot be deleted (FK RESTRICT; the services explain it). A Teacher → Subject pair used by the draft or live timetable cannot be removed. Academic years with a timetable count as "in use".
+- **Derived, never stored twice:** class, teacher and student timetables are queries over the PUBLISHED version (student → ACTIVE enrolment → section → entries). The Phase 7 attendance context (Date + Period + Class/Section + Subject + Teacher) is derived from the published entry for the date's weekday; attendance will snapshot teacher/subject (D‑05).
 
 ## 6. Mapping of the functional entity list to the schema
 
@@ -198,7 +216,7 @@ Percentages are stored as integer **basis points** so 33.33 % is exact on every 
 | StudentAcademicHistory | `enrolments` | Phase 1 ✔ |
 | Configurable student profile fields | Not built (fixed groups, D‑41); would be `student_field_definitions` + values | Open |
 | AuditLog | `audit_logs` | Phase 1 ✔ |
-| Timetable, TimetableAssignment | `timetable_versions` (DRAFT/PUBLISHED/SUPERSEDED, effective‑from) + `timetable_slots` with unique (version, section, day, period) and (version, teacher, day, period) | Phase 6 |
+| Timetable, TimetableAssignment | `timetable_versions` (DRAFT/PUBLISHED/SUPERSEDED, published at = effective from) + `timetable_entries` with unique (version, section, day, period) and (version, teacher, day, period) (§5c) | Phase 6 ✔ |
 | AttendanceRecord, AttendanceAudit | `attendance_sessions` (date + section + period, snapshot of teacher/subject, cancelled flag) + `attendance_records` (session + enrolment + status ∈ `- P A L C`, leave reason) + `attendance_audit` | Phase 7 |
 | Exam, ExamSubject, Mark, GradeRule, ExamWeightage | **Phase 4 ✔:** `exams` (incl. weightage), `exam_subjects` (per exam × class × subject), `grade_schemes`/`grade_bands`. **Phase 8:** `mark_sheets` (DRAFT/SUBMITTED/UNLOCKED — drives subject‑wise visibility), `mark_entries` (raw marks; NULL = `-`), `grade_schemes`/`grade_bands`, `mark_audit` | Phase 8 |
 | BehaviourCategory, BehaviourRating, BehaviourAssessment | **Phase 4 ✔:** `behaviour_categories`, `behaviour_rating_labels`. **Phase 9:** `behaviour_assessments` (enrolment × exam, remark) + `behaviour_ratings` (category, 1–5 CHECK) | Phase 9 |
@@ -217,4 +235,4 @@ Several of them depend on decisions that are still open — streams/electives (D
 - **No sample data.** The only seeded row is the school identity supplied by the school. Tests create clearly synthetic fixtures in throwaway in‑memory databases.
 
 ## 8. Performance notes
-Indexes exist for the expected heavy lookups: student/teacher name search, enrolments by section+year and by student, teacher's class‑teacher assignments, audit by entity/actor/time. Attendance (the highest‑volume table) will be indexed on (section, date), (enrolment, date) and the unique session key in Phase 7. No further optimisation now.
+Indexes exist for the expected heavy lookups: student/teacher name search, enrolments by section+year and by student, teacher's class‑teacher assignments, timetable entries by version+section/teacher slot, teacher+subject and period, audit by entity/actor/time. Attendance (the highest‑volume table) will be indexed on (section, date), (enrolment, date) and the unique session key in Phase 7. No further optimisation now.

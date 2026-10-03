@@ -32,7 +32,7 @@ Development happens in explicit, user‑unlocked phases:
 - Do not silently introduce major new requirements.
 - Do not make irreversible architectural decisions the spec leaves open — ask. Open decisions are tracked in `docs/decisions.md`.
 
-**Current phase status:** Phase 5 complete (student + teacher management). Waiting for Phase 6 instruction.
+**Current phase status:** Phase 6 complete (timetable). Waiting for Phase 7 instruction.
 
 ## 2. Workflow for every phase
 
@@ -108,6 +108,7 @@ Real generated documents only: A4, official logo, school name, academic year, st
 - **UI (Phase 3):** add pages to `apps/web/src/app/routes.tsx` (`SHELL_ROUTES`) with `permission`/`roles` and an optional `nav` entry — the menu is generated from it; never add menu entries for unbuilt modules. Use the tokens in `styles/tokens.css` and the components in `components/ui` and `components/layout`; school name and logo come from `useBranding()` / `<SchoolLogo>`, never hard-coded. Each page calls `usePageTitle()`. Frontend gating is UX only.
 - **Configuration (Phase 4):** school structure and rules come from the Admin‑configured tables (`modules/config/`), read through repositories — never hard‑code them. Permission grants: code defaults in `core/auth/role-permissions.ts`, Admin overrides clipped to the ceilings in `@ttlmhss/shared` `PERMISSION_INFO`; never widen a ceiling to `ADMIN`‑only permissions. Admin pages are registered in `features/admin/admin-pages.ts`.
 - **People (Phase 5):** a student's class/section/roll lives only in `enrolments` (one ACTIVE per year); never add a class column to `students` and never edit/delete past enrolments — close and open. Later attendance/marks/behaviour rows reference `enrolments.id`. Teacher → Subject (`teacher_subjects`), class‑teacher assignments and Phase 6 timetable assignments stay separate tables. Accounts are created only through `AccountCredentialsService` with a fixed role (STUDENT/TEACHER); temporary passwords are issued on demand and never stored or logged.
+- **Timetable (Phase 6):** Teacher → Subject (`teacher_subjects`) is only what a teacher can teach; a timetable entry (Teacher + Subject + Class/Section + Day + Period in a `timetable_versions` row) is the only teacher↔class link. Every view and the future attendance context read the **PUBLISHED** version (`TimetableRepository`); never store a second class/teacher/student timetable. All rules live in `modules/timetable/timetable-rules.ts`; changes go through the year's single draft as an all‑or‑nothing batch; publishing is atomic and keeps the old version as SUPERSEDED history. Editing needs `timetable.manage` (Class Teachers: own section only, checked per operation); publishing needs `timetable.publish` (administrators only).
 - Run `pnpm check` (lint + format + typecheck + tests) before finishing a phase; run `pnpm --filter @ttlmhss/web test:e2e` when UI flows change.
 
 ## 9. Documentation map

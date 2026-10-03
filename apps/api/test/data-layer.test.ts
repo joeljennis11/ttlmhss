@@ -3,7 +3,9 @@ import {
   EnrolmentStatus,
   PeriodKind,
   RecordStatus,
+  TimetableStatus,
   UserRole,
+  Weekday,
 } from '@ttlmhss/shared';
 import { randomUUID } from 'node:crypto';
 import type { Kysely } from 'kysely';
@@ -141,6 +143,7 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) =
       '0004_school_logo',
       '0005_school_configuration',
       '0006_people',
+      '0007_timetable',
     ];
 
     it('migrates an empty database to the latest version', async () => {
@@ -152,6 +155,7 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) =
     });
 
     it('every migration rolls back cleanly and re-applies (schema is reproducible)', async () => {
+      expect(await store.schema.rollbackLast()).toBe('0007_timetable');
       expect(await store.schema.rollbackLast()).toBe('0006_people');
       expect(await store.schema.rollbackLast()).toBe('0005_school_configuration');
       expect(await store.schema.rollbackLast()).toBe('0004_school_logo');
@@ -344,6 +348,144 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) =
             .execute(),
         ),
       ).rejects.toBeInstanceOf(InternalError);
+    });
+  });
+
+  describe('timetable constraints (Phase 6)', () => {
+    async function setup() {
+      const yearId = await f.year();
+      const sectionA = await f.section(await f.classRow());
+      const sectionB = await f.section(await f.classRow());
+      const periodId = randomUUID();
+      await db
+        .insertInto('periods')
+        .values({
+          id: periodId,
+          academic_year_id: yearId,
+          sequence: 1,
+          period_number: 1,
+          kind: 'LESSON',
+          label: 'Period 1',
+          start_time: '09:00',
+          end_time: '09:45',
+          status: 'ACTIVE',
+          ...ts,
+        })
+        .execute();
+      const subjectId = randomUUID();
+      await db
+        .insertInto('subjects')
+        .values({
+          id: subjectId,
+          name: `Sub-${subjectId.slice(0, 6)}`,
+          code: null,
+          display_order: 1,
+          status: 'ACTIVE',
+          ...ts,
+        })
+        .execute();
+      const teacher = async () => {
+        const id = randomUUID();
+        await db
+          .insertInto('teachers')
+          .values({
+            id,
+            user_id: await f.user('TEACHER'),
+            staff_code: `T-${id.slice(0, 8)}`,
+            full_name: 'Test Teacher',
+            phone: null,
+            email: null,
+            status: 'ACTIVE',
+            gender: null,
+            date_of_birth: null,
+            address: null,
+            designation: null,
+            qualification: null,
+            joining_date: null,
+            ...ts,
+          })
+          .execute();
+        return id;
+      };
+      const version = async (status: string, number: number) => {
+        const id = randomUUID();
+        await db
+          .insertInto('timetable_versions')
+          .values({
+            id,
+            academic_year_id: yearId,
+            version_number: number,
+            status,
+            created_by: null,
+            updated_by: null,
+            published_by: null,
+            published_at: status === 'DRAFT' ? null : NOW,
+            superseded_at: null,
+            ...ts,
+          })
+          .execute();
+        return id;
+      };
+      const entry = (versionId: string, sectionId: string, teacherId: string, day = 'MON') =>
+        db
+          .insertInto('timetable_entries')
+          .values({
+            id: randomUUID(),
+            version_id: versionId,
+            academic_year_id: yearId,
+            day,
+            period_id: periodId,
+            section_id: sectionId,
+            subject_id: subjectId,
+            teacher_id: teacherId,
+            created_by: null,
+            updated_by: null,
+            ...ts,
+          })
+          .execute();
+      return { yearId, sectionA, sectionB, periodId, teacher, version, entry };
+    }
+
+    it('one draft and one published version per year; every status is accepted', async () => {
+      const t = await setup();
+      expect(TimetableStatus.values).toEqual(['DRAFT', 'PUBLISHED', 'SUPERSEDED']);
+      await t.version('SUPERSEDED', 1);
+      await t.version('SUPERSEDED', 2);
+      await t.version('PUBLISHED', 3);
+      await t.version('DRAFT', 4);
+      await expect(guard(() => t.version('DRAFT', 5))).rejects.toBeInstanceOf(ConflictError);
+      await expect(guard(() => t.version('PUBLISHED', 6))).rejects.toBeInstanceOf(ConflictError);
+      await expect(guard(() => t.version('SUPERSEDED', 3))).rejects.toBeInstanceOf(ConflictError);
+      await expect(guard(() => t.version('ARCHIVED', 7))).rejects.toBeInstanceOf(InternalError);
+    });
+
+    it('blocks teacher double-booking and class collisions within a version', async () => {
+      const t = await setup();
+      const v1 = await t.version('PUBLISHED', 1);
+      const v2 = await t.version('DRAFT', 2);
+      const arun = await t.teacher();
+      const priya = await t.teacher();
+      await t.entry(v1, t.sectionA, arun);
+      // BR-TT-04: same teacher, same day + period, another class.
+      await expect(guard(() => t.entry(v1, t.sectionB, arun))).rejects.toBeInstanceOf(
+        ConflictError,
+      );
+      // BR-TT-05: same class, same day + period, another teacher.
+      await expect(guard(() => t.entry(v1, t.sectionA, priya))).rejects.toBeInstanceOf(
+        ConflictError,
+      );
+      // Another day, another class, or another version is fine.
+      await t.entry(v1, t.sectionB, priya);
+      await t.entry(v1, t.sectionA, arun, 'TUE');
+      await t.entry(v2, t.sectionA, arun);
+      for (const day of Weekday.values) await t.entry(v2, t.sectionB, priya, day);
+      await expect(guard(() => t.entry(v2, t.sectionB, arun, 'FUNDAY'))).rejects.toBeInstanceOf(
+        InternalError,
+      );
+      // A period used by a timetable (history included) cannot be deleted.
+      await expect(
+        guard(() => db.deleteFrom('periods').where('id', '=', t.periodId).execute()),
+      ).rejects.toBeInstanceOf(ConflictError);
     });
   });
 

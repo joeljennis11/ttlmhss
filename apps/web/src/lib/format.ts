@@ -18,6 +18,21 @@ const monthFormat = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'UTC',
 });
 
+const dateTimeFormat = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Asia/Kolkata',
+});
+
+/** A stored ISO timestamp → "3 Oct 2026, 14:05" in the school's time zone. */
+export function formatDateTime(iso: string): string {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? iso : dateTimeFormat.format(date);
+}
+
 const parse = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00Z`);
 
 const safe = (format: Intl.DateTimeFormat, iso: string) => {

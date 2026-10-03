@@ -25,6 +25,7 @@ import type {
   TeacherRepository,
   TeacherSubjectRepository,
 } from '../modules/people/people.repository.js';
+import type { TimetableRepository } from '../modules/timetable/timetable.repository.js';
 import type { SchoolSettingsRepository } from '../modules/school/school-settings.repository.js';
 
 /**
@@ -63,6 +64,8 @@ export interface Repositories {
   readonly teacherSubjects: TeacherSubjectRepository;
   readonly classTeachers: ClassTeacherRepository;
   readonly personAccounts: PersonAccountRepository;
+  // Phase 6 — timetable
+  readonly timetable: TimetableRepository;
 }
 
 export interface MigrationState {

@@ -66,6 +66,7 @@ export const PERMISSIONS = [
   // Timetable
   'timetable.view',
   'timetable.manage',
+  'timetable.publish',
   // Attendance
   'attendance.view',
   'attendance.mark',
