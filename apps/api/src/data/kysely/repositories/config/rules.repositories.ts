@@ -1,4 +1,5 @@
 import {
+  ExamStage,
   PERMISSIONS,
   RecordStatus,
   isConfigurableRole,
@@ -6,7 +7,7 @@ import {
   type Permission,
   type RankScope,
 } from '@ttlmhss/shared';
-import type { Kysely } from 'kysely';
+import type { Kysely, Selectable } from 'kysely';
 import type {
   AttendancePolicyRepository,
   CategoryRecord,
@@ -214,7 +215,7 @@ export class KyselyGradeSchemeRepository implements GradeSchemeRepository {
 // Exams & exam subjects
 // ---------------------------------------------------------------------------
 
-function toExam(row: ExamsTable): ExamRecord {
+function toExam(row: Selectable<ExamsTable>): ExamRecord {
   return {
     id: row.id,
     academicYearId: row.academic_year_id,
@@ -230,6 +231,8 @@ function toExam(row: ExamsTable): ExamRecord {
     ),
     displayOrder: row.display_order,
     status: controlled(RecordStatus, row.status, 'status'),
+    stage: controlled(ExamStage, row.stage, 'exam stage'),
+    description: row.description,
   };
 }
 
@@ -311,6 +314,8 @@ export class KyselyExamRepository implements ExamRepository {
           rank_scope: record.rankScope,
           display_order: record.displayOrder,
           status: record.status,
+          stage: record.stage,
+          description: record.description,
           created_at: now,
           updated_at: now,
         })
@@ -333,6 +338,8 @@ export class KyselyExamRepository implements ExamRepository {
           ...(changes.rankScope !== undefined ? { rank_scope: changes.rankScope } : {}),
           ...(changes.displayOrder !== undefined ? { display_order: changes.displayOrder } : {}),
           ...(changes.status !== undefined ? { status: changes.status } : {}),
+          ...(changes.stage !== undefined ? { stage: changes.stage } : {}),
+          ...(changes.description !== undefined ? { description: changes.description } : {}),
           updated_at: now,
         })
         .where('id', '=', id)
@@ -354,6 +361,29 @@ export class KyselyExamRepository implements ExamRepository {
         .where('exam_id', '=', examId)
         .executeTakeFirst();
       return Number(row?.count ?? 0);
+    });
+  }
+
+  listAllSubjects(examId: string) {
+    return guard(async () =>
+      (
+        await this.db
+          .selectFrom('exam_subjects')
+          .selectAll()
+          .where('exam_id', '=', examId)
+          .execute()
+      ).map(toExamSubject),
+    );
+  }
+
+  findSubject(id: string) {
+    return guard(async () => {
+      const row = await this.db
+        .selectFrom('exam_subjects')
+        .selectAll()
+        .where('id', '=', id)
+        .executeTakeFirst();
+      return row ? toExamSubject(row) : null;
     });
   }
 

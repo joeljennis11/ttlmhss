@@ -39,6 +39,7 @@ import {
 import { KyselyAttendanceRepository } from './repositories/attendance/attendance.repository.js';
 import { KyselyTimetableRepository } from './repositories/timetable/timetable.repository.js';
 import { KyselyCalendarRepository } from './repositories/calendar/calendar.repository.js';
+import { KyselyMarksRepository } from './repositories/marks/marks.repository.js';
 import { KyselySchemaManager } from './schema-manager.js';
 
 function createRepositories(db: Kysely<Database>): Repositories {
@@ -69,6 +70,7 @@ function createRepositories(db: Kysely<Database>): Repositories {
     timetable: new KyselyTimetableRepository(db),
     calendar: new KyselyCalendarRepository(db),
     attendance: new KyselyAttendanceRepository(db),
+    marks: new KyselyMarksRepository(db),
   });
 }
 

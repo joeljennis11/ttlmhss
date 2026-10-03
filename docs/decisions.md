@@ -26,12 +26,12 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 |---|---|---|---|
 | D‑05 | How do mid‑year timetable changes relate to past attendance? | Versioned timetable; attendance snapshots teacher/subject. **Phase 6:** versions (effective from the publish moment). **Phase 7:** each register stores the timetable entry, version, subject and teacher; registers for a date use the version in force at the end of that school day | Adopted (Phase 7) |
 | D‑06 | Can a Subject Teacher overwrite `L`/`C` set by the Class Teacher? | No — L/C are read‑only to subject teachers (implemented in Phase 7) | Adopted — please confirm |
-| D‑07 | `0` represents both "scored zero" and "absent" — should absence be distinguishable in reports? | Keep `0` as the visible value; optionally store an internal absent flag so reports can count absentees. Needs user decision | Open |
+| D‑07 | `0` represents both "scored zero" and "absent" — should absence be distinguishable in reports? | Keep `0` as the visible value; optionally store an internal absent flag so reports can count absentees. **Phase 8B:** `0` only, no absent flag (a flag can be added later without changing stored marks) | Open |
 | D‑08 | Class‑teacher cardinality | **One ACTIVE class teacher per section per year** (enforced; replacing is deliberate). A teacher may be class teacher of several sections (Phase 5 spec: do not assume one) | Adopted in Phase 5 |
-| D‑09 | Higher‑secondary groups/streams & electives (XI–XII groups, optional languages) — not every student in a section takes every subject | Support per‑student subject enrolment for exams/marks where needed | **Open — important** |
-| D‑10 | Rounding of percentages / normalized marks | Round half up to 2 dp for display; store raw | Open |
-| D‑11 | What students see when a submitted sheet is unlocked for correction | Keep showing last submitted values until resubmitted | Proposed |
-| D‑12 | Rank ties and who is ranked (e.g. students with an absent subject) | Competition ranking (1,2,2,4); all enrolled students ranked once all subjects are final | Open |
+| D‑09 | Higher‑secondary groups/streams & electives (XI–XII groups, optional languages) — not every student in a section takes every subject | Support per‑student subject enrolment for exams/marks where needed. **Phase 8B:** not built — every student of a section is assessed in every subject configured for the class (a subject that only some take cannot be modelled yet) | **Open — important** |
+| D‑10 | Rounding of percentages / normalized marks | Round half up to 2 dp; store raw. **Adopted in Phase 8B as D‑68** | Adopted (D‑68) |
+| D‑11 | What students see when a submitted sheet is unlocked for correction | Proposal was: keep showing last submitted values. **Phase 8B (D‑74):** the subject is hidden until resubmitted | Decided differently — please confirm (D‑74) |
+| D‑12 | Rank ties and who is ranked (e.g. students with an absent subject) | Competition ranking (1,2,2,4) of students with a complete result. **Adopted in Phase 8B as D‑73** | Adopted (D‑73) |
 | D‑13 | Who records behaviour ratings | Class Teacher (+ Admin) | Proposed |
 | D‑14 | Request routing | Class Teacher of the student's section; Admin sees all | Proposed |
 | D‑15 | "Permissions" management: fixed role map or Admin‑editable toggles; Class Teacher audit visibility | Phase 2: code‑defined defaults. **Phase 4:** Admin can adjust Teacher / Class Teacher / Student grants within fixed per‑permission ceilings (no escalation; ADMIN fixed); stored as overrides. Class Teacher has no `audit.view` by default (grantable). User‑specific permissions not implemented (needs Phase 5 account management) | Adopted in Phase 4 — please confirm |
@@ -66,7 +66,7 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑36 | Must active exam weightages total exactly 100%? | Total may never exceed 100%; the screen marks it "complete" at 100%. Phase 8 should require 100% before annual results (BR‑EX‑03) | Adopted — please confirm |
 | D‑37 | Grade scale shape | Grades defined by minimum percentage only (contiguous by construction), two decimals; one scale per exam with optional per‑subject override | Adopted — please confirm |
 | D‑38 | Attendance cutoff day range | 1–28 so it exists in every month; unconfigured = no locking until the Admin saves a rule | Adopted — please confirm |
-| D‑39 | Pass marks per component (D‑25) | Phase 4 stores one pass mark against the total; per‑component pass marks can be added in Phase 8 if needed | Open (D‑25) |
+| D‑39 | Pass marks per component (D‑25) | Phase 4 stores one pass mark against the total; per‑component pass marks can be added in Phase 8 if needed. **Phase 8B:** not added — pass is decided on the total only (D‑70) | Open (D‑25) |
 | D‑40 | Web logo source | The enhanced 8000 px logo supplied with Phase 4 (`assets/brand/ttlmhss-logo-enhanced.jpg`) is now the master for web and PDF; the original is kept unchanged for reference | Adopted |
 
 ## Added in Phase 5
@@ -111,6 +111,28 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑61 | Timetable on special working weekdays | A section may hold lessons on a weekday only if it is a weekly working day or the weekday of a special working date for it; lessons still occur only on calendar‑working dates. If the same weekday later stops being special, those lessons are listed as problems at the next publish | Adopted — please confirm |
 | D‑62 | Attendance on a date that later became a holiday | Kept, shown read‑only, and still counted (it was really recorded). Deleting the holiday makes it editable again | Adopted — please confirm |
 | D‑63 | Calendar permissions | Reuses `config.manage` (School setup, administrators only); no new permission keys. Teachers/students consume the calendar only through attendance and timetable | Adopted |
+
+## Added in Phase 8B
+
+| ID | Question | Current default | Status |
+|---|---|---|---|
+| D‑64 | Exam lifecycle | A separate `stage` DRAFT → OPEN → CLOSED (reopen allowed; back to draft only without marks) next to the Phase 4 ACTIVE/INACTIVE status. New exams start as DRAFT; exams that existed before 8B became DRAFT | Adopted — please confirm |
+| D‑65 | Class/section applicability | Kept at the Phase 4 level: exam subjects per exam **and class**; every active section of the class has a sheet. Excluding one section of a class from a subject is not possible | Adopted — please confirm |
+| D‑66 | Mark‑entry authorisation | ONE teacher per exam subject + section, stored on the mark sheet, chosen by the administrator from active teachers who teach the subject; re‑checked on every request (removing the subject or deactivating the teacher removes access). No sheet teacher = administrators only. Multiple teachers per sheet: not supported (keeps "who entered what" unambiguous) | Adopted — please confirm |
+| D‑67 | Components and decimals | A component is marked when its maximum is above 0; marks to two decimals; a student is "entered" only with every component | Adopted — please confirm |
+| D‑68 | Rounding (D‑10) | Exact integer arithmetic; normalised marks and percentages rounded half up to two decimals, once. Subject % uses raw total ÷ raw maximum; exam % uses Σ final marks ÷ Σ final maximums | Adopted |
+| D‑69 | Which mark the grade uses | The subject percentage (raw ÷ raw maximum, = normalised ÷ normalised maximum up to rounding); grade scale = subject override else exam scale; no scale → no grade. No overall exam grade | Adopted — please confirm |
+| D‑70 | Pass/fail (D‑25/D‑39) | Raw total ≥ the subject's pass marks; no per‑component pass rule. Overall pass = every counting subject passed | Adopted — please confirm |
+| D‑71 | Complete result | Every subject with "counts in result" submitted for the student's section and marked for the student. Non‑counting subjects are shown, not required | Adopted |
+| D‑72 | Settings kept with submitted marks | Submission stores the derived values and the settings used (maximums, pass marks, convert‑to, grade bands). Grade‑scale edits after submission do not change submitted results; exam‑subject settings cannot change while a sheet is submitted | Adopted |
+| D‑73 | Rank (D‑12, BR‑RS‑05) | Standard competition ranking (1, 2, 2, 4) on the total among students with a complete result in the exam's Phase 4 rank scope (section by default, class if configured); shown "rank / number ranked" | Adopted — please confirm |
+| D‑74 | Visibility during correction (D‑11) | An unlocked sheet is hidden from students (and complete results/ranks of that section are unavailable) until it is resubmitted — no "last submitted" copy is kept | Adopted — please confirm |
+| D‑75 | Roster for a sheet | Students placed in the section on the exam's end date (else start date, else today; clamped to the year), plus anyone already holding marks on the sheet. Students who joined after or left before that date are not on the sheet | Adopted — please confirm |
+| D‑76 | Placement used by results | Where the student's marks are; else the placement on the roster date. Later transfers/promotions never move a result | Adopted |
+| D‑77 | Exam dates vs academic calendar | Independent; a start/end date that is not a working day for any class shows a warning only | Adopted |
+| D‑78 | Exam‑linked behaviour | **Deferred to Phase 9.** Phase 4 has categories and 1–5 labels but not who records (D‑13 still proposed), when ratings become visible, or whether they lock like marks; Phase 9 is "Student portal, behaviour and achievements" | Deferred — needs decision with Phase 9 |
+| D‑79 | Permissions for 8B | No new keys. `exams.manage` (admin): lifecycle and mark‑entry teachers; Phase 4 `config.manage` keeps the exam/subject settings. `marks.view` + per‑sheet scope to open sheets; `marks.enter` / `marks.submit` for the authorised teacher; `marks.edit` (class teacher ceiling) = unlock and correct own section; `results.view`: students own results, class teachers own section, admins all | Adopted — please confirm |
+| D‑80 | Audit redaction | The audit redactor no longer masks keys such as `passMarks`/`passed` (it matched "pass"); passwords, secrets, tokens and hashes are still masked | Adopted |
 
 ## Pending inputs from the user
 

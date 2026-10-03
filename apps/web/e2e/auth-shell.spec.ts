@@ -118,21 +118,26 @@ test.describe('roles in the shell', () => {
 
       const nav = page.getByRole('navigation', { name: 'Main' });
       // Only administrators get Management (Phase 5) and School setup (Phase 4); staff get the
-      // timetable (Phase 6); students get nothing more until their portal is built.
+      // timetable (Phase 6) and Marks (Phase 8B); Results go to students, class teachers and
+      // administrators (Phase 8B).
       await expect(nav.getByRole('link')).toHaveText(
         username === 'e2e.admin'
           ? [
               'Home',
               'Timetable',
               'Attendance',
+              'Marks',
+              'Results',
               'Students',
               'Teachers',
               'School setup',
               'Change password',
             ]
           : username === 'e2e.student'
-            ? ['Home', 'Attendance', 'Change password']
-            : ['Home', 'Timetable', 'Attendance', 'Change password'],
+            ? ['Home', 'Attendance', 'Results', 'Change password']
+            : username === 'e2e.classteacher'
+              ? ['Home', 'Timetable', 'Attendance', 'Marks', 'Results', 'Change password']
+              : ['Home', 'Timetable', 'Attendance', 'Marks', 'Change password'],
       );
     });
   }

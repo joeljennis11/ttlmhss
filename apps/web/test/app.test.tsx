@@ -65,6 +65,8 @@ describe('routing and role-aware navigation', () => {
       'Home',
       'Timetable',
       'Attendance',
+      'Marks',
+      'Results',
       'Accounts',
       'Students',
       'Teachers',

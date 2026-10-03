@@ -191,7 +191,7 @@ test.describe('admin configuration', () => {
     await expect(exam.getByText(/cannot exceed 100%/)).toBeVisible();
     await exam.getByRole('button', { name: 'Cancel' }).click();
 
-    await page.getByRole('link', { name: 'Subjects for E2E Exam' }).click();
+    await page.getByRole('link', { name: 'Set up E2E Exam' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'E2E Exam' })).toBeVisible();
     await page.getByLabel('Class').selectOption({ label: 'Class E2E-CLASS' });
     await page.getByLabel('Include E2E Subject One in E2E Exam').check();

@@ -1,5 +1,8 @@
 import {
   CONFIGURABLE_ROLES,
+  MARK_COMPONENTS,
+  MARK_COMPONENT_LABELS,
+  fromHundredths,
   PERMISSIONS,
   PERMISSION_INFO,
   RATING_VALUES,
@@ -116,6 +119,9 @@ export class ExamService extends ConfigService {
       rankScope: input.rankScope,
       displayOrder: input.displayOrder,
       status: 'ACTIVE',
+      // Phase 8B: a new exam starts as a draft; it is opened for marks from the exam page.
+      stage: 'DRAFT',
+      description: input.description,
     };
     await this.write(ctx, async ({ repos, now, audit }) => {
       await this.validate(repos, record);
@@ -193,10 +199,15 @@ export class ExamService extends ConfigService {
       this.repos.exams.listSubjects(examId, classId),
       this.repos.subjects.list(),
     ]);
+    const marks = await marksState(
+      this.repos,
+      rows.map((r) => r.id),
+    );
     const order = new Map(subjects.map((s, i) => [s.id, { i, name: s.name }]));
     return rows
       .sort((a, b) => (order.get(a.subjectId)?.i ?? 0) - (order.get(b.subjectId)?.i ?? 0))
       .map((r) => ({
+        id: r.id,
         subjectId: r.subjectId,
         subjectName: order.get(r.subjectId)?.name ?? '',
         theoryMax: r.theoryMax,
@@ -207,6 +218,8 @@ export class ExamService extends ConfigService {
         normalizedMax: r.normalizedMax,
         includeInResult: r.includeInResult,
         gradeSchemeId: r.gradeSchemeId,
+        hasMarks: marks.get(r.id)?.hasMarks ?? false,
+        locked: marks.get(r.id)?.submitted ?? false,
       }));
   }
 
@@ -256,9 +269,56 @@ export class ExamService extends ConfigService {
       }
       if (issues.length) throw new ValidationError(issues);
 
+      // Phase 8B: marks already entered protect the settings they were entered against.
+      const marks = await marksState(
+        repos,
+        existing.map((r) => r.id),
+      );
       const keep = new Set(input.subjects.map((r) => r.subjectId));
-      for (const row of existing)
-        if (!keep.has(row.subjectId)) await repos.exams.deleteSubject(row.id);
+      for (const row of existing) {
+        if (keep.has(row.subjectId)) continue;
+        const state = marks.get(row.id);
+        if (state?.hasMarks || state?.submitted) {
+          throw new ConflictError(
+            `${await subjectName(repos, row.subjectId)} already has marks in this exam for class ${cls.name}; it cannot be removed.`,
+          );
+        }
+        for (const sheetId of state?.sheetIds ?? []) await repos.marks.deleteEmptySheet(sheetId);
+        await repos.exams.deleteSubject(row.id);
+      }
+      for (const [i, row] of input.subjects.entries()) {
+        const current = bySubject.get(row.subjectId);
+        const state = current ? marks.get(current.id) : undefined;
+        if (!current || !state) continue;
+        const name = await subjectName(repos, row.subjectId);
+        const changed =
+          current.theoryMax !== row.theoryMax ||
+          current.internalMax !== (row.internalMax ?? null) ||
+          current.practicalMax !== (row.practicalMax ?? null) ||
+          current.passMarks !== row.passMarks ||
+          current.normalizedMax !== (row.normalizedMax ?? null) ||
+          current.includeInResult !== row.includeInResult ||
+          current.gradeSchemeId !== (row.gradeSchemeId ?? null);
+        if (changed && state.submitted) {
+          throw fieldConflict(
+            `subjects.${i}.theoryMax`,
+            `${name} marks are already submitted for class ${cls.name}. Unlock those mark sheets before changing how ${name} is marked.`,
+          );
+        }
+        const limits = {
+          theory: row.theoryMax,
+          internal: row.internalMax ?? 0,
+          practical: row.practicalMax ?? 0,
+        };
+        for (const key of MARK_COMPONENTS) {
+          if (state.highest[key] > limits[key] * 100) {
+            throw fieldConflict(
+              `subjects.${i}.${key}Max`,
+              `${name}: marks up to ${fromHundredths(state.highest[key])} are already entered for ${MARK_COMPONENT_LABELS[key].toLowerCase()}; the maximum cannot be lower.`,
+            );
+          }
+        }
+      }
       for (const row of input.subjects) {
         const values = {
           theoryMax: row.theoryMax,
@@ -287,6 +347,49 @@ export class ExamService extends ConfigService {
     });
     return this.subjectViews(examId, classId);
   }
+}
+
+/** What marks already exist for some exam subjects (Phase 8B guards on configuration changes). */
+async function marksState(repos: Repositories, examSubjectIds: string[]) {
+  const sheets = await repos.marks.sheetsForExamSubjects(examSubjectIds);
+  const entries = await repos.marks.entriesForSheets(sheets.map((s) => s.id));
+  const state = new Map<
+    string,
+    {
+      sheetIds: string[];
+      submitted: boolean;
+      hasMarks: boolean;
+      highest: Record<(typeof MARK_COMPONENTS)[number], number>;
+    }
+  >();
+  const sheetOf = new Map(sheets.map((s) => [s.id, s]));
+  for (const sheet of sheets) {
+    const item = state.get(sheet.examSubjectId) ?? {
+      sheetIds: [],
+      submitted: false,
+      hasMarks: false,
+      highest: { theory: 0, internal: 0, practical: 0 },
+    };
+    item.sheetIds.push(sheet.id);
+    item.submitted ||= sheet.status === 'SUBMITTED';
+    state.set(sheet.examSubjectId, item);
+  }
+  for (const e of entries) {
+    const item = state.get(sheetOf.get(e.markSheetId)!.examSubjectId)!;
+    const values = { theory: e.theoryCm, internal: e.internalCm, practical: e.practicalCm };
+    for (const key of MARK_COMPONENTS) {
+      const v = values[key];
+      if (v !== null) {
+        item.hasMarks = true;
+        item.highest[key] = Math.max(item.highest[key], v);
+      }
+    }
+  }
+  return state;
+}
+
+async function subjectName(repos: Repositories, subjectId: string) {
+  return (await repos.subjects.find(subjectId))?.name ?? 'This subject';
 }
 
 // ---------------------------------------------------------------------------

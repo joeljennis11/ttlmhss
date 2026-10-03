@@ -2,6 +2,7 @@ import type {
   AcademicYearStatus,
   AttendanceLockMode,
   ConfigurableRole,
+  ExamStage,
   PeriodKind,
   Permission,
   RankScope,
@@ -181,6 +182,9 @@ export interface ExamRecord {
   rankScope: RankScope;
   displayOrder: number;
   status: RecordStatus;
+  /** Phase 8B marks lifecycle. */
+  stage: ExamStage;
+  description: string | null;
 }
 
 export interface ExamSubjectRecord {
@@ -209,6 +213,9 @@ export interface ExamRepository {
   ): Promise<void>;
   delete(id: string): Promise<void>;
   countSubjects(examId: string): Promise<number>;
+  /** Every class × subject row of the exam. */
+  listAllSubjects(examId: string): Promise<ExamSubjectRecord[]>;
+  findSubject(id: string): Promise<ExamSubjectRecord | null>;
   listSubjects(examId: string, classId: string): Promise<ExamSubjectRecord[]>;
   insertSubject(record: ExamSubjectRecord, now: string): Promise<void>;
   updateSubject(

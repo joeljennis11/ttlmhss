@@ -2,10 +2,12 @@ import type { ReactElement } from 'react';
 import type { EffectiveRole, Permission } from '@ttlmhss/shared';
 import {
   CalendarDays,
+  ChartColumn,
   ClipboardCheck,
   GraduationCap,
   House,
   KeyRound,
+  NotebookPen,
   Settings,
   Users,
   type LucideIcon,
@@ -41,6 +43,9 @@ import { MyAttendancePage } from '../features/attendance/pages/MyAttendancePage'
 import { MyLessonsPage } from '../features/attendance/pages/MyLessonsPage';
 import { RegisterPage } from '../features/attendance/pages/RegisterPage';
 import { RegistersPage } from '../features/attendance/pages/RegistersPage';
+import { MarkSheetPage } from '../features/marks/pages/MarkSheetPage';
+import { MarksHomePage } from '../features/marks/pages/MarksHomePage';
+import { ResultsPage } from '../features/marks/pages/ResultsPage';
 import { TimetableHome } from '../features/timetable/TimetableLayout';
 import { TimetableEditorPage } from '../features/timetable/pages/EditorPage';
 import { ClassTimetablePage, MyTimetablePage } from '../features/timetable/pages/ViewPages';
@@ -162,6 +167,31 @@ export const SHELL_ROUTES: readonly ShellRoute[] = [
     element: <MyAttendancePage />,
     permission: 'attendance.view',
     roles: ['STUDENT'],
+  },
+  // Phase 8B — Marks (staff: sheets they are authorised for; class teachers view their class) and
+  // results (students: their own; class teachers: their class; administrators: all).
+  {
+    path: 'marks',
+    title: 'Marks',
+    element: <MarksHomePage />,
+    permission: 'marks.view',
+    roles: ['ADMIN', 'TEACHER'],
+    nav: { label: 'Marks', icon: NotebookPen, section: 'main', end: false },
+  },
+  {
+    path: 'marks/sheet',
+    title: 'Mark sheet',
+    element: <MarkSheetPage />,
+    permission: 'marks.view',
+    roles: ['ADMIN', 'TEACHER'],
+  },
+  {
+    path: 'results',
+    title: 'Results',
+    element: <ResultsPage />,
+    permission: 'results.view',
+    roles: ['ADMIN', 'CLASS_TEACHER', 'STUDENT'],
+    nav: { label: 'Results', icon: ChartColumn, section: 'main' },
   },
   // Phase 5 — Student & teacher management (administrator screens; permissions are admin-only
   // management actions, so the menu shows them to administrators).

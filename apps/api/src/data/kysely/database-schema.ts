@@ -9,6 +9,8 @@
  * - controlled values: text with CHECK constraints (no native enums)
  * - lifecycle: `status` text (ACTIVE/INACTIVE …) instead of booleans or hard deletes
  */
+import type { Generated } from 'kysely';
+
 export interface Database {
   school_settings: SchoolSettingsTable;
   academic_years: AcademicYearsTable;
@@ -44,6 +46,9 @@ export interface Database {
   // Phase 7 — attendance
   attendance_sessions: AttendanceSessionsTable;
   attendance_records: AttendanceRecordsTable;
+  // Phase 8B — marks
+  mark_sheets: MarkSheetsTable;
+  mark_entries: MarkEntriesTable;
 }
 
 export interface AttendancePolicyTable extends Timestamps {
@@ -78,6 +83,9 @@ export interface ExamsTable extends Timestamps {
   rank_scope: string;
   display_order: number;
   status: string;
+  /** Phase 8B (0010): DRAFT / OPEN / CLOSED. */
+  stage: Generated<string>;
+  description: string | null;
 }
 
 export interface ExamSubjectsTable extends Timestamps {
@@ -372,4 +380,46 @@ export interface CalendarEntryTargetsTable {
   entry_id: string;
   class_id: string | null;
   section_id: string | null;
+}
+
+// Phase 8B (0010) — marks
+export interface MarkSheetsTable extends Timestamps {
+  id: string;
+  academic_year_id: string;
+  exam_id: string;
+  exam_subject_id: string;
+  class_id: string;
+  section_id: string;
+  subject_id: string;
+  entry_teacher_id: string | null;
+  status: string;
+  revision: number;
+  /** JSON: the MarkStructure used when the sheet was submitted. */
+  calculation: string | null;
+  submitted_at: string | null;
+  submitted_by: string | null;
+  unlocked_at: string | null;
+  unlocked_by: string | null;
+  unlock_reason: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+}
+
+export interface MarkEntriesTable extends Timestamps {
+  id: string;
+  mark_sheet_id: string;
+  academic_year_id: string;
+  section_id: string;
+  enrolment_id: string;
+  student_id: string;
+  theory_cm: number | null;
+  internal_cm: number | null;
+  practical_cm: number | null;
+  total_cm: number | null;
+  normalized_cm: number | null;
+  percent_bp: number | null;
+  grade: string | null;
+  passed: number | null;
+  created_by: string | null;
+  updated_by: string | null;
 }

@@ -21,6 +21,7 @@ import {
   LoadingState,
   SelectField,
   StatusBadge,
+  TextAreaField,
   TextField,
   useToast,
 } from '../../../components/ui';
@@ -31,6 +32,7 @@ import { AdminLayout } from '../AdminLayout';
 import { adminHref } from '../admin-pages';
 import { exams as api, gradeScales } from '../api';
 import { RANK_SCOPE_LABELS } from '../labels';
+import { StageBadge } from '../../marks/marks-shared';
 import { YearGate, YearSelect, useYearSelection } from '../year-selection';
 import styles from '../admin.module.css';
 
@@ -152,6 +154,7 @@ function ExamList({ year }: { year: AcademicYearView }) {
                       Subjects
                     </th>
                     <th scope="col">Status</th>
+                    <th scope="col">Marks</th>
                     <th scope="col">
                       <span className="visually-hidden">Actions</span>
                     </th>
@@ -186,13 +189,16 @@ function ExamList({ year }: { year: AcademicYearView }) {
                       <td data-label="Status">
                         <StatusBadge status={exam.status} />
                       </td>
+                      <td data-label="Marks">
+                        <StageBadge stage={exam.stage} />
+                      </td>
                       <td data-actions="">
                         <div className={styles.rowActions}>
                           <Link
                             to={`${adminHref('exams')}/${exam.id}`}
                             className={styles.textAction}
                           >
-                            Subjects<span className="visually-hidden"> for {exam.name}</span>
+                            Set up<span className="visually-hidden"> {exam.name}</span>
                           </Link>
                           <Button variant="ghost" size="sm" onClick={() => setEditing({ exam })}>
                             Edit<span className="visually-hidden"> {exam.name}</span>
@@ -265,6 +271,7 @@ function ExamDialog({
     gradeSchemeId: exam?.gradeSchemeId ?? '',
     rankScope: exam?.rankScope ?? 'SECTION',
     displayOrder: String(exam?.displayOrder ?? nextOrder),
+    description: exam?.description ?? '',
   });
   const [active, setActive] = useState((exam?.status ?? 'ACTIVE') === 'ACTIVE');
   const form = useFormSubmit([
@@ -275,6 +282,7 @@ function ExamDialog({
     'gradeSchemeId',
     'rankScope',
     'displayOrder',
+    'description',
   ]);
   const set = (name: keyof typeof values) => (e: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [name]: e.target.value }));
@@ -288,6 +296,7 @@ function ExamDialog({
       gradeSchemeId: values.gradeSchemeId || null,
       rankScope: values.rankScope,
       displayOrder: Number(values.displayOrder),
+      description: values.description,
     };
     if (exam) {
       const body = form.check(ExamUpdateSchema, {
@@ -387,6 +396,14 @@ function ExamDialog({
           error={form.errors.rankScope}
         />
       </div>
+      <TextAreaField
+        label="Description"
+        hint="Optional note, e.g. syllabus covered."
+        maxLength={300}
+        value={values.description}
+        onChange={set('description')}
+        error={form.errors.description}
+      />
       {exam && (
         <CheckboxField
           label="Active"

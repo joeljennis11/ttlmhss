@@ -181,6 +181,8 @@ test('administrator: draft, add, clash refused, drag to move, remove, save and p
     .click();
   await expect(toast(page, /Timetable published \(version \d+\)/)).toBeVisible();
   await expect(page.getByRole('table', { name: 'Timetable versions' })).toContainText('Published');
+  // Let the editor finish reloading after publishing before leaving it (avoids a navigation race).
+  await page.waitForLoadState('networkidle');
 
   await page
     .getByRole('navigation', { name: 'Timetable' })

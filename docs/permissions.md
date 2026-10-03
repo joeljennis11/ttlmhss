@@ -222,3 +222,25 @@ Scope (server‑side, from the signed‑in user — never from request ids):
 - Managing the calendar (view, create, edit, delete entries) needs `config.manage` — administrators only (ceiling NONE), like every School setup page. No new permission keys.
 - Teachers, class teachers and students never see or change the calendar directly; it only affects them through attendance (no register on a class's non‑working day) and timetable lessons.
 - All four routes are checked on the server; teacher/student calls get 403, signed‑out calls 401.
+
+## 13. Exams, marks and results (Phase 8B)
+
+No new permission keys (D‑79).
+
+| Permission | Default holders | Ceiling | Used for |
+|---|---|---|---|
+| `config.manage` | Admin | none | Phase 4 exam settings: exams, subjects per class, maximums, pass marks, components, convert‑to, grade scales |
+| `exams.manage` | Admin | none | exam stage (open / close / reopen / back to draft), mark‑entry teachers, the exam matrix |
+| `marks.view` | Admin, Teacher, Student | all | open mark sheets — always narrowed by the per‑sheet scope below (students have none) |
+| `marks.enter` | Admin, Teacher | staff | save drafts on a sheet the teacher is authorised for |
+| `marks.submit` | Admin, Teacher | staff | submit that sheet |
+| `marks.edit` | Admin, Class Teacher | Class Teacher | unlock submitted marks of the own section (with a reason) and correct an unlocked sheet |
+| `results.view` | Admin, Teacher, Student | all | students: own results; class teachers: own section; administrators: all (plain teachers have no result views — their sheets show grades and pass/fail) |
+
+Per‑sheet scope (server‑side, from the stored sheet — never from request ids):
+- **Authorised teacher** — the teacher an administrator assigned to that exam subject + section, while active and teaching the subject (Teacher → Subject). Timetable lessons, teaching the subject elsewhere and the class‑teacher role give nothing.
+- **Class teacher** — views every sheet of their section in that academic year; with `marks.edit` unlocks submitted sheets and corrects unlocked ones; never enters a fresh draft for another teacher's subject.
+- **Administrator** — everything; enters sheets without a teacher; continues after a teacher is deactivated.
+- **Student** — `GET /results/me…` and `/results/exams/:exam/students/:own id` only; another id → 403 with the same message as a missing one; draft or unlocked marks are never returned.
+- Out‑of‑scope sheets are refused with the same 403 whether or not they exist; signed‑out calls get 401.
+

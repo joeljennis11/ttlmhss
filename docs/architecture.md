@@ -467,3 +467,37 @@ timetable (lesson days per section, /timetable/lessons) · attendance (registers
 - API (`modules/calendar/`): `CalendarResolver` (`isWorking`, `lessonDays`, `workingForAnyone`, `explain`), `CalendarService` (get / create / update / delete with validation and audit), `CalendarRepository` (Kysely in `data/kysely/repositories/calendar/`). Routes: `GET|POST /admin/academic-years/:yearId/calendar`, `PUT|DELETE /admin/calendar-entries/:id` (`config.manage`).
 - `loadFrame` (timetable week frame) now carries the resolver, so the timetable rules and every attendance service ask the same object; nothing reads `working_days` directly any more.
 - Web (`features/admin/pages/AcademicCalendarPage.tsx`, School setup → **Calendar**): year selector, weekly pattern, month grid (days marked Working / Closed in words, entries as labelled chips with icons; `+` per day), phone list of the month's entries, table of all entries with Edit / Delete, add/edit dialog (date, status, entire school / class range / classes / sections, reason, note) with client validation from the shared schema, discard‑changes and delete confirmations. Dates are plain `YYYY-MM-DD` strings with UTC arithmetic, so the browser time zone never shifts a school date.
+
+## 17. Exams, marks and results (Phase 8B)
+
+```
+Academic year → Exam (Phase 4; stage DRAFT → OPEN → CLOSED)
+  → Exam subject (exam × class × subject, Phase 4 marking settings)
+  → Section → ONE mark sheet (authorised teacher, DRAFT / SUBMITTED / UNLOCKED, revision, settings used)
+  → one mark entry per student (enrolment; raw marks per component; derived values at submission)
+  → results (computed from SUBMITTED sheets only): subject results → complete result → rank
+```
+Marks are never period‑based: no timetable lesson is needed or consulted.
+
+- Shared (`@ttlmhss/shared/marks`): contracts; exact arithmetic (`halfUpDiv`, hundredths); `componentsOf`, `scoreSubject` (total, normalised, %, grade, pass), `summarizeExam` (Σ ÷ Σ), `competitionRanks`. The API uses them at submission; the mark‑sheet page uses the same function for its live preview only.
+- API (`modules/marks/`):
+  - `marks-context.ts` — base service (authorize + one‑transaction `write` with audit), `loadSheetContext` (exam subject + section → year, exam, subject, section, live settings; a section of another class is "not found"), `structureOf` (subject scale else exam scale), roster (`sheetStudents`: placements on the roster date via the attendance roster helpers + students already holding marks).
+  - `MarkSheetService` — per‑sheet access (admin; the sheet's teacher if active and teaching the subject; class teacher of the section in that year), Marks home, sheet view, Save draft (changed students only, revision claim, each student audited), Submit (complete check, derived values + settings stored, lock), Unlock (reason), history (from `audit_logs`, entity `mark_sheet`).
+  - `MarksAdminService` (`exams.manage`) — exam stage changes, the exam × class × section × subject matrix (teachers per subject, sheet status, entered count, calendar warnings), assign / remove the mark‑entry teacher.
+  - `ResultsService` (`results.view`) — student's own exams and results; staff options; class/section results; a student's result for admins and their class teacher. Only SUBMITTED sheets count; rank per the exam's Phase 4 rank scope.
+  - Repository `MarksRepository` (`marks.repository.ts`; Kysely in `data/kysely/repositories/marks/`); Phase 4 `ExamService.setSubjects` refuses removing subjects with marks, lowering maximums below entered marks and changing settings of submitted subjects.
+
+### Endpoints
+| Area | Endpoints | Permission |
+|---|---|---|
+| Administration | `GET /admin/exams/:examId/mark-sheets`, `PUT /admin/exams/:examId/stage` `{ stage }`, `PUT /admin/exam-subjects/:examSubjectId/sections/:sectionId/teacher` `{ teacherId|null }` | `exams.manage` |
+| Mark sheets | `GET /marks?academicYearId`, `GET /marks/sheet?examSubjectId&sectionId`, `GET /marks/sheet/history?…`, `PUT /marks/sheet` `{ examSubjectId, sectionId, revision, marks[] }`, `POST /marks/sheet/submit` `{ …, revision }`, `POST /marks/sheet/unlock` `{ …, revision, reason }` | `marks.view` + per‑sheet scope; entering/submitting/unlocking decided per sheet (`marks.enter`, `marks.submit`, `marks.edit`) |
+| Results | `GET /results/me?academicYearId`, `GET /results/me/exams/:examId`, `GET /results/options?academicYearId`, `GET /results/exams/:examId/sections/:sectionId`, `GET /results/exams/:examId/students/:studentId` | `results.view` + scope |
+
+Errors: 409 with `details[].path = body.marks.<i>.<component>` for a mark above its maximum or a component the subject does not have, `body.marks.<i>.studentId` for a student not on the sheet; 409 "Reload the sheet" for a stale revision; 409 for locked / closed / not‑open states; 403 (same message whether or not it exists) outside scope.
+
+### Web (`features/marks/`, `features/admin/ExamMarksPanels.tsx`)
+- Sidebar **Marks** (administrators and teachers): exams of a year with the sheets the user may open (role badge "Your class (view)" for class teachers); the **mark sheet**: context (exam, year, class, subject, maximum made of components, pass marks, convert‑to, grade scale, authorised teacher), status bar ("Draft" / "Submitted · locked" / "Unlocked for correction", "38 / 42 students entered", unsaved changes), Save draft, Submit (confirm), Unlock (reason dialog), stale‑save reload, history panel. Desktop/tablet: table with one numeric box per component (Tab across, Enter moves down), live total / converted / grade / Pass‑Fail; phones: one card per student. Blank boxes stay "-".
+- Sidebar **Results**: students — *My results* (year, exam, details, complete result tiles with total / % / Pass‑Fail / rank, subject table — "Not yet available" until finalised; list on phones); class teachers and administrators — class results (year, exam, class; subject status list; students × subjects with total, %, result, rank; cards on phones).
+- School setup → Exams: list shows the marks stage; the exam page adds **Marks and results** (stage with confirmations, calendar warnings, sheet counts) and **Mark entry** (per subject and section: maximum, pass, teacher select limited to teachers of the subject, status, entered). Subjects that hold marks cannot be unticked; submitted subjects' settings are shown as locked.
+

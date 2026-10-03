@@ -816,3 +816,17 @@
     flex: 1 1 100%;
   }
 }
+
+/* Phase 8B: mark-entry teacher choice in the exam page. */
+.teacherSelect {
+  width: 100%;
+  min-width: 12rem;
+  max-width: 18rem;
+  min-height: 40px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  font-size: var(--text-sm);
+  color: var(--ink);
+}

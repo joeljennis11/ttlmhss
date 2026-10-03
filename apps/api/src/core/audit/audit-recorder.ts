@@ -15,7 +15,8 @@ export interface AuditContext {
   requestId: string | null;
 }
 
-const SENSITIVE_KEY = /pass(word)?|secret|token|hash/i;
+// `pass` alone or any key mentioning a password; NOT e.g. `passMarks`/`passed` (exam data).
+const SENSITIVE_KEY = /^pass$|password|passphrase|secret|token|hash/i;
 const REDACTED = '[REDACTED]';
 
 /** Deep copy with sensitive keys masked. Audit data must never contain credentials. */

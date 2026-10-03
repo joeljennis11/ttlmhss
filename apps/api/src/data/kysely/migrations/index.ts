@@ -8,6 +8,7 @@ import { migration0006People } from './0006_people.js';
 import { migration0007Timetable } from './0007_timetable.js';
 import { migration0008Attendance } from './0008_attendance.js';
 import { migration0009AcademicCalendar } from './0009_academic_calendar.js';
+import { migration0010Marks } from './0010_marks.js';
 
 /**
  * Ordered migration registry. Names sort lexically and are applied in that order.
@@ -28,4 +29,5 @@ export const migrations: Record<string, Migration> = {
   '0007_timetable': migration0007Timetable,
   '0008_attendance': migration0008Attendance,
   '0009_academic_calendar': migration0009AcademicCalendar,
+  '0010_marks': migration0010Marks,
 };

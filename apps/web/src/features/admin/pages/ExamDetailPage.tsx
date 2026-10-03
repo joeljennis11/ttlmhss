@@ -26,6 +26,8 @@ import { useResource } from '../../../lib/use-resource';
 import { AdminLayout } from '../AdminLayout';
 import { adminHref } from '../admin-pages';
 import { classes as classesApi, exams as api, gradeScales, subjects as subjectsApi } from '../api';
+import { examAdminApi } from '../../marks/api';
+import { MarkEntryPanel, StagePanel } from '../ExamMarksPanels';
 import { RANK_SCOPE_LABELS } from '../labels';
 import styles from '../admin.module.css';
 
@@ -60,13 +62,16 @@ export function ExamDetailPage() {
     >
       {setup.status === 'loading' && <LoadingState />}
       {setup.status === 'error' && <ErrorState message={setup.error} onRetry={setup.reload} />}
-      {setup.status === 'ready' && <ExamSetup setup={setup.data} />}
+      {setup.status === 'ready' && <ExamSetup setup={setup.data} onExamChanged={setup.reload} />}
     </AdminLayout>
   );
 }
 
-function ExamSetup({ setup }: { setup: Setup }) {
+function ExamSetup({ setup, onExamChanged }: { setup: Setup; onExamChanged: () => void }) {
   const { exam, classes, scales } = setup;
+  const matrix = useResource(`exam-matrix:${exam.id}`, (signal) =>
+    examAdminApi.matrix(exam.id, signal),
+  );
   const [params, setParams] = useSearchParams();
   const usable = classes.filter((c) => c.status === 'ACTIVE');
   const classId = usable.find((c) => c.id === params.get('class'))?.id ?? usable[0]?.id ?? null;
@@ -103,8 +108,16 @@ function ExamSetup({ setup }: { setup: Setup }) {
               <StatusBadge status={exam.status} />
             </dd>
           </div>
+          {exam.description && (
+            <div>
+              <dt>Description</dt>
+              <dd>{exam.description}</dd>
+            </div>
+          )}
         </dl>
       </Panel>
+
+      <StagePanel exam={exam} matrix={matrix} onChanged={onExamChanged} />
 
       {classId === null ? (
         <Panel>
@@ -135,7 +148,13 @@ function ExamSetup({ setup }: { setup: Setup }) {
               options={usable.map((c) => ({ value: c.id, label: `Class ${c.name}` }))}
             />
           </div>
-          <SubjectsEditor key={classId} setup={setup} cls={usable.find((c) => c.id === classId)!} />
+          <SubjectsEditor
+            key={classId}
+            setup={setup}
+            cls={usable.find((c) => c.id === classId)!}
+            onSaved={matrix.reload}
+          />
+          <MarkEntryPanel classId={classId} matrix={matrix} />
         </>
       )}
     </>
@@ -155,6 +174,9 @@ interface Row {
   normalizedMax: string;
   includeInResult: boolean;
   gradeSchemeId: string;
+  /** Phase 8B: marks exist (cannot remove) / submitted (settings locked until unlocked). */
+  hasMarks: boolean;
+  locked: boolean;
 }
 
 const str = (n: number | null | undefined) => (n === null || n === undefined ? '' : String(n));
@@ -178,13 +200,23 @@ function toRows(subjects: SubjectView[], configured: ExamSubjectView[]): Row[] {
         normalizedMax: str(c?.normalizedMax),
         includeInResult: c?.includeInResult ?? true,
         gradeSchemeId: c?.gradeSchemeId ?? '',
+        hasMarks: c?.hasMarks ?? false,
+        locked: c?.locked ?? false,
       };
     });
 }
 
 type CellField = 'theoryMax' | 'internalMax' | 'practicalMax' | 'passMarks' | 'normalizedMax';
 
-function SubjectsEditor({ setup, cls }: { setup: Setup; cls: ClassView }) {
+function SubjectsEditor({
+  setup,
+  cls,
+  onSaved,
+}: {
+  setup: Setup;
+  cls: ClassView;
+  onSaved: () => void;
+}) {
   const { exam, subjects, scales } = setup;
   const configured = useResource(`exam-subjects:${exam.id}:${cls.id}`, (signal) =>
     api.subjects(exam.id, cls.id, signal),
@@ -214,7 +246,10 @@ function SubjectsEditor({ setup, cls }: { setup: Setup; cls: ClassView }) {
       cls={cls}
       scales={scales}
       initial={toRows(subjects, configured.data)}
-      onSaved={configured.replace}
+      onSaved={(rows) => {
+        configured.replace(rows);
+        onSaved();
+      }}
     />
   );
 }
@@ -305,6 +340,7 @@ function SubjectsForm({
                 (num(row.internalMax) ?? 0) +
                 (num(row.practicalMax) ?? 0);
               const off = !row.included;
+              const frozen = off || row.locked;
               const cell = (field: CellField, label: string) => {
                 const error = errorFor(row, field);
                 const id = `${row.subjectId}-${field}`;
@@ -317,7 +353,7 @@ function SubjectsForm({
                       max={1000}
                       aria-label={`${label}, ${row.name}`}
                       value={row[field]}
-                      disabled={off || form.pending}
+                      disabled={frozen || form.pending}
                       onChange={(e) => update(row.subjectId, { [field]: e.target.value })}
                       aria-invalid={error ? true : undefined}
                       aria-describedby={error ? `${id}-error` : undefined}
@@ -337,13 +373,8 @@ function SubjectsForm({
                       type="checkbox"
                       aria-label={`Include ${row.name} in ${exam.name}`}
                       checked={row.included}
-                      disabled={form.pending || (row.inactive && !row.included)}
-                      onChange={(e) =>
-                        update(row.subjectId, {
-                          included: e.target.checked,
-                          ...(e.target.checked && row.theoryMax === '' ? { theoryMax: '100' } : {}),
-                        })
-                      }
+                      disabled={form.pending || (row.inactive && !row.included) || row.hasMarks}
+                      onChange={(e) => update(row.subjectId, { included: e.target.checked })}
                     />
                   </td>
                   <td className={styles.strong}>
@@ -354,6 +385,15 @@ function SubjectsForm({
                         <StatusBadge status="INACTIVE" />
                       </>
                     )}
+                    {row.locked ? (
+                      <span className={styles.meta} style={{ display: 'block' }}>
+                        Marks submitted — settings locked
+                      </span>
+                    ) : row.hasMarks ? (
+                      <span className={styles.meta} style={{ display: 'block' }}>
+                        Marks entered — cannot be removed
+                      </span>
+                    ) : null}
                     {errorFor(row, 'subjectId') && (
                       <span className={styles.cellError}>
                         {errorFor(row, 'subjectId')!.join(' ')}
@@ -371,7 +411,7 @@ function SubjectsForm({
                       type="checkbox"
                       aria-label={`${row.name} counts in the result`}
                       checked={row.includeInResult}
-                      disabled={off || form.pending}
+                      disabled={frozen || form.pending}
                       onChange={(e) => update(row.subjectId, { includeInResult: e.target.checked })}
                     />
                   </td>
@@ -379,7 +419,7 @@ function SubjectsForm({
                     <select
                       aria-label={`Grade scale for ${row.name}`}
                       value={row.gradeSchemeId}
-                      disabled={off || form.pending}
+                      disabled={frozen || form.pending}
                       onChange={(e) => update(row.subjectId, { gradeSchemeId: e.target.value })}
                     >
                       <option value="">Same as exam</option>

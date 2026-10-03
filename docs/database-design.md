@@ -232,6 +232,26 @@ published timetable (version in force on the date)
 - Overlap between class/section entries on a date is refused by the service (structural rule, BR‑CAL‑04) inside the write transaction.
 - Attendance tables are untouched: calendar changes never delete or rewrite attendance (BR‑CAL‑08).
 
+### 5f. Phase 8B additions (`0010_marks`)
+
+```
+exams (+ stage DRAFT/OPEN/CLOSED, description)
+  → exam_subjects (Phase 4: exam × class × subject + marking settings)
+  → mark_sheets (one per exam subject + section; authorised teacher; workflow; settings used)
+  → mark_entries (one per sheet + student; raw marks in hundredths; derived values at submission)
+```
+
+| Table | Columns | Rules |
+|---|---|---|
+| `exams` (altered) | + `stage` (NOT NULL, default DRAFT, CHECK DRAFT/OPEN/CLOSED), `description` | Existing exams become DRAFT. |
+| `mark_sheets` | id, academic_year_id, exam_id, exam_subject_id, class_id, section_id, subject_id, entry_teacher_id (nullable), status ∈ DRAFT/SUBMITTED/UNLOCKED, revision ≥ 1, calculation (JSON settings used at submission), submitted_at/by, unlocked_at/by, unlock_reason, created_by/updated_by, timestamps | **Unique (exam_subject, section)** — one sheet, so at most one authorised teacher. Composite FKs: (exam, year) → `exams(id, academic_year_id)`; (exam_subject, exam, class) → `exam_subjects(id, exam_id, class_id)`; (section, class) → `sections(id, class_id)`. CHECK: SUBMITTED needs submitted_at + calculation; UNLOCKED needs unlocked_at + reason. Indexes (exam, section), (entry_teacher). |
+| `mark_entries` | id, mark_sheet_id, academic_year_id, section_id, **enrolment_id**, student_id, theory_cm / internal_cm / practical_cm (NULL = `-`), total_cm, normalized_cm, percent_bp, grade, passed, created_by/updated_by, timestamps | **Unique (sheet, student).** CHECK every mark ≥ 0, percent 0–10000, passed 0/1. Composite FKs: (sheet, year, section) → `mark_sheets`; (enrolment, year, section, student) → `enrolments` (the student's placement in that very section and year). Index (student). |
+
+- Supporting unique indexes exist only as composite‑FK targets: `exams(id, academic_year_id)`, `exam_subjects(id, exam_id, class_id)`, `sections(id, class_id)`, `enrolments(id, academic_year_id, section_id, student_id)`.
+- Marks are stored in hundredths of a mark and percentages in hundredths of a percent (exact on both databases). Component maximums are checked by the service (they live in `exam_subjects`).
+- Derived values (`total_cm` … `passed`) are written at submission and cleared when a mark changes; together with `mark_sheets.calculation` they reproduce every result without today's configuration.
+- All references are ON DELETE RESTRICT: marks are history. Class changes, promotion, teacher deactivation, timetable and calendar changes never touch them.
+
 ## 6. Mapping of the functional entity list to the schema
 
 | Functional entity | Representation | When |
@@ -248,7 +268,7 @@ published timetable (version in force on the date)
 | AuditLog | `audit_logs` | Phase 1 ✔ |
 | Timetable, TimetableAssignment | `timetable_versions` (DRAFT/PUBLISHED/SUPERSEDED, published at = effective from) + `timetable_entries` with unique (version, section, day, period) and (version, teacher, day, period) (§5c) | Phase 6 ✔ |
 | AttendanceRecord, AttendanceAudit | `attendance_sessions` (date + section + period, snapshot of lesson/teacher/subject, revision) + `attendance_records` (session + enrolment + status ∈ `- P A L C`, leave reason, note); the audit trail uses `audit_logs` (`attendance.marked` / `attendance.override`) (§5d) | Phase 7 ✔ |
-| Exam, ExamSubject, Mark, GradeRule, ExamWeightage | **Phase 4 ✔:** `exams` (incl. weightage), `exam_subjects` (per exam × class × subject), `grade_schemes`/`grade_bands`. **Phase 8:** `mark_sheets` (DRAFT/SUBMITTED/UNLOCKED — drives subject‑wise visibility), `mark_entries` (raw marks; NULL = `-`), `grade_schemes`/`grade_bands`, `mark_audit` | Phase 8 |
+| Exam, ExamSubject, Mark, GradeRule, ExamWeightage | **Phase 4 ✔:** `exams` (incl. weightage), `exam_subjects` (per exam × class × subject), `grade_schemes`/`grade_bands`. **Phase 8B ✔:** `mark_sheets` (one per exam subject + section; authorised teacher; DRAFT/SUBMITTED/UNLOCKED — drives subject‑wise visibility; settings used), `mark_entries` (raw marks per component; NULL = `-`; derived values at submission); the audit trail uses `audit_logs` (entity `mark_sheet`) (§5f) | Phase 4 ✔ / 8B ✔ |
 | BehaviourCategory, BehaviourRating, BehaviourAssessment | **Phase 4 ✔:** `behaviour_categories`, `behaviour_rating_labels`. **Phase 9:** `behaviour_assessments` (enrolment × exam, remark) + `behaviour_ratings` (category, 1–5 CHECK) | Phase 9 |
 | AchievementCategory, Achievement | **Phase 4 ✔:** `achievement_categories` (configurable; the six specified categories are offered as an explicit "add suggested" choice, not seeded). **Phase 9:** `achievements` | Phase 4 / 9 |
 | Announcement, StudentRequest | `announcements`, `student_requests` | Phase 10 |

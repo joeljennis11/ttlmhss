@@ -111,6 +111,11 @@ Admin configures:
 - **R‑9.8** Configurable grade ranges.
 - **R‑9.9** Subject‑wise result visibility on submission (see business rules).
 - **R‑9.10** Result page: exam, subject, marks, max marks, grade, total, percentage, rank shown as `4 / 42`; rank scope configurable (default class/section).
+- **R‑9.11** *(Phase 8B)* Exam lifecycle **Draft → Open for marks → Closed** (separate from Active/Inactive); optional description. Exam dates are independent of the academic calendar (a non‑working exam date is only a warning).
+- **R‑9.12** *(Phase 8B)* Mark entry is authorised **explicitly** per exam subject (exam × class × subject) and section: the administrator chooses one teacher who teaches that subject (Teacher → Subject). The timetable and the class‑teacher role never grant mark entry.
+- **R‑9.13** *(Phase 8B)* Mark sheet per exam subject + section: roll‑ordered students placed in the section for that exam; one box per configured component (theory / internal / practical, each with its own maximum); blank = `-`, `0` = real zero; up to two decimals; live total, grade and pass/fail preview; "38 / 42 students entered"; Save draft; Submit (only when every student has every mark; confirms first; locks); responsive (table on desktop/tablet, one card per student on phones).
+- **R‑9.14** *(Phase 8B)* Unlock for correction by an administrator or the section's class teacher (`marks.edit`) with a reason; the corrected sheet must be submitted again; every entry, correction, submission, unlock and teacher assignment is in the sheet's history.
+- **R‑9.15** *(Phase 8B)* Students: "My results" per year and exam — finalised subjects only; the complete result (total, percentage, pass/fail, rank / ranked) only when every counting subject is finalised. Class teachers and administrators: class results per exam and section. Teachers: only their authorised sheets.
 
 ## 10. Behaviour & achievements (Phase 9)
 

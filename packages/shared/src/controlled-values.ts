@@ -109,6 +109,14 @@ export type TimetableStatus = (typeof TimetableStatus.values)[number];
 export const MarkSheetStatus = controlledValues(['DRAFT', 'SUBMITTED', 'UNLOCKED']);
 export type MarkSheetStatus = (typeof MarkSheetStatus.values)[number];
 
+/**
+ * Phase 8B: an exam's marks lifecycle (separate from its ACTIVE/INACTIVE record status).
+ * DRAFT — being set up, no mark entry, invisible to students; OPEN — marks can be entered and
+ * submitted, submitted subjects are visible to students; CLOSED — marks are frozen (read-only).
+ */
+export const ExamStage = controlledValues(['DRAFT', 'OPEN', 'CLOSED']);
+export type ExamStage = (typeof ExamStage.values)[number];
+
 /** BR-RQ-01. */
 export const RequestType = controlledValues([
   'ATTENDANCE_ISSUE',

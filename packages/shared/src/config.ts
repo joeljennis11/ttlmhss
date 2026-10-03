@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { PermissionSchema } from './auth.js';
-import { AcademicYearStatus, PeriodKind, RecordStatus, Weekday } from './controlled-values.js';
+import {
+  AcademicYearStatus,
+  ExamStage,
+  PeriodKind,
+  RecordStatus,
+  Weekday,
+} from './controlled-values.js';
 import { CONFIGURABLE_ROLES } from './permission-info.js';
 import { IsoDateSchema, TimeOfDaySchema, optionalText, requiredText } from './validation.js';
 
@@ -434,6 +440,8 @@ const examFields = {
   gradeSchemeId: z.string().min(1).nullable().optional(),
   rankScope: z.enum(RANK_SCOPES).default('SECTION'),
   displayOrder,
+  /** Optional note shown with the exam (Phase 8B). */
+  description: optionalText(300, 'Description'),
 };
 
 function datesInOrder(v: { startDate?: string | null; endDate?: string | null }) {
@@ -453,6 +461,7 @@ export const ExamUpdateSchema = z
     rankScope: z.enum(RANK_SCOPES).optional(),
     displayOrder: displayOrder.optional(),
     status: RecordStatus.schema.optional(),
+    description: examFields.description.optional(),
   })
   .refine(datesInOrder, { path: ['endDate'], message: 'End date cannot be before the start date' });
 export type ExamCreate = z.input<typeof ExamCreateSchema>;
@@ -469,6 +478,9 @@ export const ExamViewSchema = z.object({
   rankScope: z.enum(RANK_SCOPES),
   displayOrder: z.number(),
   status: RecordStatus.schema,
+  /** Phase 8B marks lifecycle: DRAFT → OPEN → CLOSED. */
+  stage: ExamStage.schema,
+  description: z.string().nullable(),
   /** Number of class × subject rows configured for this exam. */
   subjectCount: z.number(),
 });
@@ -530,6 +542,7 @@ export const ExamSubjectsUpdateSchema = z
 export type ExamSubjectInput = z.input<typeof ExamSubjectInputSchema>;
 
 export const ExamSubjectViewSchema = z.object({
+  id: z.string(),
   subjectId: z.string(),
   subjectName: z.string(),
   theoryMax: z.number(),
@@ -540,6 +553,10 @@ export const ExamSubjectViewSchema = z.object({
   normalizedMax: z.number().nullable(),
   includeInResult: z.boolean(),
   gradeSchemeId: z.string().nullable(),
+  /** Mark sheets of this subject already hold marks (Phase 8B): it cannot be removed. */
+  hasMarks: z.boolean(),
+  /** A mark sheet is submitted: the marking settings cannot change until it is unlocked. */
+  locked: z.boolean(),
 });
 export type ExamSubjectView = z.infer<typeof ExamSubjectViewSchema>;
 

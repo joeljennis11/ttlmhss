@@ -151,7 +151,10 @@ export function SummaryTiles({ counts }: { counts: AttendanceCounts }) {
  * Warns before unsaved changes are lost: the browser's own prompt on reload/close, and a
  * confirmation for links inside the app (the app uses a plain router, so links are intercepted).
  */
-export function useLeaveGuard(dirty: boolean): ReactNode {
+export function useLeaveGuard(
+  dirty: boolean,
+  message = 'Your attendance changes are not saved yet. If you leave now they will be lost.',
+): ReactNode {
   const navigate = useNavigate();
   const [target, setTarget] = useState<string | null>(null);
   useEffect(() => {
@@ -191,7 +194,7 @@ export function useLeaveGuard(dirty: boolean): ReactNode {
         if (to) void navigate(to);
       }}
     >
-      <p>Your attendance changes are not saved yet. If you leave now they will be lost.</p>
+      <p>{message}</p>
     </ConfirmDialog>
   );
 }
