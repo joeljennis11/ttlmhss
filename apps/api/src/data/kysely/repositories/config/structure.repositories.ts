@@ -149,6 +149,7 @@ export class KyselyAcademicYearRepository implements AcademicYearRepository {
         .union(this.db.selectFrom('class_teacher_assignments').select('academic_year_id as id'))
         .union(this.db.selectFrom('timetable_versions').select('academic_year_id as id'))
         .union(this.db.selectFrom('attendance_sessions').select('academic_year_id as id'))
+        .union(this.db.selectFrom('calendar_entries').select('academic_year_id as id'))
         .execute();
       return new Set(rows.map((r) => r.id));
     });

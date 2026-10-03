@@ -132,7 +132,7 @@ export class TimetableViewService extends TimetableServiceBase {
     const entries = published ? await repos.timetable.listEntries(published.id, { sectionId }) : [];
     const { active: _a, label: _l, ...sectionView } = section;
     return {
-      ...gridFor(frame, entries),
+      ...gridFor(frame, entries, sectionId),
       section: sectionView,
       published: published ? toVersionView(published) : null,
       entries: sortEntries(frame, entries).map(toEntryView),
@@ -231,13 +231,17 @@ export class TimetableViewService extends TimetableServiceBase {
       schoolDay,
       lessons: [],
     });
-    if (!year || !(year.workingDays ?? []).includes(day)) return none(false);
+    if (!year) return none(false);
     const [frame, published] = await Promise.all([
       loadFrame(repos, year),
       repos.timetable.versionWithStatus(year.id, 'PUBLISHED'),
     ]);
+    // Academic calendar (Phase 8A): a lesson happens only if its class works on that date.
+    if (!frame.calendar.workingForAnyone(date)) return none(false);
     if (!published) return none(true);
-    const entries = await repos.timetable.listEntries(published.id, { teacherId: target, day });
+    const entries = (
+      await repos.timetable.listEntries(published.id, { teacherId: target, day })
+    ).filter((e) => frame.calendar.isWorking(date, e.sectionId));
     return {
       ...none(true),
       lessons: sortEntries(frame, entries).flatMap((e) => {

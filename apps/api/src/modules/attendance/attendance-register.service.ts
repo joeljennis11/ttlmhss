@@ -1,5 +1,6 @@
 import {
   countAttendance,
+  weekdayOf,
   type AttendanceRegisterView,
   type AttendanceSaveSchema,
   type AttendanceStatus,
@@ -155,6 +156,11 @@ export class AttendanceRegisterService extends AttendanceServiceBase {
   ) {
     const access = await this.accessFor(repos, principal, lesson);
     if (!access.canMark) throw new ForbiddenError(NO_ACCESS);
+    if (!lesson.workingDay) {
+      throw new ConflictError(
+        `${lesson.frame.calendar.explain(lesson.date, lesson.section.sectionId, lesson.section.label)} The attendance saved for it is kept as history and cannot be changed.`,
+      );
+    }
     if (lesson.date > this.today()) {
       throw new ConflictError('Attendance cannot be taken for a date in the future.');
     }
@@ -411,9 +417,10 @@ export class AttendanceRegisterService extends AttendanceServiceBase {
       studentId,
       date,
     );
-    const day = this.requireSchoolDay(year, date);
+    const day = weekdayOf(date);
     const frame = await loadFrame(repos, year);
     const lessons = await this.sectionLessons(repos, year, frame, placement.sectionId, date);
+    const workingDay = frame.calendar.isWorking(date, placement.sectionId);
     const records = await repos.attendance.recordsForStudent(studentId, date, date);
     const byPeriod = new Map(records.map((r) => [r.periodId, r]));
     const section = await sectionRef(repos, placement.sectionId);
@@ -432,7 +439,7 @@ export class AttendanceRegisterService extends AttendanceServiceBase {
     const { locked, lockDate } = await this.lockState(repos, date);
     const future = date > this.today();
     const canOverride = locked && principal.permissions.has('attendance.override');
-    const editable = !future && (!locked || canOverride) && lessons.length > 0;
+    const editable = workingDay && !future && (!locked || canOverride) && lessons.length > 0;
     return {
       date,
       day,
@@ -453,13 +460,15 @@ export class AttendanceRegisterService extends AttendanceServiceBase {
         lockDate,
         canOverride,
         editable,
-        readOnlyReason: future
-          ? 'This day has not happened yet.'
-          : locked && !canOverride
-            ? `Attendance for this date is locked (since ${lockDate}). Only an administrator can change it.`
-            : lessons.length === 0
-              ? 'There are no lessons on this day.'
-              : null,
+        readOnlyReason: !workingDay
+          ? `${frame.calendar.explain(date, placement.sectionId, section.label)}${lessons.length ? ' Attendance saved earlier is kept as history.' : ''}`
+          : future
+            ? 'This day has not happened yet.'
+            : locked && !canOverride
+              ? `Attendance for this date is locked (since ${lockDate}). Only an administrator can change it.`
+              : lessons.length === 0
+                ? 'There are no lessons on this day.'
+                : null,
       },
     };
   }

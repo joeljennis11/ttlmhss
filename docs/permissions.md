@@ -216,3 +216,9 @@ Scope (server‑side, from the signed‑in user — never from request ids):
 - **Administrator** — everything, including the paginated register search; locked dates need an explicit override with a reason.
 - **Student** — `GET /attendance/me` (and `/attendance/students/:own id`) only; another id → 403 without revealing whether it exists; never writes.
 - **Cutoff** — after the configured cutoff the register is read‑only for teachers and class teachers, whatever the URL.
+
+## 12. Academic calendar (Phase 8A)
+
+- Managing the calendar (view, create, edit, delete entries) needs `config.manage` — administrators only (ceiling NONE), like every School setup page. No new permission keys.
+- Teachers, class teachers and students never see or change the calendar directly; it only affects them through attendance (no register on a class's non‑working day) and timetable lessons.
+- All four routes are checked on the server; teacher/student calls get 403, signed‑out calls 401.

@@ -451,3 +451,19 @@ Errors: 409 with `details[].path = body.marks.<i>.studentId` for a student not o
 - Sidebar **Attendance** → *My lessons* (teachers: a date's lessons with Take / Open attendance and complete/incomplete state), *Class attendance* (class teachers, admins: day matrix with absentees, leave, unmarked periods and %, totals tab, student‑day dialog for multi‑period Leave / C with reasons), *All registers* (admin search), *My attendance* (students: date range, totals, day‑by‑period list). *My timetable* shows **Today's lessons** with the same action.
 - Register: lesson header (class, subject, teacher, date, period and time) from the server; roster with roll, admission number, name; segmented radio controls (P A L C -, letters plus labels, 44 px targets); Mark all present (unmarked only); unsaved marker and leave‑page warning; Save attendance; admin override dialog with reason; conflict message with Reload. Phones: one card per student.
 - Statuses never rely on colour: each shows its letter and a text label.
+
+## 16. Academic calendar (Phase 8A)
+
+```
+weekly pattern (academic_years.working_days)
+   ↓ date entry that applies to the class/section (calendar_entries + targets; never overlapping)
+   ↓
+working / not working  ── CalendarResolver (one per request, loaded with the week frame)
+   ↓ consumed by
+timetable (lesson days per section, /timetable/lessons) · attendance (registers, lessons, class day, totals, student view)
+```
+
+- Shared (`@ttlmhss/shared/calendar`): contract, `resolveWorkingDay`, `appliesTo`, `targetsOverlap`, `classesInRange` (display order), `weeklyWorking`.
+- API (`modules/calendar/`): `CalendarResolver` (`isWorking`, `lessonDays`, `workingForAnyone`, `explain`), `CalendarService` (get / create / update / delete with validation and audit), `CalendarRepository` (Kysely in `data/kysely/repositories/calendar/`). Routes: `GET|POST /admin/academic-years/:yearId/calendar`, `PUT|DELETE /admin/calendar-entries/:id` (`config.manage`).
+- `loadFrame` (timetable week frame) now carries the resolver, so the timetable rules and every attendance service ask the same object; nothing reads `working_days` directly any more.
+- Web (`features/admin/pages/AcademicCalendarPage.tsx`, School setup → **Calendar**): year selector, weekly pattern, month grid (days marked Working / Closed in words, entries as labelled chips with icons; `+` per day), phone list of the month's entries, table of all entries with Edit / Delete, add/edit dialog (date, status, entire school / class range / classes / sections, reason, note) with client validation from the shared schema, discard‑changes and delete confirmations. Dates are plain `YYYY-MM-DD` strings with UTC arithmetic, so the browser time zone never shifts a school date.

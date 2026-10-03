@@ -1,6 +1,7 @@
 import type { Permission } from '@ttlmhss/shared';
 import {
   Award,
+  CalendarDays,
   CalendarRange,
   Clock,
   ClipboardList,
@@ -17,6 +18,7 @@ import {
 export type AdminPageId =
   | 'settings'
   | 'years'
+  | 'calendar'
   | 'classes'
   | 'subjects'
   | 'periods'
@@ -63,6 +65,16 @@ export const ADMIN_PAGES: readonly AdminPageInfo[] = [
     short: 'Years',
     summary: 'Year dates, the current year and working days.',
     icon: CalendarRange,
+    permission: 'config.manage',
+    group: 'School',
+  },
+  {
+    id: 'calendar',
+    path: 'admin/academic-calendar',
+    title: 'Academic calendar',
+    short: 'Calendar',
+    summary: 'Holidays and special working days, for the whole school or some classes.',
+    icon: CalendarDays,
     permission: 'config.manage',
     group: 'School',
   },

@@ -1,6 +1,7 @@
 export * from './api-contract.js';
 export * from './attendance.js';
 export * from './auth.js';
+export * from './calendar.js';
 export * from './config.js';
 export * from './controlled-values.js';
 export * from './permission-info.js';

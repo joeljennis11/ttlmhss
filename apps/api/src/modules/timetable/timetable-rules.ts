@@ -14,22 +14,32 @@ import { DAY_NAMES, slotName, type WeekFrame } from './timetable-service.js';
  * `field` is the request path the message is attached to (e.g. `operations.2.teacherId`).
  */
 
-/** A lesson slot: a working day + an active teaching period of the year (not a break). */
+/**
+ * A lesson slot: a day this section can work on + an active teaching period of the year (not a
+ * break). The section's days are the weekly working days plus the weekdays of special working dates
+ * that apply to it in the academic calendar (Phase 8A) — e.g. Sunday for 11–12 if a Sunday is a
+ * special working day for them. The calendar still decides which actual dates are working.
+ */
 export function checkSlot(
   frame: WeekFrame,
+  sectionId: string,
   day: Weekday,
   periodId: string,
   field: (name: string) => string,
 ): PeriodRecord {
   const { year } = frame;
-  if (frame.workingDays.length === 0) {
+  const days = frame.calendar.lessonDays(sectionId);
+  if (days.length === 0) {
     throw fieldConflict(
       field('day'),
       `The working days of ${year.label} are not set yet. Set them in School setup → Academic years first.`,
     );
   }
-  if (!frame.workingDays.includes(day)) {
-    throw fieldConflict(field('day'), `${DAY_NAMES[day]} is not a working day in ${year.label}.`);
+  if (!days.includes(day)) {
+    throw fieldConflict(
+      field('day'),
+      `${DAY_NAMES[day]} is not a working day for this class in ${year.label}. A special working ${DAY_NAMES[day]} can be added in School setup → Academic calendar.`,
+    );
   }
   const slot = frame.slotById.get(periodId);
   if (!slot) {
@@ -132,7 +142,7 @@ export async function draftIssues(
     const add = (problem: string) =>
       issues.push({ entryId: e.id, sectionId: e.sectionId, message: `${where}: ${problem}` });
     const slot = frame.slotById.get(e.periodId);
-    if (!frame.workingDays.includes(e.day)) {
+    if (!frame.calendar.lessonDays(e.sectionId).includes(e.day)) {
       add(`${DAY_NAMES[e.day]} is no longer a working day.`);
     }
     if (!slot || slot.academicYearId !== frame.year.id) add('the period is not part of this year.');

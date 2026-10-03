@@ -12,6 +12,7 @@ import type { AuthorizationService } from '../../core/auth/authorization.service
 import { ConflictError, ForbiddenError, NotFoundError } from '../../core/errors/app-errors.js';
 import { toTimestamp, type Clock } from '../../core/utils/clock.js';
 import type { DataStore, Repositories } from '../../data/data-store.js';
+import { CalendarResolver } from '../calendar/calendar-resolver.js';
 import type { AcademicYearRecord, PeriodRecord } from '../config/config.repository.js';
 import type { TimetableEntryRecord, TimetableVersionRecord } from './timetable.repository.js';
 
@@ -116,18 +117,24 @@ export function required<T>(value: T | null | undefined, what: string): T {
 
 export interface WeekFrame {
   year: AcademicYearRecord;
-  /** Working days of the year, in week order (empty when not configured). */
+  /** Weekly working days of the year, in week order (empty when not configured). */
   workingDays: Weekday[];
+  /** The academic calendar (weekly pattern + date entries) — Phase 8A. */
+  calendar: CalendarResolver;
   /** All slots of the year's day, in day order (breaks and inactive ones included). */
   slots: PeriodRecord[];
   slotById: Map<string, PeriodRecord>;
 }
 
 export async function loadFrame(repos: Repositories, year: AcademicYearRecord): Promise<WeekFrame> {
-  const slots = await repos.periods.listByYear(year.id);
+  const [slots, calendar] = await Promise.all([
+    repos.periods.listByYear(year.id),
+    CalendarResolver.load(repos, year),
+  ]);
   return {
     year,
     workingDays: sortDays(year.workingDays ?? []),
+    calendar,
     slots,
     slotById: new Map(slots.map((s) => [s.id, s])),
   };
@@ -152,12 +159,18 @@ export const DAY_NAMES: Record<Weekday, string> = {
  * entry still uses after the configuration changed (so nothing silently disappears; the slot comes
  * back with its INACTIVE status and the draft lists it as a problem).
  */
-export function gridFor(frame: WeekFrame, entries: readonly TimetableEntryRecord[]) {
+export function gridFor(
+  frame: WeekFrame,
+  entries: readonly TimetableEntryRecord[],
+  sectionId?: string,
+) {
   const usedSlots = new Set(entries.map((e) => e.periodId));
   const periods = frame.slots
     .filter((s) => s.status === 'ACTIVE' || usedSlots.has(s.id))
     .map(toPeriodView);
-  const workingDays = sortDays([...frame.workingDays, ...entries.map((e) => e.day)]);
+  // A section's grid also shows weekdays of its special working dates (academic calendar).
+  const base = sectionId ? frame.calendar.lessonDays(sectionId) : frame.workingDays;
+  const workingDays = sortDays([...base, ...entries.map((e) => e.day)]);
   return {
     academicYear: { id: frame.year.id, label: frame.year.label, status: frame.year.status },
     workingDays,

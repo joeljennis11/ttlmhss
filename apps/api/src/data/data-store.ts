@@ -27,6 +27,7 @@ import type {
 } from '../modules/people/people.repository.js';
 import type { AttendanceRepository } from '../modules/attendance/attendance.repository.js';
 import type { TimetableRepository } from '../modules/timetable/timetable.repository.js';
+import type { CalendarRepository } from '../modules/calendar/calendar.repository.js';
 import type { SchoolSettingsRepository } from '../modules/school/school-settings.repository.js';
 
 /**
@@ -67,6 +68,8 @@ export interface Repositories {
   readonly personAccounts: PersonAccountRepository;
   // Phase 6 — timetable
   readonly timetable: TimetableRepository;
+  // Phase 8A — academic calendar
+  readonly calendar: CalendarRepository;
   // Phase 7 — attendance
   readonly attendance: AttendanceRepository;
 }

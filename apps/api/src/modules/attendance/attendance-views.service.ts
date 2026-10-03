@@ -66,17 +66,22 @@ export class AttendanceViewService extends AttendanceServiceBase {
       future: date > this.today(),
       teacher: { id: teacher.id, fullName: teacher.fullName, staffCode: teacher.staffCode },
     };
-    if (!year || !(year.workingDays ?? []).includes(day)) {
-      return { ...base, schoolDay: false, lessons: [] };
-    }
+    if (!year) return { ...base, schoolDay: false, lessons: [] };
     const frame = await loadFrame(repos, year);
     const cache = new VersionCache(repos, year.id);
     // Registers already taken by this teacher that day keep their own lesson (history) …
     const sessions = (await repos.attendance.sessionsForTeacher(target, date)).filter(
       (s) => s.academicYearId === year.id,
     );
-    // … and the timetable in force that day adds the rest.
+    if (!frame.calendar.workingForAnyone(date) && sessions.length === 0) {
+      return { ...base, schoolDay: false, lessons: [] };
+    }
+    // … and the timetable in force that day adds the rest — only for classes working that date
+    // in the academic calendar (Phase 8A).
     const inForce = await cache.entriesOn(date, { teacherId: target, day });
+    if (inForce) {
+      inForce.entries = inForce.entries.filter((e) => frame.calendar.isWorking(date, e.sectionId));
+    }
     const taken = new Set(sessions.map((s) => `${s.periodId}|${s.sectionId}`));
     const lessons: { periodId: string; sectionId: string; subject: DayLesson['subject'] }[] = [
       ...sessions.map((s) => ({
@@ -144,9 +149,12 @@ export class AttendanceViewService extends AttendanceServiceBase {
     const day = weekdayOf(date);
     const future = date > this.today();
     const { locked } = await this.lockState(repos, date);
-    const schoolDay = (year.workingDays ?? []).includes(day);
+    const frame = await loadFrame(repos, year);
+    // Academic calendar (Phase 8A); registers saved before a later holiday still show (history).
+    const schoolDay = frame.calendar.isWorking(date, sectionId);
     const empty = countAttendance([]);
-    if (!schoolDay) {
+    const saved = schoolDay ? [] : await repos.attendance.sessionsForSection(sectionId, date, date);
+    if (!schoolDay && saved.length === 0) {
       return {
         date,
         day,
@@ -161,7 +169,6 @@ export class AttendanceViewService extends AttendanceServiceBase {
         canManage: true,
       };
     }
-    const frame = await loadFrame(repos, year);
     const lessons = await this.sectionLessons(repos, year, frame, sectionId, date);
     const roster = rosterOn(
       await sectionPlacements(repos, year.id, sectionId, date, date),
@@ -246,7 +253,7 @@ export class AttendanceViewService extends AttendanceServiceBase {
       from < year.startDate ? year.startDate : from,
       last > year.endDate ? year.endDate : last,
     )) {
-      if (!(year.workingDays ?? []).includes(weekdayOf(date))) continue;
+      // Non-working days (academic calendar) contribute only registers saved earlier (history).
       const lessons = await this.sectionLessons(repos, year, frame, sectionId, date, cache);
       if (lessons.length === 0) continue;
       for (const s of rosterOn(placements, sectionId, date)) {
@@ -344,7 +351,6 @@ export class AttendanceViewService extends AttendanceServiceBase {
     const statuses: AttendanceStatus[] = [];
     for (const date of datesBetween(from < year.startDate ? year.startDate : from, last)) {
       const day = weekdayOf(date);
-      if (!(year.workingDays ?? []).includes(day)) continue;
       const placement = placementOn(placements, studentId, date);
       if (!placement) continue;
       const lessons = await this.sectionLessons(

@@ -14,6 +14,7 @@ import { HomePage } from '../pages/HomePage';
 import { AccountPasswordPage } from '../pages/AccountPasswordPage';
 import { ADMIN_PAGES, type AdminPageId } from '../features/admin/admin-pages';
 import { AdminHubPage } from '../features/admin/pages/AdminHubPage';
+import { AcademicCalendarPage } from '../features/admin/pages/AcademicCalendarPage';
 import { AcademicYearsPage } from '../features/admin/pages/AcademicYearsPage';
 import { AchievementCategoriesPage } from '../features/admin/pages/AchievementCategoriesPage';
 import { AttendancePolicyPage } from '../features/admin/pages/AttendancePolicyPage';
@@ -72,6 +73,7 @@ export interface ShellRoute {
 const ADMIN_ELEMENTS: Record<AdminPageId, ReactElement> = {
   settings: <SchoolSettingsPage />,
   years: <AcademicYearsPage />,
+  calendar: <AcademicCalendarPage />,
   classes: <ClassesPage />,
   subjects: <SubjectsPage />,
   periods: <PeriodsPage />,

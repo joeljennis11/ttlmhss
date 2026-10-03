@@ -221,6 +221,17 @@ published timetable (version in force on the date)
 - **Not marked** is stored as status `-` once a register is saved, or simply no record; both read as `-`.
 - **Percentage:** P ÷ (P + A) × 100; L, C and `-` excluded; null when P + A = 0 (computed in `@ttlmhss/shared` `countAttendance`, used by every API and screen).
 
+### 5e. Phase 8A additions (`0009_academic_calendar`)
+
+| Table | Columns | Rules |
+|---|---|---|
+| `calendar_entries` | id, academic_year_id, date, status ∈ WORKING/HOLIDAY, scope ∈ SCHOOL/CLASSES/SECTIONS, reason, note, created_by / updated_by, timestamps | Index (year, date). Partial unique: one SCHOOL entry per (year, date). |
+| `calendar_entry_targets` | entry_id, class_id or section_id | CHECK exactly one of class_id / section_id; unique per (entry, class) and (entry, section). |
+
+- The weekly pattern stays in `academic_years.working_days`; entries are exceptions on top of it. Classes and sections are the Phase 4 master data (RESTRICT references), never copied.
+- Overlap between class/section entries on a date is refused by the service (structural rule, BR‑CAL‑04) inside the write transaction.
+- Attendance tables are untouched: calendar changes never delete or rewrite attendance (BR‑CAL‑08).
+
 ## 6. Mapping of the functional entity list to the schema
 
 | Functional entity | Representation | When |

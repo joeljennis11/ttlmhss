@@ -32,7 +32,7 @@ Development happens in explicit, user‑unlocked phases:
 - Do not silently introduce major new requirements.
 - Do not make irreversible architectural decisions the spec leaves open — ask. Open decisions are tracked in `docs/decisions.md`.
 
-**Current phase status:** Phase 7 complete (period‑wise attendance). Waiting for Phase 8 instruction.
+**Current phase status:** Phase 8A complete (academic / working‑day calendar). Waiting for the next instruction (Phase 8B not started).
 
 ## 2. Workflow for every phase
 
@@ -110,6 +110,7 @@ Real generated documents only: A4, official logo, school name, academic year, st
 - **People (Phase 5):** a student's class/section/roll lives only in `enrolments` (one ACTIVE per year); never add a class column to `students` and never edit/delete past enrolments — close and open. Later attendance/marks/behaviour rows reference `enrolments.id`. Teacher → Subject (`teacher_subjects`), class‑teacher assignments and Phase 6 timetable assignments stay separate tables. Accounts are created only through `AccountCredentialsService` with a fixed role (STUDENT/TEACHER); temporary passwords are issued on demand and never stored or logged.
 - **Timetable (Phase 6):** Teacher → Subject (`teacher_subjects`) is only what a teacher can teach; a timetable entry (Teacher + Subject + Class/Section + Day + Period in a `timetable_versions` row) is the only teacher↔class link. Every view and the future attendance context read the **PUBLISHED** version (`TimetableRepository`); never store a second class/teacher/student timetable. All rules live in `modules/timetable/timetable-rules.ts`; changes go through the year's single draft as an all‑or‑nothing batch; publishing is atomic and keeps the old version as SUPERSEDED history. Editing needs `timetable.manage` (Class Teachers: own section only, checked per operation); publishing needs `timetable.publish` (administrators only).
 - **Attendance (Phase 7):** a register (`attendance_sessions`) is resolved by the server from date + period + section against the timetable version in force that day and keeps a snapshot of that lesson; never accept teacher/subject/class from the request. Records (`attendance_records`) reference `enrolments.id`, one per (year, date, period, student). Subject‑teacher scope = their own published lesson only; class‑teacher scope = their section in that year; L/C only for class teachers/admins. Every change is audited per record; saves are one transaction with a revision check; locked dates need `attendance.override` + a reason. Use `countAttendance` from `@ttlmhss/shared` for every percentage (P ÷ (P + A); null when none).
+- **Academic calendar (Phase 8A):** whether a class/section works on a date comes ONLY from `CalendarResolver` (weekly pattern → the one date entry that applies → result); it is loaded with the timetable week frame (`frame.calendar`). Never read `academic_years.working_days` directly for a date decision. Calendar entries never overlap per section (validated in `CalendarService`); calendar changes never delete attendance — registers on later‑holiday dates stay read‑only history. Calendar management uses `config.manage`.
 - Run `pnpm check` (lint + format + typecheck + tests) before finishing a phase; run `pnpm --filter @ttlmhss/web test:e2e` when UI flows change.
 
 ## 9. Documentation map

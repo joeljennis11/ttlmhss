@@ -96,7 +96,7 @@ export class TimetableEditorService extends TimetableServiceBase {
       : [];
     const { active: _a, label: _l, ...sectionView } = section;
     return {
-      ...gridFor(frame, entries),
+      ...gridFor(frame, entries, sectionId),
       section: sectionView,
       draft: draft ? toVersionView(draft) : null,
       published: published ? toVersionView(published) : null,
@@ -281,7 +281,7 @@ export class TimetableEditorService extends TimetableServiceBase {
         if (!section.active) {
           throw fieldConflict(field('sectionId'), `${section.label} is inactive.`);
         }
-        checkSlot(frame, op.day, op.periodId, field);
+        checkSlot(frame, section.sectionId, op.day, op.periodId, field);
         const { teacher } = await checkTeaching(repos, op.subjectId, op.teacherId, field);
         await checkFree(
           repos,
@@ -360,7 +360,7 @@ export class TimetableEditorService extends TimetableServiceBase {
         const label = `${entry.className} ${entry.sectionName}`;
         this.checkManageSection(actor, entry.sectionId, label);
         if (entry.day === op.day && entry.periodId === op.periodId) return;
-        checkSlot(frame, op.day, op.periodId, field);
+        checkSlot(frame, entry.sectionId, op.day, op.periodId, field);
         await checkFree(
           repos,
           frame,

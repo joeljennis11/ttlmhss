@@ -47,6 +47,7 @@ Admin configures:
 - **R‑4.8** Configurable student profile fields grouped as Personal, Parent/Guardian, Contact, Address, Academic, Other. Protected system fields stay application‑controlled.
 - **R‑4.9** School details (name, address, contact, signatory names/titles for documents).
 - **R‑4.10** Access to audit information.
+- **R‑4.11** *(Phase 8A)* **Academic calendar:** per academic year, the weekly working days are the default; administrators add date entries — **Holiday** or **Working day** — for the entire school, a class range, specific classes or specific sections, with a reason and optional note; monthly calendar and list views; edit and delete with confirmation; every change audited. Whether attendance can exist for a class on a date comes from this calendar.
 
 ## 5. Student management (Phase 5)
 

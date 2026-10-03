@@ -38,6 +38,9 @@ export interface Database {
   // Phase 6 — timetable
   timetable_versions: TimetableVersionsTable;
   timetable_entries: TimetableEntriesTable;
+  // Phase 8A — academic calendar
+  calendar_entries: CalendarEntriesTable;
+  calendar_entry_targets: CalendarEntryTargetsTable;
   // Phase 7 — attendance
   attendance_sessions: AttendanceSessionsTable;
   attendance_records: AttendanceRecordsTable;
@@ -350,4 +353,23 @@ export interface AttendanceRecordsTable extends Timestamps {
   note: string | null;
   created_by: string | null;
   updated_by: string | null;
+}
+
+// Phase 8A (0009) — academic calendar
+export interface CalendarEntriesTable extends Timestamps {
+  id: string;
+  academic_year_id: string;
+  date: string;
+  status: string;
+  scope: string;
+  reason: string;
+  note: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+}
+
+export interface CalendarEntryTargetsTable {
+  entry_id: string;
+  class_id: string | null;
+  section_id: string | null;
 }

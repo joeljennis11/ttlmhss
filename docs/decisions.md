@@ -95,11 +95,22 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 |---|---|---|---|
 | D‑51 | Meaning of `C` | Phase 7 instruction: **Permission / conditionally excused**, per student (earlier docs said "Cancelled" for a whole period). Shown as "Excused" with the full wording in help text. No reason list; optional note | Adopted — please confirm |
 | D‑52 | Which statuses a subject teacher may set | `P`, `A` and `-` only; `L` and `C` belong to the class teacher / administrator (BR‑ATT‑05, CLAUDE.md) | Adopted — please confirm |
-| D‑53 | Attendance on a configured non‑working day | Refused for everyone, administrators included (no override built). Add a working day to the year if the school opens that day | Adopted — please confirm |
+| D‑53 | Attendance on a configured non‑working day | Phase 7: refused for everyone, based on the year's weekly working days. **Superseded by D‑58 (Phase 8A):** the class‑aware academic calendar now decides; a special working day is added there instead of changing the weekly pattern | Superseded (Phase 8A) |
 | D‑54 | Future dates | Registers can be viewed but not saved before the day | Adopted |
 | D‑55 | Concurrent editing | Optimistic locking: each register has a revision; a save based on an older revision is refused with "reload". Multi‑period Leave/C saves always apply on top of the latest state | Adopted |
 | D‑56 | Mark All Present | Sets only unmarked (`-`) students to `P`; P/A/L/C already chosen are kept (the UI says how many were kept). Nothing is saved until Save attendance | Adopted |
 | D‑57 | Not‑marked lessons in student and class totals | Lessons that happened with no record count as `-` (shown, excluded from %) | Adopted |
+
+## Added in Phase 8A
+
+| ID | Question | Current default | Status |
+|---|---|---|---|
+| D‑58 | Source of "is this a working day for this class?" | The academic calendar (weekly pattern + date entries per school / classes / sections), resolved only by `CalendarResolver`; replaces the year‑level check of D‑53 in attendance and timetable lessons. Still no attendance on a class's non‑working day, administrators included | Adopted |
+| D‑59 | Overlapping entries | Refused (no precedence hierarchy): at most one entry per section per date | Adopted — please confirm |
+| D‑60 | Class range | A UI convenience: resolved to explicit classes by display order when saved. Classes added to the school later are **not** added to existing entries | Adopted — please confirm |
+| D‑61 | Timetable on special working weekdays | A section may hold lessons on a weekday only if it is a weekly working day or the weekday of a special working date for it; lessons still occur only on calendar‑working dates. If the same weekday later stops being special, those lessons are listed as problems at the next publish | Adopted — please confirm |
+| D‑62 | Attendance on a date that later became a holiday | Kept, shown read‑only, and still counted (it was really recorded). Deleting the holiday makes it editable again | Adopted — please confirm |
+| D‑63 | Calendar permissions | Reuses `config.manage` (School setup, administrators only); no new permission keys. Teachers/students consume the calendar only through attendance and timetable | Adopted |
 
 ## Pending inputs from the user
 

@@ -2,6 +2,7 @@ import {
   AcademicYearViewSchema,
   AttendancePolicyViewSchema,
   BehaviourConfigViewSchema,
+  CalendarViewSchema,
   CategoryViewSchema,
   ClassViewSchema,
   DayStructureViewSchema,
@@ -16,6 +17,7 @@ import {
   type AcademicYearCreate,
   type AcademicYearUpdate,
   type AttendancePolicyUpdate,
+  type CalendarEntryInput,
   type CategoryCreate,
   type CategoryUpdate,
   type ConfigurableRole,
@@ -237,4 +239,27 @@ export const permissions = {
       body: { permissions: list },
       schema: PermissionsViewSchema,
     }),
+};
+
+/** Academic calendar (Phase 8A): date entries over the weekly working days. */
+export const calendar = {
+  get: (yearId: string, signal?: Signal) =>
+    apiRequest(`/admin/academic-years/${yearId}/calendar`, {
+      schema: CalendarViewSchema,
+      ...opts(signal),
+    }),
+  create: (yearId: string, body: CalendarEntryInput) =>
+    apiRequest(`/admin/academic-years/${yearId}/calendar`, {
+      method: 'POST',
+      body,
+      schema: CalendarViewSchema,
+    }),
+  update: (id: string, body: CalendarEntryInput) =>
+    apiRequest(`/admin/calendar-entries/${id}`, {
+      method: 'PUT',
+      body,
+      schema: CalendarViewSchema,
+    }),
+  remove: (id: string) =>
+    apiRequest(`/admin/calendar-entries/${id}`, { method: 'DELETE', schema: CalendarViewSchema }),
 };

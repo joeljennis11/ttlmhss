@@ -26,6 +26,18 @@ Authoritative definitions of the domain rules. Each rule has an ID so code, test
 - **BR‑TCH‑05 (Phase 5) Teacher → Subject** is only teacher + subject (no class, no period). The subject must exist and be active; the same pair cannot be added twice; many teachers may share a subject. Removing a pair is audited. Classes and periods come from timetable assignments (Teacher + Subject + Class/Section + Day + Period, Phase 6), which check that the pair exists (BR‑TT‑02); a pair used by the draft or live timetable cannot be removed (BR‑TT‑16).
 - **BR‑TCH‑06 (Phase 5) Class teacher assignment** = teacher + academic year + section. At most one ACTIVE per section per year (database‑enforced). Assigning to a section that already has a class teacher requires an explicit *replace*: the old assignment is ended (kept) and the new one starts. A teacher may hold more than one section (not restricted, D‑08). Only active teachers, active sections and non‑closed years. Deactivating a teacher ends their ACTIVE assignments.
 
+## Academic calendar (BR‑CAL) — implemented in Phase 8A
+
+- **BR‑CAL‑01** The year's **weekly working days** (Phase 4) are the default pattern. They are never edited to represent a single date.
+- **BR‑CAL‑02** A **date entry** (Holiday or Working day, with a reason) overrides the weekly pattern for the classes it applies to: the **entire school**, **specific classes** (a class range is chosen in the configured class order and stored as explicit classes) or **specific sections**. Other classes keep the weekly pattern that day.
+- **BR‑CAL‑03** Resolution, in one server‑side place (`CalendarResolver` / `resolveWorkingDay`): date outside the academic year → not working; else the one entry that applies to the class/section → its status; else the weekly pattern.
+- **BR‑CAL‑04** Entries never stack: on one date at most one entry may apply to any section. The whole school overlaps every entry that day; a class overlaps itself and its own sections; sections overlap only themselves. Overlaps are refused with the existing entry named, so there is no precedence to remember. An entry must also change something (no "Working day" on a weekly working day, no "Holiday" on a weekly closed day). Closed years cannot change.
+- **BR‑CAL‑05** Class‑specific special working days (e.g. a Saturday for 11–12) and class‑specific holidays (e.g. 1–10 off) are supported; different classes may resolve differently on the same date.
+- **BR‑CAL‑06** A working day does not create lessons: the **published timetable** remains the only source of lessons. A section's timetable may hold lessons on the weekly working days plus the weekdays of special working dates that apply to it (e.g. Saturday lessons for 11–12 once a Saturday is a special working day for them); those lessons happen only on dates the calendar says are working.
+- **BR‑CAL‑07** Non‑working dates (for that class) have no expected attendance: no register can be created, no Take attendance, no `-` counted, nothing added to percentages (P ÷ (P + A) unchanged).
+- **BR‑CAL‑08** Attendance history is never deleted by later calendar changes. A register saved on a date that later becomes a holiday stays visible as **read‑only history** (no one can change it while the date is non‑working) and its records still count as recorded attendance; removing the holiday makes it editable again.
+- **BR‑CAL‑09** Every create / update / delete is audited (actor, time, year, date, old and new status, applicability, reason, note). Only administrators manage the calendar (`config.manage`).
+
 ## Timetable (BR‑TT)
 
 - **BR‑TT‑01** A timetable slot assignment = Teacher + Subject + Class + Section + Day + Period (within an academic year).

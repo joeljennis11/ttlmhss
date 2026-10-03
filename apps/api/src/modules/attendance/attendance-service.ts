@@ -85,6 +85,11 @@ export interface Lesson {
   section: Awaited<ReturnType<typeof sectionRef>>;
   /** The saved register, if any (its snapshot wins over today's timetable). */
   session: AttendanceSessionRecord | null;
+  /**
+   * Is the date a working day for this class in the academic calendar NOW? False only for a saved
+   * register whose date later became a holiday: it stays readable as history but cannot change.
+   */
+  workingDay: boolean;
   timetableEntryId: string;
   timetableVersionId: string;
   subject: { id: string; name: string; code: string | null };
@@ -291,14 +296,13 @@ export abstract class AttendanceServiceBase {
     return year;
   }
 
-  protected requireSchoolDay(year: AcademicYearRecord, date: string): Weekday {
-    const day = weekdayOf(date);
-    if (!(year.workingDays ?? []).includes(day)) {
+  /** A working day for this class in the academic calendar (Phase 8A), or a clear refusal. */
+  protected requireWorkingDay(frame: WeekFrame, date: string, sectionId: string, label: string) {
+    if (!frame.calendar.isWorking(date, sectionId)) {
       throw new ConflictError(
-        `${DAY_NAMES[day]} ${date} is not a working day in ${year.label}. Attendance is taken on working days only.`,
+        `${frame.calendar.explain(date, sectionId, label)} Attendance is taken on working days only.`,
       );
     }
-    return day;
   }
 
   /**
@@ -313,7 +317,7 @@ export abstract class AttendanceServiceBase {
     sectionId: string,
   ): Promise<Lesson> {
     const year = await this.requireYear(repos, date);
-    const day = this.requireSchoolDay(year, date);
+    const day = weekdayOf(date);
     const frame = await loadFrame(repos, year);
     const period = frame.slotById.get(periodId);
     if (!period)
@@ -323,6 +327,7 @@ export abstract class AttendanceServiceBase {
     }
     const section = await sectionRef(repos, sectionId);
     const session = await repos.attendance.findSession(year.id, date, periodId, sectionId);
+    const workingDay = frame.calendar.isWorking(date, sectionId);
     if (session) {
       return {
         year,
@@ -332,6 +337,7 @@ export abstract class AttendanceServiceBase {
         period,
         section,
         session,
+        workingDay,
         timetableEntryId: session.timetableEntryId,
         timetableVersionId: session.timetableVersionId,
         subject: { id: session.subjectId, name: session.subjectName, code: session.subjectCode },
@@ -342,6 +348,8 @@ export abstract class AttendanceServiceBase {
         },
       };
     }
+    // BR-CAL-06: a new register only on a working day for this class (academic calendar).
+    this.requireWorkingDay(frame, date, sectionId, section.label);
     const version = await repos.timetable.versionInForce(year.id, endOfSchoolDay(date));
     if (!version) {
       throw new ConflictError(
@@ -362,6 +370,7 @@ export abstract class AttendanceServiceBase {
       period,
       section,
       session: null,
+      workingDay: true,
       timetableEntryId: entry.id,
       timetableVersionId: version.id,
       subject: { id: entry.subjectId, name: entry.subjectName, code: entry.subjectCode },
@@ -393,15 +402,18 @@ export abstract class AttendanceServiceBase {
     const canMark = manage || ownLesson;
     const { locked, lockDate } = await this.lockState(repos, lesson.date);
     const future = lesson.date > this.today();
-    const canOverride = locked && principal.permissions.has('attendance.override');
-    const editable = canMark && !future && (!locked || canOverride);
+    const canOverride =
+      lesson.workingDay && locked && principal.permissions.has('attendance.override');
+    const editable = canMark && lesson.workingDay && !future && (!locked || canOverride);
     const readOnlyReason = !canMark
       ? 'You can view this register but not change it.'
-      : future
-        ? 'This lesson has not happened yet.'
-        : locked && !canOverride
-          ? `Attendance for this date is locked (since ${lockDate}). Only an administrator can change it.`
-          : null;
+      : !lesson.workingDay
+        ? `${lesson.frame.calendar.explain(lesson.date, lesson.section.sectionId, lesson.section.label)} This attendance was saved before and is kept as history; it cannot be changed.`
+        : future
+          ? 'This lesson has not happened yet.'
+          : locked && !canOverride
+            ? `Attendance for this date is locked (since ${lockDate}). Only an administrator can change it.`
+            : null;
     return {
       canView,
       canMark,
@@ -429,7 +441,10 @@ export abstract class AttendanceServiceBase {
     );
     const byPeriod = new Map(sessions.map((s) => [s.periodId, s]));
     const versions = cache ?? new VersionCache(repos, year.id);
-    const entries = await versions.entriesOn(date, { sectionId, day });
+    // Academic calendar (Phase 8A): on a non-working day only registers already saved remain.
+    const entries = frame.calendar.isWorking(date, sectionId)
+      ? await versions.entriesOn(date, { sectionId, day })
+      : null;
     const out: DayLesson[] = [];
     for (const slot of frame.slots) {
       if (slot.kind !== 'LESSON') continue;
