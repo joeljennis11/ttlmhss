@@ -54,6 +54,9 @@ export interface Database {
   behaviour_assessments: BehaviourAssessmentsTable;
   behaviour_ratings: BehaviourRatingsTable;
   achievements: AchievementsTable;
+  // Phase 10
+  announcements: AnnouncementsTable;
+  requests: RequestsTable;
 }
 
 export interface AttendancePolicyTable extends Timestamps {
@@ -477,4 +480,48 @@ export interface AchievementsTable extends Timestamps {
   status: string;
   created_by: string | null;
   updated_by: string | null;
+}
+
+// ---- Phase 10: announcements and requests --------------------------------------------------------
+
+export interface AnnouncementsTable extends Timestamps {
+  id: string;
+  academic_year_id: string;
+  title: string;
+  body: string;
+  audience: string;
+  class_id: string | null;
+  section_id: string | null;
+  status: string;
+  published_at: string | null;
+  expires_on: string | null;
+  published_by: string | null;
+  created_by: string;
+  updated_by: string | null;
+}
+
+export interface RequestsTable extends Timestamps {
+  id: string;
+  type: string;
+  status: string;
+  academic_year_id: string;
+  student_id: string;
+  enrolment_id: string;
+  section_id: string;
+  requested_by: string;
+  requester_role: string;
+  summary: string;
+  description: string;
+  related_date: string | null;
+  related_period_id: string | null;
+  related_subject_id: string | null;
+  related_exam_id: string | null;
+  profile_field: string | null;
+  assigned_to: string | null;
+  resolution_note: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  closed_at: string | null;
+  closed_by: string | null;
+  revision: number;
 }

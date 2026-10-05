@@ -8,6 +8,7 @@ import {
   type AttendanceSessionListQuerySchema,
   type AttendanceStatus,
   type StudentAttendanceView,
+  type StudentDayView,
 } from '@ttlmhss/shared';
 import type { z } from 'zod';
 import type { Principal } from '../../core/auth/access.js';
@@ -400,6 +401,123 @@ export class AttendanceViewService extends AttendanceServiceBase {
     const principal = this.authorize(ctx, 'attendance.view');
     if (!principal.studentId) throw new ConflictError('Only students have their own attendance.');
     return this.studentAttendance(ctx, principal.studentId, from, to);
+  }
+
+  /**
+   * The signed-in student's lessons on one date (Phase 10: dashboard "today", attendance-issue
+   * requests). Same resolution as their attendance: placement on that date → the section's lessons
+   * (timetable in force + registers already taken, academic calendar applied) → their own status.
+   */
+  async myDay(ctx: RequestContext, date: string): Promise<StudentDayView> {
+    const principal = this.authorize(ctx, 'attendance.view');
+    if (!principal.studentId) throw new ConflictError('Only students have their own lessons.');
+    const studentId = principal.studentId;
+    const repos = this.repos;
+    const year = await this.yearOf(repos, date);
+    if (!year) return { date, schoolDay: false, section: null, lessons: [] };
+    const placement = placementOn(
+      await repos.attendance.placementsOfStudents([studentId], year.id, date, date),
+      studentId,
+      date,
+    );
+    if (!placement) return { date, schoolDay: false, section: null, lessons: [] };
+    const frame = await loadFrame(repos, year);
+    const section = sectionView(await sectionRef(repos, placement.sectionId));
+    const lessons = await this.sectionLessons(repos, year, frame, placement.sectionId, date);
+    const records = await repos.attendance.recordsForStudent(studentId, date, date);
+    const statusAt = new Map(records.map((r) => [r.periodId, r.status]));
+    return {
+      date,
+      schoolDay: frame.calendar.isWorking(date, placement.sectionId),
+      section,
+      lessons: lessons.map((l) => ({
+        period: {
+          id: l.period.id,
+          label: l.period.label,
+          periodNumber: l.period.periodNumber,
+          startTime: l.period.startTime,
+          endTime: l.period.endTime,
+        },
+        subject: { id: l.subject.id, name: l.subject.name },
+        teacherName: l.teacher.fullName,
+        status: statusAt.get(l.period.id) ?? '-',
+      })),
+    };
+  }
+
+  /**
+   * Administrator overview of one date (Phase 10 dashboard): for every active section working that
+   * day, its lessons (same resolution as the class day: timetable in force + saved registers,
+   * academic calendar applied), how many registers were taken and the P/A/L/C counts.
+   */
+  async schoolDay(ctx: RequestContext, date: string) {
+    const principal = this.authorize(ctx, 'attendance.view');
+    if (!this.isAdmin(principal)) {
+      throw new ForbiddenError("Only administrators can see the whole school's attendance.");
+    }
+    const repos = this.repos;
+    const year = await this.yearOf(repos, date);
+    const empty = countAttendance([]);
+    if (!year) return { schoolDay: false, workingSections: 0, sections: [], counts: empty };
+    const frame = await loadFrame(repos, year);
+    const cache = new VersionCache(repos, year.id);
+    const [classes, sections] = await Promise.all([
+      repos.classes.listClasses(),
+      repos.classes.listSections(),
+    ]);
+    const classOf = new Map(classes.map((c) => [c.id, c]));
+    const active = sections
+      .filter((s) => s.status === 'ACTIVE' && classOf.get(s.classId)?.status === 'ACTIVE')
+      .sort(
+        (a, b) =>
+          (classOf.get(a.classId)?.displayOrder ?? 0) -
+            (classOf.get(b.classId)?.displayOrder ?? 0) || a.name.localeCompare(b.name),
+      );
+    const out: {
+      section: { sectionId: string; sectionName: string; classId: string; className: string };
+      lessons: number;
+      taken: number;
+      counts: ReturnType<typeof countAttendance>;
+    }[] = [];
+    const all: AttendanceStatus[] = [];
+    let working = 0;
+    for (const s of active) {
+      if (frame.calendar.isWorking(date, s.id)) working += 1;
+      const lessons = await this.sectionLessons(repos, year, frame, s.id, date, cache);
+      if (lessons.length === 0) continue;
+      const taken = lessons.filter((l) => l.session !== null);
+      const roster = rosterOn(
+        await sectionPlacements(repos, year.id, s.id, date, date),
+        s.id,
+        date,
+      );
+      const records = await repos.attendance.recordsForSessions(taken.map((l) => l.session!.id));
+      const statusAt = new Map(records.map((r) => [`${r.sessionId}|${r.studentId}`, r.status]));
+      // Every placed student × every lesson, '-' when not marked — exactly as the class day counts.
+      const statuses: AttendanceStatus[] = roster.flatMap((st) =>
+        lessons.map((l) =>
+          l.session ? (statusAt.get(`${l.session.id}|${st.studentId}`) ?? '-') : '-',
+        ),
+      );
+      all.push(...statuses);
+      out.push({
+        section: {
+          sectionId: s.id,
+          sectionName: s.name,
+          classId: s.classId,
+          className: classOf.get(s.classId)?.name ?? '',
+        },
+        lessons: lessons.length,
+        taken: taken.length,
+        counts: countAttendance(statuses),
+      });
+    }
+    return {
+      schoolDay: frame.calendar.workingForAnyone(date),
+      workingSections: working,
+      sections: out,
+      counts: countAttendance(all),
+    };
   }
 
   // ---- Classes the caller manages (filters) -----------------------------------------------------

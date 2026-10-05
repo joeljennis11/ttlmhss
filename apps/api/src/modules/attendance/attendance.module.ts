@@ -1,4 +1,5 @@
 import {
+  IsoDateSchema,
   AttendanceClassDayQuerySchema,
   AttendanceClassRangeQuerySchema,
   AttendanceDateQuerySchema,
@@ -118,6 +119,14 @@ export function attendanceModule(deps: AppDependencies): FeatureModule {
         access: requires('attendance.view'),
         schema: { query: AttendanceRangeQuerySchema },
         handler: (c) => views.myAttendance(ctxOf(c), c.query.from, c.query.to),
+      }),
+      // Phase 10: the signed-in student's lessons on one date (dashboard, attendance-issue form).
+      defineRoute({
+        method: 'GET',
+        url: '/attendance/me/day',
+        access: requires('attendance.view'),
+        schema: { query: z.object({ date: IsoDateSchema }) },
+        handler: (c) => views.myDay(ctxOf(c), c.query.date),
       }),
       defineRoute({
         method: 'GET',

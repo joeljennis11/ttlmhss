@@ -533,3 +533,40 @@ Achievements: student + academic year + placement on the date → category, titl
 - Students: *My portal* (overview + link tiles), *My profile*, *Timetable* (week grid + subjects and teachers), *Attendance* (Phase 7 page, with a per‑lesson list), *Marks & results* (Phase 8B `MyResults` at `/portal/results`), *Behaviour* (cards per exam), *Achievements* (cards).
 - Staff: *Behaviour* (year → exam → class; table of students × configured categories with rating drop‑downs and remark; cards on phones; Save draft, Submit with confirmation, correction reason dialog, history); *Achievements* (filters, cards, add/edit dialog with student search through the scoped student list, archive/restore/delete confirmations, pagination). The administrator's student profile shows both (`StudentRecordPanels`).
 
+
+## 19. Dashboards, announcements and requests (Phase 10)
+
+```
+GET /dashboard  (one call per home page; nothing is calculated here)
+  admin     ← students/teachers list totals, classes config, AttendanceViewService.schoolDay (class‑day lesson
+              logic for every section, calendar‑aware), calendar entries of today, MarkSheetService.home
+  teaching  ← AttendanceViewService.lessons (published timetable + calendar + registers), MarkSheetService.home/sheet
+  classes[] ← AttendanceViewService.classDay, MarkSheetService.home, BehaviourService.sheet, AchievementService.list
+  student   ← PortalService.profile, AttendanceViewService.myDay / myAttendance, ResultsService.myExams/myResult,
+              BehaviourService.mine, AchievementService.mine
+  shared    ← AnnouncementService.feed, RequestService.list / mine
+```
+
+**Dashboards consume the existing source‑of‑truth services** (BR‑DASH‑01): attendance percentages are `countAttendance` through the attendance service, lessons come from the published timetable and the `CalendarResolver`, mark and result states from Phase 8B, behaviour and achievements from Phase 9 with their visibility rules. Each block runs with the caller's own identity, so permissions and scope apply unchanged; a refused block is omitted.
+
+- Shared: `@ttlmhss/shared/communication` (announcement and request contracts, student day) and `/dashboard` (dashboard contract, mark‑task states). Controlled values `AnnouncementAudience`, `AnnouncementStatus`, `RequestStatus` (OPEN/IN_REVIEW/RESOLVED/CLOSED), `ProfileField`.
+- API:
+  - `modules/dashboard/dashboard.service.ts` — composes the blocks; `modules/dashboard/phase10.module.ts` registers all Phase 10 routes.
+  - `modules/announcements/announcement.service.ts` — feed (own audience, published, not expired, current year), get (audience or manager), management list/options, create (publish now or draft), update (re‑target audited), publish, archive, restore.
+  - `modules/requests/request.service.ts` — form options (visible exams + subjects via `ResultsService`), create (lesson checked via `AttendanceViewService.myDay`, routing to the class teacher), mine, scoped list, detail with audit history and assignees, status workflow with revision check, assignment.
+  - `modules/attendance/attendance-views.service.ts` — new read‑only `schoolDay` (administrators) and `myDay` (students).
+  - Repositories `AnnouncementRepository`, `RequestRepository` (Kysely in `data/kysely/repositories/communication/`); `UserAccountRepository.listActiveByRole`.
+
+### Endpoints
+| Area | Endpoints | Permission |
+|---|---|---|
+| Dashboard | `GET /dashboard` | signed in (+ each block's own permission) |
+| Announcements | `GET /announcements/feed?page`, `GET /announcements/:id`; `GET /announcements/options`, `GET /announcements?year&status&audience&q&page`, `POST /announcements` `{ announcement, publish }`, `PUT /announcements/:id`, `POST /announcements/:id/publish|archive|restore` | `announcements.view` / `announcements.manage` + scope |
+| Requests | `GET /requests/mine`, `GET /requests/options`, `POST /requests`; `GET /requests?year&status&type&section&from&to&page`, `GET /requests/:id`, `POST /requests/:id/status` `{ status, note, revision }`, `POST /requests/:id/assign` `{ assigneeUserId, revision }` | `requests.view` / `requests.create` / `requests.handle` + scope |
+| Attendance | `GET /attendance/me/day?date` (the student's lessons that date) | `attendance.view`, students |
+
+### Web (`features/communication/`)
+- *Home* (`DashboardPage`): staff layout (numbers, quick actions, Today, Exams and marks, today's lessons via the Phase 7 `LessonList`, mark entry, my class panels, announcements, open requests) or the student home (`StudentHome`: class banner, today, attendance, latest result, behaviour, achievements, my requests, announcements, portal link chips — phone first).
+- *Announcements* (feed, full announcement page) and *Manage announcements* (filters, cards, dialog with audience‑dependent class/section, publish now, archive confirmation, restore).
+- *My requests* (list + type‑specific form) and *Requests* for reviewers (filters, list) sharing one request page (details, resolution, review actions, assignment, history, link to the record's own page).
+- Menu: Announcements for everyone; Requests for administrators and class teachers; My requests for students.

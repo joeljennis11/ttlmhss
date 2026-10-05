@@ -76,6 +76,17 @@ export class KyselyUserAccountRepository implements UserAccountRepository {
     });
   }
 
+  listActiveByRole(role: UserRole): Promise<UserAccount[]> {
+    return guard(async () => {
+      const rows = await this.query()
+        .where('u.role', '=', role)
+        .where('u.status', '=', 'ACTIVE')
+        .orderBy('u.username')
+        .execute();
+      return rows.map((r) => this.map(r));
+    });
+  }
+
   create(account: NewUserAccount, now: string): Promise<void> {
     return guard(async () => {
       await this.db

@@ -204,9 +204,17 @@ Implemented in Phase 8B on top of the Phase 4 configuration (BR‑CFG‑09/10). 
 
 ## Requests & announcements (BR‑RQ)
 
-- **BR‑RQ‑01** Request types: Attendance Issue, Result Clarification, Profile Correction. Lifecycle: Open → Resolved / Rejected, with a response note. No threaded chat.
-- **BR‑RQ‑02** Default routing proposal: requests go to the student's Class Teacher; Admin sees all. **⚠ Open (D‑14)**
-- **BR‑RQ‑03** Announcements: Admin can target all / role / class; Class Teacher targets own class only.
+- **BR‑RQ‑01** Request types: Attendance Issue, Result Clarification, Profile Correction. Only students create requests, about themselves, while placed in a class in the current year. No threaded chat.
+- **BR‑RQ‑02 Routing (Phase 10, D‑95; closes D‑14).** Attendance issues and result clarifications are assigned to the class teacher of the student's current section and are also visible to administrators; profile corrections go to administrators only (unassigned = the office queue). Subject teachers see no requests. Administrators may assign a request to another administrator or to the section's class teacher.
+- **BR‑RQ‑03 What a request refers to** is checked by the server from the student's own data: an attendance issue names a date in the year, not in the future, and a period in which the student actually had a lesson (the subject is taken from that lesson); a result clarification names an exam whose results the student may see (Phase 8B) and one of its subjects for the student; a profile correction names a detail category. Description 10–2000 characters. At most 10 requests may be Open or In review per student (D‑97).
+- **BR‑RQ‑04 Lifecycle (D‑94):** Open → In review (the reviewer becomes the assignee if none) → Resolved (resolution note ≥ 5 characters, visible to the student) → Closed. An unresolved request may be closed with a note (it becomes the resolution, e.g. duplicate). Resolved/Closed → Open again with a reason (the earlier resolution stays in the history). Every change checks the request's revision.
+- **BR‑RQ‑05 No back door.** Handling a request changes only the request. Attendance, marks and profile data are corrected through their own pages and rules (locks, unlock reasons, audits); the request page links there.
+- **BR‑RQ‑06 Visibility.** A student sees only their own requests (status, resolution, dates), never another student's — refused like a missing id. Reviewers see requests in scope with the history from the audit trail.
+- **BR‑AN‑01 Announcements (Phase 10, D‑96).** Audience is structured: whole school (everyone), teachers and staff (teachers and administrators), a class (students placed in any of its sections + their class teachers), a section (its students + its class teacher). Administrators see every audience. Subject teachers do not see class/section announcements.
+- **BR‑AN‑02 Who writes:** administrators — any audience; class teachers with `announcements.manage` — only their own section (this academic year), never another section, a whole class, staff or the whole school; subject teachers and students — never.
+- **BR‑AN‑03 Lifecycle:** Draft (managers only) → Published (its audience, from the publish time) → Archived (hidden, kept). Restore returns it to Published (if it had been published) or Draft. No deletion. An optional expiry date (inclusive, not in the past) hides a published announcement from its audience afterwards; managers still see it marked "Expired". Edits of archived announcements are refused; announcements of a closed year are read‑only.
+- **BR‑AN‑04** Every create, edit, re‑target, publish, archive and restore is audited (entity `announcement`, before/after).
+- **BR‑DASH‑01 Dashboards consume, never compute (D‑91).** Every number comes from the existing service used by the page it links to; no dashboard‑specific definitions. Lessons and "registers to take" follow the published timetable and the academic calendar (no lessons on a holiday). A mark sheet is "Not started" while no student's marks are entered (D‑92).
 
 ## Authentication & accounts (BR‑AUTH) — implemented in Phase 2
 

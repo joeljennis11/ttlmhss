@@ -22,6 +22,8 @@ export interface NewUserAccount {
 export interface UserAccountRepository {
   findByUsername(username: string): Promise<UserAccount | null>;
   findById(id: string): Promise<UserAccount | null>;
+  /** Phase 10: active accounts of one role (e.g. administrators a request may be assigned to). */
+  listActiveByRole(role: UserRole): Promise<UserAccount[]>;
   create(account: NewUserAccount, now: string): Promise<void>;
   setStatus(userId: string, status: RecordStatus, now: string): Promise<void>;
 }

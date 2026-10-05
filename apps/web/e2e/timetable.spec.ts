@@ -239,6 +239,9 @@ test('class teacher editing follows the permission setting and stays in their ow
 test('timetable pages fit tablet and phone screens; phones show one day at a time', async ({
   page,
 }) => {
+  // Five page loads of the full week grid; by this point the shared e2e database holds every
+  // other spec file's periods and lessons, so allow more than the 30 s default.
+  test.setTimeout(60_000);
   await signIn(page, 'e2e.admin');
   for (const [width, height] of [
     [820, 1180],

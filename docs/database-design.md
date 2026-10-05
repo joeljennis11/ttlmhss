@@ -87,8 +87,8 @@ erDiagram
 
 ### Engagement
 - **Achievement** — Student (+ AcademicYear), category, title, description, date, optional file reference, created‑by.
-- **Announcement** — title, body, audience (all / role / section), author, publish/expiry dates.
-- **StudentRequest** — Student, type (Attendance Issue / Result Clarification / Profile Correction), message, status, response, handled‑by/at.
+- **Announcement** — title, body, structured audience (school / staff / class / section), academic year, author, status, publish time, expiry date.
+- **StudentRequest** — Student + placement, type (Attendance Issue / Result Clarification / Profile Correction), related date/period/subject/exam/profile field, description, status, assignee, resolution, timestamps (table `requests`).
 - **FileAsset** — uploaded photos/certificates: storage key, type, size, owner.
 
 ## 3. Key relationships & integrity rules
@@ -264,6 +264,17 @@ exams (+ stage DRAFT/OPEN/CLOSED, description)
 - Annual‑report ready: behaviour keeps year, exam, section, student/placement, category, rating, the label that applied, remark and the submitted state; achievements keep year, student/placement, category, title, description, date and the attachment reference.
 - All references are ON DELETE RESTRICT. Categories are deactivated, never deleted, so history keeps its names.
 
+### 5h. Phase 10 additions (`0012_announcements_requests`)
+
+| Table | Columns | Rules |
+|---|---|---|
+| `announcements` | id, academic_year_id, title (1–120), body (1–4000), audience ∈ SCHOOL/STAFF/CLASS/SECTION, class_id, section_id, status ∈ DRAFT/PUBLISHED/ARCHIVED, published_at/by, expires_on, created_by, updated_by, timestamps | CHECK target: SCHOOL/STAFF → no class/section; CLASS → class only; SECTION → section + its class. Composite FK (section, class) → `sections(id, class_id)`. CHECK: PUBLISHED needs published_at. Indexes (year, status, published_at), (section). |
+| `requests` | id, type ∈ ATTENDANCE_ISSUE/RESULT_CLARIFICATION/PROFILE_CORRECTION, status ∈ OPEN/IN_REVIEW/RESOLVED/CLOSED, academic_year_id, student_id, **enrolment_id**, section_id, requested_by → users, requester_role (STUDENT), summary (1–200), description (1–2000), related_date, related_period_id → periods, related_subject_id → subjects, related_exam_id → exams, profile_field, assigned_to → users, resolution_note (≤ 1000), resolved_at/by, closed_at/by, revision ≥ 1, timestamps | Composite FK (enrolment, year, section, student) → `enrolments`. CHECK per type: attendance → date + period (no exam/field); result → exam + subject; profile → field only. CHECK: RESOLVED needs resolved_at, CLOSED needs closed_at. Indexes (student, created_at), (year, status), (section, status). |
+
+- The placement at creation (enrolment + section) fixes the request's scope, so later class changes do not move it to another class teacher.
+- Status and assignment history is the audit trail (`request.created`, `.review_started`, `.assigned`, `.resolved`, `.closed`, `.reopened`); announcements log `announcement.created`, `.updated`, `.retargeted`, `.published`, `.archived`, `.restored`.
+- All references are ON DELETE RESTRICT. No rows are inserted.
+
 ## 6. Mapping of the functional entity list to the schema
 
 | Functional entity | Representation | When |
@@ -283,7 +294,7 @@ exams (+ stage DRAFT/OPEN/CLOSED, description)
 | Exam, ExamSubject, Mark, GradeRule, ExamWeightage | **Phase 4 ✔:** `exams` (incl. weightage), `exam_subjects` (per exam × class × subject), `grade_schemes`/`grade_bands`. **Phase 8B ✔:** `mark_sheets` (one per exam subject + section; authorised teacher; DRAFT/SUBMITTED/UNLOCKED — drives subject‑wise visibility; settings used), `mark_entries` (raw marks per component; NULL = `-`; derived values at submission); the audit trail uses `audit_logs` (entity `mark_sheet`) (§5f) | Phase 4 ✔ / 8B ✔ |
 | BehaviourCategory, BehaviourRating, BehaviourAssessment | **Phase 4 ✔:** `behaviour_categories`, `behaviour_rating_labels`. **Phase 9 ✔:** `behaviour_sheets` (exam × section, DRAFT/SUBMITTED) + `behaviour_assessments` (enrolment, remark) + `behaviour_ratings` (category, 1–5 CHECK, label at submission) (§5g) | Phase 4 ✔ / 9 ✔ |
 | AchievementCategory, Achievement | **Phase 4 ✔:** `achievement_categories` (configurable; the six specified categories are offered as an explicit "add suggested" choice, not seeded). **Phase 9 ✔:** `achievements` (student + year + placement, ACTIVE/ARCHIVED, attachment reference reserved) | Phase 4 ✔ / 9 ✔ |
-| Announcement, StudentRequest | `announcements`, `student_requests` | Phase 10 |
+| Announcement, StudentRequest | `announcements` (structured audience, DRAFT/PUBLISHED/ARCHIVED, expiry) and `requests` (student + placement, typed references, OPEN/IN_REVIEW/RESOLVED/CLOSED, revision); history in `audit_logs` (entities `announcement`, `request`) (§5h) | Phase 10 ✔ |
 
 ### Why feature tables are not created yet
 Several of them depend on decisions that are still open — streams/electives (D‑09) for marks, timetable versioning (D‑05) for attendance, `0` vs absent (D‑07), unlock visibility (D‑11), behaviour ownership (D‑13), permissions model (D‑15). Creating them now would either lock those decisions silently or force rework migrations later. Each feature phase adds its tables in a new migration, with the relationships fixed in §1–§3 (Attendance = date + class/section + period + student + status; Marks = exam + subject + class/section + student + teacher + marks; Timetable assignment = teacher + subject + class/section + day + period).

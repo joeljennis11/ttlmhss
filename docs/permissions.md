@@ -66,11 +66,11 @@ Legend: ✅ granted · — not granted. CLASS_TEACHER grants are **added** to TE
 | behaviour.manage | ✅ | — | ✅ *own class* | — |
 | achievements.view | ✅ | — | ✅ | ✅ *self* |
 | achievements.manage | ✅ | — **(BR‑ACH‑01)** | ✅ *own class* | — |
-| announcements.view | ✅ | ✅ | (✅) | ✅ |
-| announcements.manage | ✅ | — | ✅ *own class* | — |
+| announcements.view | ✅ | ✅ *own audience* | (✅) | ✅ *own audience* |
+| announcements.manage | ✅ | — | ✅ *own section* | — |
 | requests.view | ✅ | — | ✅ *own class* | ✅ *own* |
 | requests.create | — | — | — | ✅ |
-| requests.handle | ✅ | — | ✅ *own class* ⚠ D‑14 | — |
+| requests.handle | ✅ | — | ✅ *own section* (D‑95) | — |
 | reports.view | ✅ | ✅ *scoped* | (✅) | ✅ *self* |
 | reports.generate | ✅ | — | ✅ *own class* | — |
 | audit.view | ✅ | — | — ⚠ D‑15 | — |
@@ -262,3 +262,22 @@ Scope (server‑side, never from request ids):
 - **Subject teacher** — no behaviour or achievement access (no permission by default, and no section scope even if granted).
 - **Administrator** — everything; only administrators delete (archived) achievements.
 
+
+## 15. Dashboards, announcements and requests (Phase 10)
+
+No new permission keys (D‑98).
+
+| Permission | Default holders | Ceiling | Used for |
+|---|---|---|---|
+| *(signed in)* | everyone | — | `GET /dashboard` — every block re‑checks the permission and scope of the service it comes from; blocks the caller may not see are left out |
+| `announcements.view` | everyone | all | the feed of the caller's own audience and opening one announcement in it |
+| `announcements.manage` | Admin, Class Teacher | Class Teacher | create, edit, publish, archive, restore — administrators any audience; class teachers SECTION announcements of their own section only |
+| `requests.view` | Admin, Class Teacher, Student | all | students: own requests; class teachers: attendance/result requests of their own section; administrators: all |
+| `requests.create` | Student | Student | create a request about oneself |
+| `requests.handle` | Admin, Class Teacher | Class Teacher | start review, resolve, close, reopen (scope as above); assignment: administrators only |
+
+Scope (server‑side):
+- **Student** — `/requests/mine`, `/requests/options`, `/attendance/me/day` use the session's student; another student's request → 403, the same as a missing id; no status/assign/announcement writes.
+- **Class teacher** — sections they are class teacher of in the current year; posting to another section, a class, staff or the school → 403; editing an announcement outside their section → 403.
+- **Subject teacher** — reads SCHOOL and STAFF announcements; no requests, no announcement management (no permission, and no section scope even if granted).
+- **Administrator** — everything.

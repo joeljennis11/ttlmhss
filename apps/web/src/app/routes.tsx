@@ -10,13 +10,25 @@ import {
   UserRound,
   GraduationCap,
   House,
+  Inbox,
+  Megaphone,
   KeyRound,
   NotebookPen,
   Settings,
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import { HomePage } from '../pages/HomePage';
+import { DashboardPage } from '../features/communication/pages/DashboardPage';
+import {
+  AnnouncementDetailPage,
+  AnnouncementManagePage,
+  AnnouncementsPage,
+} from '../features/communication/pages/AnnouncementPages';
+import {
+  MyRequestsPage,
+  RequestDetailPage,
+  RequestsPage,
+} from '../features/communication/pages/RequestPages';
 import { AccountPasswordPage } from '../pages/AccountPasswordPage';
 import { ADMIN_PAGES, type AdminPageId } from '../features/admin/admin-pages';
 import { AdminHubPage } from '../features/admin/pages/AdminHubPage';
@@ -108,7 +120,7 @@ export const SHELL_ROUTES: readonly ShellRoute[] = [
   {
     path: '',
     title: 'Home',
-    element: <HomePage />,
+    element: <DashboardPage />,
     nav: { label: 'Home', icon: House, section: 'main' },
   },
   // Phase 9 — Student portal: the signed-in student's own data (the API never takes their id).
@@ -271,6 +283,49 @@ export const SHELL_ROUTES: readonly ShellRoute[] = [
     permission: 'achievements.view',
     roles: ['STUDENT'],
     nav: { label: 'Achievements', icon: Award, section: 'main' },
+  },
+  // Phase 10 — announcements (everyone reads their own audience) and structured requests.
+  {
+    path: 'announcements',
+    title: 'Announcements',
+    element: <AnnouncementsPage />,
+    permission: 'announcements.view',
+    nav: { label: 'Announcements', icon: Megaphone, section: 'main' },
+  },
+  {
+    path: 'announcements/manage',
+    title: 'Manage announcements',
+    element: <AnnouncementManagePage />,
+    permission: 'announcements.manage',
+    roles: ['ADMIN', 'CLASS_TEACHER'],
+  },
+  {
+    path: 'announcements/:id',
+    title: 'Announcement',
+    element: <AnnouncementDetailPage />,
+    permission: 'announcements.view',
+  },
+  {
+    path: 'requests',
+    title: 'Requests',
+    element: <RequestsPage />,
+    permission: 'requests.view',
+    roles: ['ADMIN', 'CLASS_TEACHER'],
+    nav: { label: 'Requests', icon: Inbox, section: 'main' },
+  },
+  {
+    path: 'portal/requests',
+    title: 'My requests',
+    element: <MyRequestsPage />,
+    permission: 'requests.create',
+    roles: ['STUDENT'],
+    nav: { label: 'My requests', icon: Inbox, section: 'main' },
+  },
+  {
+    path: 'requests/:id',
+    title: 'Request',
+    element: <RequestDetailPage />,
+    permission: 'requests.view',
   },
   // Phase 5 — Student & teacher management (administrator screens; permissions are admin-only
   // management actions, so the menu shows them to administrators).

@@ -125,8 +125,68 @@ export const RequestType = controlledValues([
 ]);
 export type RequestType = (typeof RequestType.values)[number];
 
-export const RequestStatus = controlledValues(['OPEN', 'RESOLVED', 'REJECTED']);
+export const REQUEST_TYPE_LABELS: Readonly<Record<RequestType, string>> = Object.freeze({
+  ATTENDANCE_ISSUE: 'Attendance issue',
+  RESULT_CLARIFICATION: 'Result clarification',
+  PROFILE_CORRECTION: 'Profile correction',
+});
+
+/**
+ * Phase 10 (BR-RQ-02): Open → In review → Resolved → Closed. A resolved or closed request can be
+ * reopened (back to Open). There is no separate Rejected state: a request that needs no change is
+ * resolved with a note saying so (D-94).
+ */
+export const RequestStatus = controlledValues(['OPEN', 'IN_REVIEW', 'RESOLVED', 'CLOSED']);
 export type RequestStatus = (typeof RequestStatus.values)[number];
+
+export const REQUEST_STATUS_LABELS: Readonly<Record<RequestStatus, string>> = Object.freeze({
+  OPEN: 'Open',
+  IN_REVIEW: 'In review',
+  RESOLVED: 'Resolved',
+  CLOSED: 'Closed',
+});
+
+/** What a Profile Correction request is about (the student never edits the record itself). */
+export const ProfileField = controlledValues([
+  'NAME',
+  'DATE_OF_BIRTH',
+  'GENDER',
+  'PARENTS_GUARDIAN',
+  'CONTACT',
+  'ADDRESS',
+  'ADMISSION_DETAILS',
+  'CLASS_PLACEMENT',
+  'OTHER',
+]);
+export type ProfileField = (typeof ProfileField.values)[number];
+
+export const PROFILE_FIELD_LABELS: Readonly<Record<ProfileField, string>> = Object.freeze({
+  NAME: 'Name',
+  DATE_OF_BIRTH: 'Date of birth',
+  GENDER: 'Gender',
+  PARENTS_GUARDIAN: 'Parents / guardian',
+  CONTACT: 'Phone or email',
+  ADDRESS: 'Address',
+  ADMISSION_DETAILS: 'Admission details',
+  CLASS_PLACEMENT: 'Class, section or roll number',
+  OTHER: 'Something else',
+});
+
+/** Phase 10 announcements: who an announcement is for (BR-AN-01). */
+export const AnnouncementAudience = controlledValues(['SCHOOL', 'STAFF', 'CLASS', 'SECTION']);
+export type AnnouncementAudience = (typeof AnnouncementAudience.values)[number];
+
+export const ANNOUNCEMENT_AUDIENCE_LABELS: Readonly<Record<AnnouncementAudience, string>> =
+  Object.freeze({
+    SCHOOL: 'Whole school',
+    STAFF: 'Teachers and staff',
+    CLASS: 'A class (all sections)',
+    SECTION: 'A class section',
+  });
+
+/** Draft (managers only) → Published (its audience) → Archived (hidden, kept as history). */
+export const AnnouncementStatus = controlledValues(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
+export type AnnouncementStatus = (typeof AnnouncementStatus.values)[number];
 
 /** BR-BH-02: behaviour ratings are integers 1–5. Labels are school-configurable data. */
 export const BEHAVIOUR_RATING_MIN = 1;
