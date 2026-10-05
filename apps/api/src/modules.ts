@@ -5,6 +5,7 @@ import { authModule } from './modules/auth/auth.module.js';
 import { calendarModule } from './modules/calendar/calendar.module.js';
 import { configModule } from './modules/config/config.module.js';
 import { marksModule } from './modules/marks/marks.module.js';
+import { phase9Module } from './modules/portal/phase9.module.js';
 import { peopleModule } from './modules/people/people.module.js';
 import { schoolModule } from './modules/school/school.module.js';
 import { systemModule } from './modules/system/system.module.js';
@@ -25,5 +26,6 @@ export function featureModules(deps: AppDependencies): FeatureModule[] {
     timetableModule(deps),
     attendanceModule(deps),
     marksModule(deps),
+    phase9Module(deps),
   ];
 }

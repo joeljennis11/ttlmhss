@@ -501,3 +501,35 @@ Errors: 409 with `details[].path = body.marks.<i>.<component>` for a mark above 
 - Sidebar **Results**: students — *My results* (year, exam, details, complete result tiles with total / % / Pass‑Fail / rank, subject table — "Not yet available" until finalised; list on phones); class teachers and administrators — class results (year, exam, class; subject status list; students × subjects with total, %, result, rank; cards on phones).
 - School setup → Exams: list shows the marks stage; the exam page adds **Marks and results** (stage with confirmations, calendar warnings, sheet counts) and **Mark entry** (per subject and section: maximum, pass, teacher select limited to teachers of the subject, status, entered). Subjects that hold marks cannot be unticked; submitted subjects' settings are shown as locked.
 
+## 18. Student portal, behaviour and achievements (Phase 9)
+
+```
+Student portal (own data only — the student id comes from the session)
+  profile ← students + enrolments        timetable ← PUBLISHED version of own section
+  attendance ← Phase 7/8A views           marks & results ← Phase 8B (SUBMITTED only)
+  behaviour ← behaviour_sheets (SUBMITTED) achievements ← achievements (ACTIVE)
+
+Behaviour: Academic year → Exam → Section → ONE behaviour_sheets row (DRAFT → SUBMITTED)
+  → behaviour_assessments (per student placement, remark) → behaviour_ratings (per category, 1–5, label at submission)
+Achievements: student + academic year + placement on the date → category, title, description, date (ACTIVE / ARCHIVED)
+```
+
+- Shared (`@ttlmhss/shared/portal`): profile, behaviour sheet and achievement contracts.
+- API:
+  - `modules/portal/portal.service.ts` — `/portal/profile` (read‑only, no admin metadata). `modules/portal/phase9.module.ts` registers all Phase 9 routes.
+  - `modules/behaviour/behaviour.service.ts` — options (years, open exams, sections in scope, setup problems), sheet view, Save draft / correction (reason) with revision claim and per‑student audit, Submit (completeness, label snapshot), history, a student's own submitted assessments, staff view of one student. Roster and base service reused from `modules/marks/marks-context.ts`.
+  - `modules/achievements/achievement.service.ts` — options, scoped list (admin all; class teacher own sections), get, create / update (placement on the date + scope + active category), archive / restore, admin delete of archived ones, a student's own list.
+  - Repositories `BehaviourRepository`, `AchievementRepository` (Kysely in `data/kysely/repositories/behaviour|achievements/`).
+  - Attendance: the student view's cells now carry `teacherName` (D‑90).
+
+### Endpoints
+| Area | Endpoints | Permission |
+|---|---|---|
+| Portal | `GET /portal/profile`, `GET /portal/behaviour?academicYearId`, `GET /portal/achievements` | `students.view` / `behaviour.view` / `achievements.view`, students only |
+| Behaviour | `GET /behaviour/options`, `GET /behaviour/sheet?examId&sectionId`, `GET /behaviour/sheet/history?…`, `PUT /behaviour/sheet` `{ examId, sectionId, revision, rows[], reason? }`, `POST /behaviour/sheet/submit`, `GET /behaviour/students/:id` | view / `behaviour.manage` + section scope |
+| Achievements | `GET /achievements/options`, `GET /achievements?…&page`, `POST /achievements`, `GET|PUT|DELETE /achievements/:id`, `POST /achievements/:id/archive|restore` | `achievements.view` / `achievements.manage` + scope |
+
+### Web (`features/portal/`)
+- Students: *My portal* (overview + link tiles), *My profile*, *Timetable* (week grid + subjects and teachers), *Attendance* (Phase 7 page, with a per‑lesson list), *Marks & results* (Phase 8B `MyResults` at `/portal/results`), *Behaviour* (cards per exam), *Achievements* (cards).
+- Staff: *Behaviour* (year → exam → class; table of students × configured categories with rating drop‑downs and remark; cards on phones; Save draft, Submit with confirmation, correction reason dialog, history); *Achievements* (filters, cards, add/edit dialog with student search through the scoped student list, archive/restore/delete confirmations, pagination). The administrator's student profile shows both (`StudentRecordPanels`).
+

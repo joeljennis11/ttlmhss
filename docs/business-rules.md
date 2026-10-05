@@ -157,13 +157,28 @@ Implemented in Phase 8B on top of the Phase 4 configuration (BR‑CFG‑09/10). 
 - **BR‑BH‑01** Behaviour is recorded **per exam/result period**, not daily.
 - **BR‑BH‑02** Each configured category is rated **1–5** via radio buttons. Labels are configurable (default: 1 Needs Improvement, 2 Below Expectations, 3 Satisfactory, 4 Good, 5 Excellent).
 - **BR‑BH‑03** Optional teacher remark.
-- **BR‑BH‑04** Default proposal: Class Teacher (and Admin) records behaviour for their class. **⚠ Open (D‑13)**
+- **BR‑BH‑04** Class Teacher (own section, `behaviour.manage`) and Admin record behaviour — adopted in Phase 9 (D‑13, D‑81).
 
 ## Achievements (BR‑ACH)
 
 - **BR‑ACH‑01** Only **Admin** and **Class Teacher** (for own class) can create/edit/delete achievements. Subject Teachers cannot.
 - **BR‑ACH‑02** Fields: category (Academic, Sports, Cultural, Competitions, Certifications, Other), title, description, date, optional certificate/image.
 - **BR‑ACH‑03** Achievements appear on the student profile and the annual report.
+
+## Student portal, behaviour & achievements — Phase 9 (BR‑PORTAL / BR‑BEH / BR‑ACH)
+
+- **BR‑PORTAL‑01** A student sees only their own data. Portal endpoints take no student id (the session's student is used); shared endpoints that take an id refuse any other student with the same 403 whether or not that student exists. Students never change records (all write routes need staff permissions and scope).
+- **BR‑PORTAL‑02** The portal reuses existing data only: profile from the student record and enrolments (current placement = ACTIVE placement in the current year; history never flattened); timetable from the PUBLISHED version of the student's section; subjects and teachers derived from that timetable (no new teacher↔class link); attendance from Phase 7/8A (P ÷ (P + A), each lesson with subject, teacher, status); marks and results from Phase 8B (submitted subjects only, complete result and rank by the 8B rules, unlocked subjects hidden).
+- **BR‑PORTAL‑03** The profile is read‑only and excludes administrative metadata (exit reason, deletability, account login data other than username/status, audit).
+- **BR‑BEH‑01** Behaviour is exam‑based: ONE sheet per exam and section; one assessment per student placed in the section for that exam (same roster rule as marks, BR‑MARK‑10); one rating 1–5 per **active** configured category; optional remark ≤ 300 characters. No daily behaviour.
+- **BR‑BEH‑02** Recording needs the five rating labels and at least one active category configured; the exam must be active and OPEN, the year not closed, and the class must take the exam (has exam subjects). Inactive categories are kept where already rated but are not required.
+- **BR‑BEH‑03** Workflow (D‑82): **Draft → Submitted.** Drafts are visible only to staff with scope. Submit requires every on‑roll student to be rated in every active category; it stores each rating's configured label (so later label changes never rewrite a finalised assessment) and makes the sheet visible to its students.
+- **BR‑BEH‑04** A submitted sheet is corrected in place: every change needs a reason (≥ 5 characters), must keep every active category rated, stores the label current at the time of the correction, and is audited (old → new rating and remark, reason). The sheet stays submitted; students see the corrected values. There is no hidden/unlocked state.
+- **BR‑BEH‑05** Who: administrators (any section) and the class teacher of the section in that academic year with `behaviour.manage`. Subject teachers have no behaviour access; refusals do not reveal whether a class exists.
+- **BR‑ACH‑04** An achievement belongs to a student and an academic year, and to the placement the student had on its date (date within the year; the student must be placed then). Category must be an ACTIVE configured category (an existing inactive one may stay on edit). Title ≤ 120, description ≤ 1000 characters.
+- **BR‑ACH‑05** Administrators manage any achievement; class teachers those of students placed in their own section in that year (`achievements.manage`). A class teacher cannot tell whether a student outside their class exists.
+- **BR‑ACH‑06** Archive (administrator or class teacher) hides an achievement from the student and keeps it; restore brings it back. Archived achievements cannot be edited. Only administrators may delete, and only an archived achievement; deletion is audited with the full record.
+- **BR‑ACH‑07** Attachments: a reference column exists for a later certificate/image upload; nothing can be uploaded yet (D‑88).
 
 ## Annual report (BR‑AR)
 

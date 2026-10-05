@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { StudentAttendanceView } from '@ttlmhss/shared';
 import { CalendarX2 } from 'lucide-react';
 import { Panel } from '../../../components/layout/Page';
-import { EmptyState, ErrorState, LoadingState, TextField } from '../../../components/ui';
+import { Button, EmptyState, ErrorState, LoadingState, TextField } from '../../../components/ui';
 import { useMediaQuery } from '../../../lib/use-media-query';
 import { useResource } from '../../../lib/use-resource';
 import { attendanceApi } from '../api';
@@ -54,12 +54,27 @@ export function MyAttendancePage() {
 
 function Body({ view }: { view: StudentAttendanceView }) {
   const phone = useMediaQuery('(max-width: 767px)');
+  const [list, setList] = useState(false);
   return (
     <>
       <Panel title="Summary">
         <SummaryTiles counts={view.counts} />
       </Panel>
-      <Panel title="By day">
+      <Panel
+        title="By day"
+        actions={
+          !phone && view.days.length > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-pressed={list}
+              onClick={() => setList((v) => !v)}
+            >
+              {list ? 'Show as grid' : 'Show each lesson'}
+            </Button>
+          ) : undefined
+        }
+      >
         {view.days.length === 0 ? (
           <EmptyState icon={CalendarX2} title="No lessons in these dates">
             Choose other dates, or check back after your lessons have taken place.
@@ -78,13 +93,48 @@ function Body({ view }: { view: StudentAttendanceView }) {
                         .map((p) => (
                           <li key={p.id}>
                             {p.label}: <StatusMark status={d.cells[p.id]!.status} />{' '}
-                            {d.cells[p.id]!.subjectName}
+                            {d.cells[p.id]!.subjectName} · {d.cells[p.id]!.teacherName}
                           </li>
                         ))}
                     </ul>
                   </li>
                 ))}
               </ul>
+            ) : list ? (
+              <div className={styles.scroll} role="region" aria-label="Lessons" tabIndex={0}>
+                <table className={styles.matrix}>
+                  <caption className="visually-hidden">Attendance for each lesson</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Date</th>
+                      <th scope="col">Period</th>
+                      <th scope="col">Subject</th>
+                      <th scope="col">Teacher</th>
+                      <th scope="col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {view.days.flatMap((d) =>
+                      view.periods
+                        .filter((p) => d.cells[p.id])
+                        .map((p) => {
+                          const cell = d.cells[p.id]!;
+                          return (
+                            <tr key={`${d.date}:${p.id}`}>
+                              <th scope="row">{formatShortDate(d.date)}</th>
+                              <td>{p.label}</td>
+                              <td>{cell.subjectName}</td>
+                              <td>{cell.teacherName}</td>
+                              <td>
+                                <StatusMark status={cell.status} />
+                              </td>
+                            </tr>
+                          );
+                        }),
+                    )}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <div
                 className={styles.scroll}
@@ -111,7 +161,11 @@ function Body({ view }: { view: StudentAttendanceView }) {
                         {view.periods.map((p) => {
                           const cell = d.cells[p.id];
                           return (
-                            <td key={p.id} className={styles.cell} title={cell?.subjectName}>
+                            <td
+                              key={p.id}
+                              className={styles.cell}
+                              title={cell ? `${cell.subjectName} · ${cell.teacherName}` : undefined}
+                            >
                               {cell ? (
                                 <StatusMark status={cell.status} />
                               ) : (

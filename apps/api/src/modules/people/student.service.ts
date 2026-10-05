@@ -151,6 +151,22 @@ export class StudentService extends PeopleService {
   private async isDeletable(student: StudentRecord, placements: number): Promise<boolean> {
     if (placements > 1) return false;
     if ((await this.repos.attendance.countForStudent(student.id)) > 0) return false;
+    // Phase 8B/9 history: marks, behaviour assessments and achievements also keep a student.
+    if ((await this.repos.marks.entriesForStudent(student.id)).length > 0) return false;
+    if ((await this.repos.behaviour.assessmentsForStudent(student.id)).length > 0) return false;
+    const achievements = await this.repos.achievements.list({
+      academicYearId: null,
+      sectionIds: null,
+      studentId: student.id,
+      categoryId: null,
+      from: null,
+      to: null,
+      q: null,
+      status: 'ALL',
+      offset: 0,
+      limit: 1,
+    });
+    if (achievements.total > 0) return false;
     return this.repos.personAccounts.isUnused(student.userId);
   }
 

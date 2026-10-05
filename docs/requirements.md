@@ -122,12 +122,17 @@ Admin configures:
 - **R‑10.1** Exam/result‑based behaviour ratings, 1–5 radio buttons, configurable categories (e.g. Discipline, Participation, Punctuality, Cooperation, Overall Behaviour) and labels (e.g. 1 Needs Improvement … 5 Excellent), optional teacher remark.
 - **R‑10.2** Achievements managed by Admin and Class Teacher only. Fields: category (Academic, Sports, Cultural, Competitions, Certifications, Other), title, description, date, optional certificate/image.
 - **R‑10.3** Achievements shown on student profile and annual report.
+- **R‑10.4** *(Phase 9)* Behaviour is recorded per **exam and class/section** on one sheet: one row per student, one 1–5 rating per active configured category (choices show the configured labels), optional remark (≤ 300 characters). Save draft → Submit (published to the student); a submitted sheet is corrected with a reason. Class teachers record their own section; administrators any. Every change audited; history on the sheet.
+- **R‑10.5** *(Phase 9)* Achievements page for administrators and class teachers: filters (year, class, category, dates, status, search), add / edit (student, configured category, title, description, date within the year), archive / restore with confirmation, permanent delete of archived achievements by administrators only. Attachments are not uploaded yet (a reference column is reserved).
+- **R‑10.6** *(Phase 9)* The administrator's student profile shows the student's behaviour assessments and achievements.
 
 ## 11. Student portal (Phase 9)
 
 - **R‑11.1** Student views own: profile, class, section, timetable, teachers, subjects, attendance, marks, results, annual performance, behaviour, achievements, announcements, reports, mark sheets.
 - **R‑11.2** No editing of academic records.
 - **R‑11.3** Download available reports/mark sheets (real PDFs).
+- **R‑11.4** *(Phase 9)* Student portal in the existing shell: **My portal** (overview with links), **My profile** (read‑only details, current class, academic history), **Timetable** (own section's published timetable + subjects and teachers derived from it), **Attendance** (Phase 7 view; each lesson with subject, teacher and status), **Marks & results** (Phase 8B rules), **Behaviour** (submitted only), **Achievements** (active only). Reports, announcements and annual performance arrive with Phases 10–11.
+- **R‑11.5** *(Phase 9)* Every portal endpoint uses the signed‑in student's own id from the session; another student's data is refused exactly like a missing record; students cannot change any record.
 
 ## 12. Dashboards (Phase 10)
 

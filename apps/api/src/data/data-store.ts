@@ -29,6 +29,8 @@ import type { AttendanceRepository } from '../modules/attendance/attendance.repo
 import type { TimetableRepository } from '../modules/timetable/timetable.repository.js';
 import type { CalendarRepository } from '../modules/calendar/calendar.repository.js';
 import type { MarksRepository } from '../modules/marks/marks.repository.js';
+import type { BehaviourRepository } from '../modules/behaviour/behaviour.repository.js';
+import type { AchievementRepository } from '../modules/achievements/achievements.repository.js';
 import type { SchoolSettingsRepository } from '../modules/school/school-settings.repository.js';
 
 /**
@@ -75,6 +77,9 @@ export interface Repositories {
   readonly attendance: AttendanceRepository;
   // Phase 8B — marks and results
   readonly marks: MarksRepository;
+  // Phase 9 — behaviour and achievements
+  readonly behaviour: BehaviourRepository;
+  readonly achievements: AchievementRepository;
 }
 
 export interface MigrationState {

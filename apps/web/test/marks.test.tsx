@@ -343,7 +343,7 @@ describe('results', () => {
         [`GET /results/me/exams/${EXAM}`]: () => ok(result()),
       }),
     );
-    renderApp('/results');
+    renderApp('/portal/results');
     const table = await screen.findByRole('table', { name: 'Subject results' });
     expect(within(table).getByText('TEST Maths').closest('tr')).toHaveTextContent('84');
     expect(within(table).getByText('TEST English').closest('tr')).toHaveTextContent(
@@ -374,7 +374,7 @@ describe('results', () => {
           ),
       }),
     );
-    renderApp('/results');
+    renderApp('/portal/results');
     expect(await screen.findByText('247 / 300')).toBeInTheDocument();
     expect(screen.getByText('82.33%')).toBeInTheDocument();
     expect(screen.getByText('4 / 42')).toBeInTheDocument();

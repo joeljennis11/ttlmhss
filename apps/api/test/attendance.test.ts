@@ -629,7 +629,11 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('attendance (%s)', (driver) =>
     // Students: own attendance only, never changes.
     const own = await call(student, 'GET', `/attendance/me?from=${MON}&to=${MON}`);
     expect(own.status).toBe(200);
-    expect(own.data.days[0].cells[s.p.P1]).toEqual({ status: 'P', subjectName: 'AT Maths' });
+    expect(own.data.days[0].cells[s.p.P1]).toEqual({
+      status: 'P',
+      subjectName: 'AT Maths',
+      teacherName: 'AT Arun',
+    });
     expect(
       (await call(student, 'GET', `/attendance/students/${s.s1}?from=${MON}&to=${MON}`)).status,
     ).toBe(200);
@@ -819,7 +823,11 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('attendance (%s)', (driver) =>
     expect((await call(arun2, 'GET', registerUrl(NEXT_MON, s.p.P1, s.xA))).status).toBe(403);
     // The student's view of 1 June still says Maths.
     const view = await call(admin, 'GET', `/attendance/students/${s.s1}?from=${MON}&to=${MON}`);
-    expect(view.data.days[0].cells[s.p.P1]).toEqual({ status: 'P', subjectName: 'AT Maths' });
+    expect(view.data.days[0].cells[s.p.P1]).toEqual({
+      status: 'P',
+      subjectName: 'AT Maths',
+      teacherName: 'AT Arun',
+    });
   });
 });
 
@@ -892,7 +900,11 @@ describe('attendance rosters, student view and atomicity', () => {
         'Period 2',
         'Period 3',
       ]);
-      expect(view.data.days[1].cells[s.p.P3]).toEqual({ status: '-', subjectName: 'AT English' });
+      expect(view.data.days[1].cells[s.p.P3]).toEqual({
+        status: '-',
+        subjectName: 'AT English',
+        teacherName: 'AT Kumar',
+      });
       expect(view.data.counts).toMatchObject({
         total: 4,
         P: 2,

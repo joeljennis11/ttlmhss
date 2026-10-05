@@ -128,15 +128,36 @@ test.describe('roles in the shell', () => {
               'Attendance',
               'Marks',
               'Results',
+              'Behaviour',
+              'Achievements',
               'Students',
               'Teachers',
               'School setup',
               'Change password',
             ]
           : username === 'e2e.student'
-            ? ['Home', 'Attendance', 'Results', 'Change password']
+            ? [
+                'Home',
+                'My portal',
+                'My profile',
+                'Timetable',
+                'Attendance',
+                'Marks & results',
+                'Behaviour',
+                'Achievements',
+                'Change password',
+              ]
             : username === 'e2e.classteacher'
-              ? ['Home', 'Timetable', 'Attendance', 'Marks', 'Results', 'Change password']
+              ? [
+                  'Home',
+                  'Timetable',
+                  'Attendance',
+                  'Marks',
+                  'Results',
+                  'Behaviour',
+                  'Achievements',
+                  'Change password',
+                ]
               : ['Home', 'Timetable', 'Attendance', 'Marks', 'Change password'],
       );
     });

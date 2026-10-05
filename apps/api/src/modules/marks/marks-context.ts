@@ -235,7 +235,8 @@ export interface SheetStudent {
 export async function sheetStudents(
   repos: Repositories,
   c: Pick<SheetContext, 'year' | 'exam' | 'section'>,
-  entries: readonly MarkEntryRecord[],
+  /** Rows already stored on the sheet (marks, or Phase 9 behaviour assessments). */
+  entries: readonly Pick<MarkEntryRecord, 'studentId' | 'enrolmentId'>[],
   today: string,
 ): Promise<SheetStudent[]> {
   const date = rosterDate(c.exam, c.year, today);

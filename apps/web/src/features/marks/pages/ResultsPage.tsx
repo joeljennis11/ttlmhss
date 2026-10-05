@@ -86,7 +86,7 @@ function YearExamPicker({
 // Student
 // ---------------------------------------------------------------------------
 
-function MyResults() {
+export function MyResults() {
   const { params, set } = useSelection();
   const year = params.get('year');
   const options = useResource(`my-results:${year ?? ''}`, (signal) =>

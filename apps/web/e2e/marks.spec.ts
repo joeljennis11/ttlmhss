@@ -216,7 +216,7 @@ test('the student sees the submitted subject, not the draft, then the complete r
   await signIn(page, 'e2e.student');
   await page
     .getByRole('navigation', { name: 'Main' })
-    .getByRole('link', { name: 'Results' })
+    .getByRole('link', { name: 'Marks & results' })
     .click();
   await page.getByLabel('Exam').selectOption({ label: EXAM });
   const table = page.getByRole('table', { name: 'Subject results' });

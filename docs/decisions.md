@@ -32,7 +32,7 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑10 | Rounding of percentages / normalized marks | Round half up to 2 dp; store raw. **Adopted in Phase 8B as D‑68** | Adopted (D‑68) |
 | D‑11 | What students see when a submitted sheet is unlocked for correction | Proposal was: keep showing last submitted values. **Phase 8B (D‑74):** the subject is hidden until resubmitted | Decided differently — please confirm (D‑74) |
 | D‑12 | Rank ties and who is ranked (e.g. students with an absent subject) | Competition ranking (1,2,2,4) of students with a complete result. **Adopted in Phase 8B as D‑73** | Adopted (D‑73) |
-| D‑13 | Who records behaviour ratings | Class Teacher (+ Admin) | Proposed |
+| D‑13 | Who records behaviour ratings | Class Teacher (+ Admin). **Adopted in Phase 9 (D‑81)** | Adopted |
 | D‑14 | Request routing | Class Teacher of the student's section; Admin sees all | Proposed |
 | D‑15 | "Permissions" management: fixed role map or Admin‑editable toggles; Class Teacher audit visibility | Phase 2: code‑defined defaults. **Phase 4:** Admin can adjust Teacher / Class Teacher / Student grants within fixed per‑permission ceilings (no escalation; ADMIN fixed); stored as overrides. Class Teacher has no `audit.view` by default (grantable). User‑specific permissions not implemented (needs Phase 5 account management) | Adopted in Phase 4 — please confirm |
 | D‑16 | Class Teacher student‑management scope (edit which fields? promote?) | Phase 5: Class Teachers may view and edit the details (not identifiers or placement) of students in their own section through the API; admission, class changes, promotion, deactivation and deletion are administrator‑only (ceilings). No CT screens yet | Adopted — please confirm |
@@ -87,7 +87,7 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑47 | Empty or invalid drafts | Publishing an empty draft is refused (it would blank the live timetable); lessons made invalid by later configuration changes are listed and block publishing | Adopted — please confirm |
 | D‑48 | Teacher deactivation while timetabled | Allowed (Phase 5 behaviour unchanged); the lessons are flagged in the draft and block the next publish until reassigned. The live timetable keeps showing them until republished | Adopted — please confirm |
 | D‑49 | Teacher access to students of classes they teach | **Phase 7:** only per lesson — a subject teacher sees the roster of a register for their own published lesson on that date and period; no general student‑list access | Adopted |
-| D‑50 | Students' timetable page | API foundation only (`/timetable/students/:id`, own placement); the page comes with the student portal (Phase 9) | Adopted |
+| D‑50 | Students' timetable page | API foundation only (`/timetable/students/:id`, own placement); **Phase 9:** the portal page uses it | Adopted |
 
 ## Added in Phase 7
 
@@ -130,9 +130,24 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑75 | Roster for a sheet | Students placed in the section on the exam's end date (else start date, else today; clamped to the year), plus anyone already holding marks on the sheet. Students who joined after or left before that date are not on the sheet | Adopted — please confirm |
 | D‑76 | Placement used by results | Where the student's marks are; else the placement on the roster date. Later transfers/promotions never move a result | Adopted |
 | D‑77 | Exam dates vs academic calendar | Independent; a start/end date that is not a working day for any class shows a warning only | Adopted |
-| D‑78 | Exam‑linked behaviour | **Deferred to Phase 9.** Phase 4 has categories and 1–5 labels but not who records (D‑13 still proposed), when ratings become visible, or whether they lock like marks; Phase 9 is "Student portal, behaviour and achievements" | Deferred — needs decision with Phase 9 |
+| D‑78 | Exam‑linked behaviour | **Deferred to Phase 9.** Phase 4 has categories and 1–5 labels but not who records (D‑13 still proposed), when ratings become visible, or whether they lock like marks; Phase 9 is "Student portal, behaviour and achievements" | Resolved in Phase 9 (D‑81–D‑86) |
 | D‑79 | Permissions for 8B | No new keys. `exams.manage` (admin): lifecycle and mark‑entry teachers; Phase 4 `config.manage` keeps the exam/subject settings. `marks.view` + per‑sheet scope to open sheets; `marks.enter` / `marks.submit` for the authorised teacher; `marks.edit` (class teacher ceiling) = unlock and correct own section; `results.view`: students own results, class teachers own section, admins all | Adopted — please confirm |
 | D‑80 | Audit redaction | The audit redactor no longer masks keys such as `passMarks`/`passed` (it matched "pass"); passwords, secrets, tokens and hashes are still masked | Adopted |
+
+## Added in Phase 9
+
+| ID | Question | Current default | Status |
+|---|---|---|---|
+| D‑81 | Who records behaviour (D‑13) | Administrators (any section) and the class teacher of the section in that year with `behaviour.manage`; subject teachers never. A teacher granted `behaviour.manage` without a class‑teacher assignment still has no section | Adopted — please confirm |
+| D‑82 | Behaviour workflow | One sheet per exam + section: **Draft → Submitted**. Submit needs every on‑roll student rated in every active category. A submitted sheet is corrected in place with a mandatory reason (audited old → new); it stays visible to students with the corrected values. No unlock state (unlike marks, behaviour has no derived results to hide) | Adopted — please confirm |
+| D‑83 | When behaviour can be recorded | Same lifecycle as marks: exam active and OPEN, year not closed; the class must take the exam. Closing the exam freezes behaviour | Adopted — please confirm |
+| D‑84 | Rating labels over time | Labels are copied onto each rating at submission and at every correction, so annual reports show the meaning that applied; drafts show today's labels | Adopted |
+| D‑85 | Behaviour permissions | No new keys: `behaviour.view` (students own submitted, class teachers own section, admins all), `behaviour.manage` (record, submit and correct — correction is distinguished by the mandatory reason, not a separate permission) | Adopted — please confirm |
+| D‑86 | Rating control | A drop‑down per category showing "n — label" instead of five radio buttons (BR‑BH‑02 mentions radio buttons): a class grid of students × categories with radios would be unusably wide; phones get one card per student | Adopted — please confirm |
+| D‑87 | Achievement deletion | Archive / restore for administrators and class teachers; permanent delete only for administrators and only after archiving; archived achievements are hidden from students and not editable | Adopted — please confirm |
+| D‑88 | Achievement attachments | Not built: no file‑storage facility exists yet. `achievements.attachment_ref` is reserved and the UI shows an indicator when set. Needs a storage decision (with Phase 11 documents) | Deferred — needs decision |
+| D‑89 | Portal navigation | Students: Home, My portal, My profile, Timetable, Attendance, Marks & results, Behaviour, Achievements. Staff "Results" no longer lists students (their results moved to `/portal/results`) | Adopted |
+| D‑90 | Student attendance detail | The Phase 7 student view now also returns the lesson's teacher (register snapshot, else timetable) and offers a per‑lesson list (date, period, subject, teacher, status) | Adopted |
 
 ## Pending inputs from the user
 

@@ -403,7 +403,12 @@ export const StudentAttendanceViewSchema = z.object({
       day: Weekday.schema,
       cells: z.record(
         z.string(),
-        z.object({ status: AttendanceStatus.schema, subjectName: z.string() }),
+        z.object({
+          status: AttendanceStatus.schema,
+          subjectName: z.string(),
+          /** Phase 9: the teacher of that lesson (snapshot of the register, else the timetable). */
+          teacherName: z.string(),
+        }),
       ),
     }),
   ),

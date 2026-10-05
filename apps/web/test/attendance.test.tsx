@@ -263,7 +263,9 @@ describe('student attendance', () => {
                 {
                   date: '2026-10-05',
                   day: 'MON',
-                  cells: { p1: { status: 'A', subjectName: 'Test Maths' } },
+                  cells: {
+                    p1: { status: 'A', subjectName: 'Test Maths', teacherName: 'Test Teacher' },
+                  },
                 },
               ],
               counts: {

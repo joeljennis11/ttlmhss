@@ -16,6 +16,7 @@ import {
 import { History } from 'lucide-react';
 import { usePageTitle } from '../../../app/page-meta';
 import { PageHeader, Panel } from '../../../components/layout/Page';
+import { StudentRecordPanels } from '../../portal/StudentRecordPanels';
 import {
   Alert,
   Avatar,
@@ -327,6 +328,8 @@ function Profile({
           </div>
         )}
       </Panel>
+
+      <StudentRecordPanels studentId={student.id} />
 
       {dialog === 'details' && <DetailsDialog student={student} onClose={() => setDialog(null)} />}
       {dialog === 'transfer' && latestActive && (

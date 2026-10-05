@@ -244,3 +244,21 @@ Per‑sheet scope (server‑side, from the stored sheet — never from request i
 - **Student** — `GET /results/me…` and `/results/exams/:exam/students/:own id` only; another id → 403 with the same message as a missing one; draft or unlocked marks are never returned.
 - Out‑of‑scope sheets are refused with the same 403 whether or not they exist; signed‑out calls get 401.
 
+## 14. Student portal, behaviour and achievements (Phase 9)
+
+No new permission keys (D‑85).
+
+| Permission | Default holders | Ceiling | Used for |
+|---|---|---|---|
+| `students.view` | Admin, Teacher, Student | all | students: `/portal/profile` (own record only) |
+| `behaviour.view` | Admin, Class Teacher, Student | all | students: own SUBMITTED behaviour; class teachers: own section's sheets; admins: all |
+| `behaviour.manage` | Admin, Class Teacher | staff | record, submit and correct (with a reason) — own section only for class teachers |
+| `achievements.view` | Admin, Class Teacher, Student | all | students: own ACTIVE achievements; class teachers: own section; admins: all |
+| `achievements.manage` | Admin, Class Teacher | Class Teacher | add, edit, archive, restore (own section); delete archived ones: administrators only |
+
+Scope (server‑side, never from request ids):
+- **Student** — `/portal/*` uses the session's student only; `/behaviour/students/:id`, `/achievements/:id`, `/timetable/students/:id`, `/results/…/students/:id`, `/admin/students/:id` with another id → 403, the same as for a missing id. No write route is open to students.
+- **Class teacher** — sections they are class teacher of in that academic year (current year assignments). Creating an achievement for a student outside them → 403 without revealing whether the student exists.
+- **Subject teacher** — no behaviour or achievement access (no permission by default, and no section scope even if granted).
+- **Administrator** — everything; only administrators delete (archived) achievements.
+

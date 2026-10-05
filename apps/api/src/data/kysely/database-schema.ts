@@ -49,6 +49,11 @@ export interface Database {
   // Phase 8B — marks
   mark_sheets: MarkSheetsTable;
   mark_entries: MarkEntriesTable;
+  // Phase 9 — behaviour and achievements
+  behaviour_sheets: BehaviourSheetsTable;
+  behaviour_assessments: BehaviourAssessmentsTable;
+  behaviour_ratings: BehaviourRatingsTable;
+  achievements: AchievementsTable;
 }
 
 export interface AttendancePolicyTable extends Timestamps {
@@ -420,6 +425,56 @@ export interface MarkEntriesTable extends Timestamps {
   percent_bp: number | null;
   grade: string | null;
   passed: number | null;
+  created_by: string | null;
+  updated_by: string | null;
+}
+
+// Phase 9 (0011) — behaviour and achievements
+export interface BehaviourSheetsTable extends Timestamps {
+  id: string;
+  academic_year_id: string;
+  exam_id: string;
+  class_id: string;
+  section_id: string;
+  status: string;
+  revision: number;
+  submitted_at: string | null;
+  submitted_by: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+}
+
+export interface BehaviourAssessmentsTable extends Timestamps {
+  id: string;
+  sheet_id: string;
+  academic_year_id: string;
+  section_id: string;
+  enrolment_id: string;
+  student_id: string;
+  remark: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+}
+
+export interface BehaviourRatingsTable {
+  assessment_id: string;
+  category_id: string;
+  rating: number;
+  rating_label: string | null;
+  updated_at: string;
+}
+
+export interface AchievementsTable extends Timestamps {
+  id: string;
+  academic_year_id: string;
+  student_id: string;
+  enrolment_id: string;
+  category_id: string;
+  title: string;
+  description: string | null;
+  achieved_on: string;
+  attachment_ref: string | null;
+  status: string;
   created_by: string | null;
   updated_by: string | null;
 }

@@ -365,7 +365,11 @@ export class AttendanceViewService extends AttendanceServiceBase {
       const cells: StudentAttendanceView['days'][number]['cells'] = {};
       for (const l of lessons) {
         const status = recordAt.get(`${date}|${l.period.id}`) ?? '-';
-        cells[l.period.id] = { status, subjectName: l.subject.name };
+        cells[l.period.id] = {
+          status,
+          subjectName: l.subject.name,
+          teacherName: l.teacher.fullName,
+        };
         used.add(l.period.id);
         statuses.push(status);
       }

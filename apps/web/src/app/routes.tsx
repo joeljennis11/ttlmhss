@@ -1,9 +1,13 @@
 import type { ReactElement } from 'react';
 import type { EffectiveRole, Permission } from '@ttlmhss/shared';
 import {
+  Award,
   CalendarDays,
   ChartColumn,
   ClipboardCheck,
+  LayoutGrid,
+  Smile,
+  UserRound,
   GraduationCap,
   House,
   KeyRound,
@@ -46,6 +50,16 @@ import { RegistersPage } from '../features/attendance/pages/RegistersPage';
 import { MarkSheetPage } from '../features/marks/pages/MarkSheetPage';
 import { MarksHomePage } from '../features/marks/pages/MarksHomePage';
 import { ResultsPage } from '../features/marks/pages/ResultsPage';
+import { AchievementsPage } from '../features/portal/pages/AchievementsPage';
+import { BehaviourPage as BehaviourSheetPage } from '../features/portal/pages/BehaviourPage';
+import {
+  MyAchievementsPage,
+  MyBehaviourPage,
+  MyProfilePage,
+  PortalHomePage,
+  StudentTimetablePage,
+} from '../features/portal/pages/StudentPortalPages';
+import { MyResults } from '../features/marks/pages/ResultsPage';
 import { TimetableHome } from '../features/timetable/TimetableLayout';
 import { TimetableEditorPage } from '../features/timetable/pages/EditorPage';
 import { ClassTimetablePage, MyTimetablePage } from '../features/timetable/pages/ViewPages';
@@ -96,6 +110,30 @@ export const SHELL_ROUTES: readonly ShellRoute[] = [
     title: 'Home',
     element: <HomePage />,
     nav: { label: 'Home', icon: House, section: 'main' },
+  },
+  // Phase 9 — Student portal: the signed-in student's own data (the API never takes their id).
+  {
+    path: 'portal',
+    title: 'My portal',
+    element: <PortalHomePage />,
+    roles: ['STUDENT'],
+    nav: { label: 'My portal', icon: LayoutGrid, section: 'main' },
+  },
+  {
+    path: 'portal/profile',
+    title: 'My profile',
+    element: <MyProfilePage />,
+    permission: 'students.view',
+    roles: ['STUDENT'],
+    nav: { label: 'My profile', icon: UserRound, section: 'main' },
+  },
+  {
+    path: 'portal/timetable',
+    title: 'My timetable',
+    element: <StudentTimetablePage />,
+    permission: 'timetable.view',
+    roles: ['STUDENT'],
+    nav: { label: 'Timetable', icon: CalendarDays, section: 'main' },
   },
   // Phase 6 — Timetable (staff screens; the student timetable view arrives with the portal).
   {
@@ -190,8 +228,49 @@ export const SHELL_ROUTES: readonly ShellRoute[] = [
     title: 'Results',
     element: <ResultsPage />,
     permission: 'results.view',
-    roles: ['ADMIN', 'CLASS_TEACHER', 'STUDENT'],
+    roles: ['ADMIN', 'CLASS_TEACHER'],
     nav: { label: 'Results', icon: ChartColumn, section: 'main' },
+  },
+  {
+    path: 'portal/results',
+    title: 'My results',
+    element: <MyResults />,
+    permission: 'results.view',
+    roles: ['STUDENT'],
+    nav: { label: 'Marks & results', icon: ChartColumn, section: 'main' },
+  },
+  // Phase 9 — exam-based behaviour and achievements.
+  {
+    path: 'behaviour',
+    title: 'Behaviour',
+    element: <BehaviourSheetPage />,
+    permission: 'behaviour.view',
+    roles: ['ADMIN', 'CLASS_TEACHER'],
+    nav: { label: 'Behaviour', icon: Smile, section: 'main' },
+  },
+  {
+    path: 'portal/behaviour',
+    title: 'My behaviour',
+    element: <MyBehaviourPage />,
+    permission: 'behaviour.view',
+    roles: ['STUDENT'],
+    nav: { label: 'Behaviour', icon: Smile, section: 'main' },
+  },
+  {
+    path: 'achievements',
+    title: 'Achievements',
+    element: <AchievementsPage />,
+    permission: 'achievements.manage',
+    roles: ['ADMIN', 'CLASS_TEACHER'],
+    nav: { label: 'Achievements', icon: Award, section: 'main' },
+  },
+  {
+    path: 'portal/achievements',
+    title: 'My achievements',
+    element: <MyAchievementsPage />,
+    permission: 'achievements.view',
+    roles: ['STUDENT'],
+    nav: { label: 'Achievements', icon: Award, section: 'main' },
   },
   // Phase 5 — Student & teacher management (administrator screens; permissions are admin-only
   // management actions, so the menu shows them to administrators).

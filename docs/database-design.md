@@ -252,6 +252,18 @@ exams (+ stage DRAFT/OPEN/CLOSED, description)
 - Derived values (`total_cm` … `passed`) are written at submission and cleared when a mark changes; together with `mark_sheets.calculation` they reproduce every result without today's configuration.
 - All references are ON DELETE RESTRICT: marks are history. Class changes, promotion, teacher deactivation, timetable and calendar changes never touch them.
 
+### 5g. Phase 9 additions (`0011_behaviour_achievements`)
+
+| Table | Columns | Rules |
+|---|---|---|
+| `behaviour_sheets` | id, academic_year_id, exam_id, class_id, section_id, status ∈ DRAFT/SUBMITTED, revision ≥ 1, submitted_at/by, created_by/updated_by, timestamps | **Unique (exam, section).** Composite FKs: (exam, year) → `exams(id, academic_year_id)`; (section, class) → `sections(id, class_id)`. CHECK: SUBMITTED needs submitted_at. |
+| `behaviour_assessments` | id, sheet_id, academic_year_id, section_id, **enrolment_id**, student_id, remark (≤ 300), created_by/updated_by, timestamps | **Unique (sheet, student).** Composite FKs to the sheet (id, year, section) and to the student's placement `enrolments(id, year, section, student)`. Index (student). |
+| `behaviour_ratings` | assessment_id, category_id → `behaviour_categories`, rating (CHECK 1–5), rating_label (copied at submission/correction), updated_at | PK (assessment, category). |
+| `achievements` | id, academic_year_id, student_id, **enrolment_id**, category_id → `achievement_categories`, title (1–120), description (≤ 1000), achieved_on, attachment_ref (reserved), status ∈ ACTIVE/ARCHIVED, created_by/updated_by, timestamps | Composite FK (enrolment, year, student) → `enrolments` (new unique index `enrolments(id, academic_year_id, student_id)`). Indexes (student, achieved_on), (year, status). |
+
+- Annual‑report ready: behaviour keeps year, exam, section, student/placement, category, rating, the label that applied, remark and the submitted state; achievements keep year, student/placement, category, title, description, date and the attachment reference.
+- All references are ON DELETE RESTRICT. Categories are deactivated, never deleted, so history keeps its names.
+
 ## 6. Mapping of the functional entity list to the schema
 
 | Functional entity | Representation | When |
@@ -269,8 +281,8 @@ exams (+ stage DRAFT/OPEN/CLOSED, description)
 | Timetable, TimetableAssignment | `timetable_versions` (DRAFT/PUBLISHED/SUPERSEDED, published at = effective from) + `timetable_entries` with unique (version, section, day, period) and (version, teacher, day, period) (§5c) | Phase 6 ✔ |
 | AttendanceRecord, AttendanceAudit | `attendance_sessions` (date + section + period, snapshot of lesson/teacher/subject, revision) + `attendance_records` (session + enrolment + status ∈ `- P A L C`, leave reason, note); the audit trail uses `audit_logs` (`attendance.marked` / `attendance.override`) (§5d) | Phase 7 ✔ |
 | Exam, ExamSubject, Mark, GradeRule, ExamWeightage | **Phase 4 ✔:** `exams` (incl. weightage), `exam_subjects` (per exam × class × subject), `grade_schemes`/`grade_bands`. **Phase 8B ✔:** `mark_sheets` (one per exam subject + section; authorised teacher; DRAFT/SUBMITTED/UNLOCKED — drives subject‑wise visibility; settings used), `mark_entries` (raw marks per component; NULL = `-`; derived values at submission); the audit trail uses `audit_logs` (entity `mark_sheet`) (§5f) | Phase 4 ✔ / 8B ✔ |
-| BehaviourCategory, BehaviourRating, BehaviourAssessment | **Phase 4 ✔:** `behaviour_categories`, `behaviour_rating_labels`. **Phase 9:** `behaviour_assessments` (enrolment × exam, remark) + `behaviour_ratings` (category, 1–5 CHECK) | Phase 9 |
-| AchievementCategory, Achievement | **Phase 4 ✔:** `achievement_categories` (configurable; the six specified categories are offered as an explicit "add suggested" choice, not seeded). **Phase 9:** `achievements` | Phase 4 / 9 |
+| BehaviourCategory, BehaviourRating, BehaviourAssessment | **Phase 4 ✔:** `behaviour_categories`, `behaviour_rating_labels`. **Phase 9 ✔:** `behaviour_sheets` (exam × section, DRAFT/SUBMITTED) + `behaviour_assessments` (enrolment, remark) + `behaviour_ratings` (category, 1–5 CHECK, label at submission) (§5g) | Phase 4 ✔ / 9 ✔ |
+| AchievementCategory, Achievement | **Phase 4 ✔:** `achievement_categories` (configurable; the six specified categories are offered as an explicit "add suggested" choice, not seeded). **Phase 9 ✔:** `achievements` (student + year + placement, ACTIVE/ARCHIVED, attachment reference reserved) | Phase 4 ✔ / 9 ✔ |
 | Announcement, StudentRequest | `announcements`, `student_requests` | Phase 10 |
 
 ### Why feature tables are not created yet
