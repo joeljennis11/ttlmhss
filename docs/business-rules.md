@@ -184,6 +184,19 @@ Implemented in Phase 8B on top of the Phase 4 configuration (BR‑CFG‑09/10). 
 
 - **BR‑AR‑01** Aggregates academic performance using **configured exam weightage**, exam results, attendance (BR‑ATT‑03), behaviour, achievements and remarks.
 - **BR‑AR‑02** The system may **suggest** a remark from marks, attendance, behaviour and achievements. The Class Teacher writes/edits the **final** remark; suggestions are never published without a human save.
+- **BR‑AR‑03 Annual percentage (Phase 11, D‑102)** = Σ (exam percentage × exam weightage) ÷ 100, half‑up to two decimals. Exam percentage = the Phase 8B result (Σ final marks ÷ Σ final maximums); weightage = the Phase 4 configuration of the year's ACTIVE exams. It is calculated only when the weightages total exactly 100 % and every exam with weightage > 0 has a complete result for the student; otherwise it is "Not available" and the report cannot be finalized. Exams with weightage 0 are shown but never enter the figure. No annual grade, pass/fail or rank is produced (no existing rule defines them).
+- **BR‑AR‑04 Lifecycle (D‑103):** one annual report per student and year. DRAFT — computed live, staff only; FINALIZED — requires the final remark and no problems, freezes the full content; PUBLISHED — the student can see and download it. Class teachers (own section, `reports.generate`) and administrators prepare, write the remark and finalize; only administrators publish, unpublish and reopen (FINALIZED → DRAFT with a reason, discarding the frozen content). Every step is audited.
+- **BR‑AR‑05 Snapshot (D‑104):** finalization stores the complete display‑ready content (results with the labels/grades/maximums that applied, weightages, attendance counts, behaviour with labels, achievements with category names, student/class names, the final remark). A finalized or published report never changes when marks, attendance, configuration or placement change later.
+- **BR‑AR‑06** The system suggestion (D‑106) is a factual sentence (annual %, attendance %, achievement and assessment counts); it is shown only on drafts, labelled as a suggestion, and never printed on the official report.
+
+## Reports (BR‑REP) — Phase 11
+
+- **BR‑REP‑01 One source of truth.** Reports are composed from the existing services (Phase 8B results/mark sheets, Phase 7/8A attendance, Phase 9 behaviour/achievements) with the caller's identity; no report recalculates marks, grades, ranks, completeness or attendance percentages. The preview and the PDF come from the same report document.
+- **BR‑REP‑02 Report cards:** a student sees only their own submitted subjects (Phase 8B); an official PDF exists only for a complete result — otherwise the request is refused with how many subjects are published. Unlocked subjects are unavailable again, so the card is too.
+- **BR‑REP‑03 Mark sheets** follow Phase 8B sheet authorisation (entry teacher, own‑section class teacher, administrators); a non‑submitted sheet prints a "Not final" banner.
+- **BR‑REP‑04 Attendance reports** use the attendance views (P ÷ (P + A); L, C and not‑marked excluded; academic calendar; registers kept on later holidays count as history, as in Phase 8A). The class Excel file is a real `.xlsx` with one row per date + period + student.
+- **BR‑REP‑05 School identity on reports:** only configured values (name, short name, address, phone, email, website, motto, principal's name) and the official logo; nothing is invented. Signature lines carry role labels only (D‑107).
+- **BR‑REP‑06 File names:** `SHORTNAME_YEAR_Kind_identifiers.pdf|xlsx`, every part reduced to letters, digits, "-" and "_" (admission number, exam name or class; never personal names).
 
 ## Students, accounts, promotion (BR‑ST)
 

@@ -156,6 +156,8 @@ Admin configures:
 - **R‑14.3** Exports: PDF; Excel where appropriate.
 - **R‑14.4** PDF standard: A4, logo, school name, academic year, student info, proper tables, `#003300` branding, readable print‑friendly layout, signatures and page numbers where applicable.
 - **R‑14.5** Annual report aggregates academic performance (using configured weightage), exam results, attendance, behaviour, achievements, teacher/class‑teacher remarks. System may suggest a remark from marks/attendance/behaviour/achievements; Class Teacher edits/writes the final remark.
+- **R‑14.6** *(Phase 11, implemented)* Server‑generated A4 PDFs (PDFKit): exam report card (complete results only), subject mark sheet (landscape), student attendance (lesson by lesson), class attendance (+ Excel `.xlsx` with every lesson cell and a summary sheet), student performance, annual report. Every PDF: official logo, configured school identity only, title, academic year, student/class details, tables with headers repeated on each page, signature lines with role labels (and the configured principal's name), "Page x of y". On‑screen previews show the same report document the PDF is rendered from. Reports area for staff (tabs by what the role may produce), *My reports* for students, an annual report page for class teachers and administrators.
+- **R‑14.7** *(Phase 11, implemented)* Annual reports: Draft (live) → Finalized (content frozen) → Published (visible to the student); annual percentage from the configured exam weightages; final remark required to finalize; administrators publish, unpublish and reopen with a reason.
 
 ## 15. Non‑functional requirements
 

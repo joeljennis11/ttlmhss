@@ -281,3 +281,22 @@ Scope (server‑side):
 - **Class teacher** — sections they are class teacher of in the current year; posting to another section, a class, staff or the school → 403; editing an announcement outside their section → 403.
 - **Subject teacher** — reads SCHOOL and STAFF announcements; no requests, no announcement management (no permission, and no section scope even if granted).
 - **Administrator** — everything.
+
+## 16. Reports, PDFs and annual reports (Phase 11)
+
+No new permission keys (D‑109). Every report endpoint requires `reports.view` (or `reports.generate`) **and** passes through the scope of the service the report is composed from — the dashboard‑style rule: a report never widens access.
+
+| Report | Who | Scope (server‑side) |
+|---|---|---|
+| Exam report card (`/reports/exam-card`) | Admin; class teacher; student | Phase 8B: students their own (id from the session — another id → 403); class teacher the section the student sat the exam in (current‑year assignment); admin all. Subject teachers: none. Official PDF only for a complete result |
+| Mark sheet (`/reports/mark-sheet`) | Admin; entry teacher; class teacher | Phase 8B sheet authorisation; students refused |
+| Student attendance (`/reports/attendance/student`) | Admin; class teacher; student | Attendance views: self, class teacher of the student's placement in the range, admin |
+| Class attendance + Excel (`/reports/attendance/class`) | Admin; class teacher | Own section (current year) / all |
+| Student performance (`/reports/performance`) | Admin; class teacher; student | `canAccessStudent` (self; class teacher of the student's current section; admin), then each source service's own rules |
+| Annual report view / PDF (`/reports/annual`) | Admin; class teacher; student | Staff: admin or class teacher of the report's section in that year; students: own report, **only when PUBLISHED** (otherwise "not published", never another student's) |
+| Annual lifecycle (`POST/PUT /reports/annual…`) | `reports.generate` | Prepare, remark, finalize: admin + own‑section class teacher; publish, unpublish, reopen: administrators only |
+
+| Permission | Default holders | Ceiling | Used for |
+|---|---|---|---|
+| `reports.view` | Admin, Teacher, Student | all | opening and downloading reports in scope |
+| `reports.generate` | Admin, Class Teacher | staff | annual report lists and lifecycle |

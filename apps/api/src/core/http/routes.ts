@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { FileResponse } from './file-response.js';
 import { toFieldIssues, type ApiSuccess, type FieldIssue } from '@ttlmhss/shared';
 import type { z } from 'zod';
 import type { AccessRequirement, Principal } from '../auth/access.js';
@@ -117,6 +118,13 @@ export function registerRoutes(app: FastifyInstance, routes: readonly AnyRouteDe
           reply,
         });
 
+        if (result instanceof FileResponse) {
+          reply.header('Content-Type', result.contentType);
+          reply.header('Content-Disposition', `attachment; filename="${result.fileName}"`);
+          reply.header('Cache-Control', 'no-store');
+          reply.header('X-Content-Type-Options', 'nosniff');
+          return reply.send(result.body);
+        }
         if (reply.statusCode === 200 && route.successStatus) reply.status(route.successStatus);
         const envelope: ApiSuccess<unknown> = isPaged(result)
           ? { data: result.items, meta: result.meta }

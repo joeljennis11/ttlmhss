@@ -11,6 +11,7 @@ import { migration0009AcademicCalendar } from './0009_academic_calendar.js';
 import { migration0010Marks } from './0010_marks.js';
 import { migration0011BehaviourAchievements } from './0011_behaviour_achievements.js';
 import { migration0012AnnouncementsRequests } from './0012_announcements_requests.js';
+import { migration0013AnnualReports } from './0013_annual_reports.js';
 
 /**
  * Ordered migration registry. Names sort lexically and are applied in that order.
@@ -34,4 +35,5 @@ export const migrations: Record<string, Migration> = {
   '0010_marks': migration0010Marks,
   '0011_behaviour_achievements': migration0011BehaviourAchievements,
   '0012_announcements_requests': migration0012AnnouncementsRequests,
+  '0013_annual_reports': migration0013AnnualReports,
 };

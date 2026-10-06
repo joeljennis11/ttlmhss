@@ -247,7 +247,9 @@ export class AttendanceViewService extends AttendanceServiceBase {
       date: string;
       studentId: string;
       periodId: string;
+      periodLabel: string;
       subjectName: string;
+      teacherName: string;
       status: AttendanceStatus;
     }[] = [];
     for (const date of datesBetween(
@@ -263,7 +265,9 @@ export class AttendanceViewService extends AttendanceServiceBase {
             date,
             studentId: s.studentId,
             periodId: l.period.id,
+            periodLabel: l.period.label,
             subjectName: l.subject.name,
+            teacherName: l.teacher.fullName,
             status: (l.session && recordAt.get(`${l.session.id}|${s.studentId}`)) || '-',
           });
         }
@@ -308,6 +312,42 @@ export class AttendanceViewService extends AttendanceServiceBase {
       })
       .sort(byRoll);
     return { section, from, to, students, counts: countAttendance(cells.map((c) => c.status)) };
+  }
+
+  /**
+   * Phase 11 reports: the class totals (exactly `classSummary`) plus every lesson cell of the range
+   * (date, period, student, subject, teacher, status) for exports — one pass over the same cells.
+   */
+  async classRegister(ctx: RequestContext, sectionId: string, from: string, to: string) {
+    const summary = await this.classSummary(ctx, sectionId, from, to);
+    const repos = this.repos;
+    const year = await this.requireYear(repos, from);
+    const { placements, cells } = await this.sectionCells(repos, year, sectionId, from, to);
+    const people = new Map(placements.map((p) => [p.studentId, p]));
+    const position = new Map(summary.students.map((st, i) => [st.studentId, i]));
+    const rows = cells
+      .map((c) => {
+        const p = people.get(c.studentId)!;
+        return {
+          date: c.date,
+          periodLabel: c.periodLabel,
+          admissionNumber: p.admissionNumber,
+          rollNumber: p.rollNumber,
+          fullName: p.fullName,
+          subjectName: c.subjectName,
+          teacherName: c.teacherName,
+          status: c.status,
+          order: position.get(c.studentId) ?? 0,
+        };
+      })
+      .sort((a, b) => a.date.localeCompare(b.date) || a.order - b.order);
+    const lessons = new Set(cells.map((c) => `${c.date}|${c.periodId}`));
+    return {
+      academicYear: yearView(year),
+      summary,
+      lessonCount: lessons.size,
+      rows: rows.map(({ order: _o, ...row }) => row),
+    };
   }
 
   // ---- A student's own attendance --------------------------------------------------------------

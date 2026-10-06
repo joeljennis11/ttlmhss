@@ -8,6 +8,7 @@ import { phase10Module } from './modules/dashboard/phase10.module.js';
 import { marksModule } from './modules/marks/marks.module.js';
 import { phase9Module } from './modules/portal/phase9.module.js';
 import { peopleModule } from './modules/people/people.module.js';
+import { reportsModule } from './modules/reports/reports.module.js';
 import { schoolModule } from './modules/school/school.module.js';
 import { systemModule } from './modules/system/system.module.js';
 import { timetableModule } from './modules/timetable/timetable.module.js';
@@ -29,5 +30,6 @@ export function featureModules(deps: AppDependencies): FeatureModule[] {
     marksModule(deps),
     phase9Module(deps),
     phase10Module(deps),
+    reportsModule(deps),
   ];
 }

@@ -275,6 +275,15 @@ exams (+ stage DRAFT/OPEN/CLOSED, description)
 - Status and assignment history is the audit trail (`request.created`, `.review_started`, `.assigned`, `.resolved`, `.closed`, `.reopened`); announcements log `announcement.created`, `.updated`, `.retargeted`, `.published`, `.archived`, `.restored`.
 - All references are ON DELETE RESTRICT. No rows are inserted.
 
+### 5i. Phase 11 additions (`0013_annual_reports`)
+
+| Table | Columns | Rules |
+|---|---|---|
+| `annual_reports` | id, academic_year_id, student_id, **enrolment_id**, section_id, status ∈ DRAFT/FINALIZED/PUBLISHED, final_remark (≤ 1000), snapshot_json, finalized_at/by, published_at/by, revision ≥ 1, created_by, updated_by, timestamps | **Unique (year, student).** Composite FK (enrolment, year, section, student) → `enrolments`. CHECK: DRAFT ⇔ no snapshot and no finalized_at; FINALIZED/PUBLISHED ⇒ snapshot, finalized_at and final remark present; PUBLISHED ⇔ published_at. Index (year, section). |
+
+- The snapshot is the complete display‑ready report (JSON matching `AnnualReportContentSchema`), so an official report never depends on mutable configuration or records. Other reports are generated on request and not stored (D‑104).
+- References are ON DELETE RESTRICT. No rows are inserted.
+
 ## 6. Mapping of the functional entity list to the schema
 
 | Functional entity | Representation | When |
@@ -294,6 +303,7 @@ exams (+ stage DRAFT/OPEN/CLOSED, description)
 | Exam, ExamSubject, Mark, GradeRule, ExamWeightage | **Phase 4 ✔:** `exams` (incl. weightage), `exam_subjects` (per exam × class × subject), `grade_schemes`/`grade_bands`. **Phase 8B ✔:** `mark_sheets` (one per exam subject + section; authorised teacher; DRAFT/SUBMITTED/UNLOCKED — drives subject‑wise visibility; settings used), `mark_entries` (raw marks per component; NULL = `-`; derived values at submission); the audit trail uses `audit_logs` (entity `mark_sheet`) (§5f) | Phase 4 ✔ / 8B ✔ |
 | BehaviourCategory, BehaviourRating, BehaviourAssessment | **Phase 4 ✔:** `behaviour_categories`, `behaviour_rating_labels`. **Phase 9 ✔:** `behaviour_sheets` (exam × section, DRAFT/SUBMITTED) + `behaviour_assessments` (enrolment, remark) + `behaviour_ratings` (category, 1–5 CHECK, label at submission) (§5g) | Phase 4 ✔ / 9 ✔ |
 | AchievementCategory, Achievement | **Phase 4 ✔:** `achievement_categories` (configurable; the six specified categories are offered as an explicit "add suggested" choice, not seeded). **Phase 9 ✔:** `achievements` (student + year + placement, ACTIVE/ARCHIVED, attachment reference reserved) | Phase 4 ✔ / 9 ✔ |
+| AnnualRemark / AnnualReport | `annual_reports` (lifecycle, final remark, frozen snapshot) (§5i) | Phase 11 ✔ |
 | Announcement, StudentRequest | `announcements` (structured audience, DRAFT/PUBLISHED/ARCHIVED, expiry) and `requests` (student + placement, typed references, OPEN/IN_REVIEW/RESOLVED/CLOSED, revision); history in `audit_logs` (entities `announcement`, `request`) (§5h) | Phase 10 ✔ |
 
 ### Why feature tables are not created yet

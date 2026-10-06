@@ -71,6 +71,7 @@ describe('routing and role-aware navigation', () => {
       'Achievements',
       'Announcements',
       'Requests',
+      'Reports',
       'Accounts',
       'Students',
       'Teachers',

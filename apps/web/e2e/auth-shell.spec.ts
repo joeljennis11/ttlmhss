@@ -132,6 +132,7 @@ test.describe('roles in the shell', () => {
               'Achievements',
               'Announcements',
               'Requests',
+              'Reports',
               'Students',
               'Teachers',
               'School setup',
@@ -149,6 +150,7 @@ test.describe('roles in the shell', () => {
                 'Achievements',
                 'Announcements',
                 'My requests',
+                'My reports',
                 'Change password',
               ]
             : username === 'e2e.classteacher'
@@ -162,9 +164,18 @@ test.describe('roles in the shell', () => {
                   'Achievements',
                   'Announcements',
                   'Requests',
+                  'Reports',
                   'Change password',
                 ]
-              : ['Home', 'Timetable', 'Attendance', 'Marks', 'Announcements', 'Change password'],
+              : [
+                  'Home',
+                  'Timetable',
+                  'Attendance',
+                  'Marks',
+                  'Announcements',
+                  'Reports',
+                  'Change password',
+                ],
       );
     });
   }

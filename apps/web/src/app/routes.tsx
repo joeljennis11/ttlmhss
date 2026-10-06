@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ChartColumn,
   ClipboardCheck,
+  FileText,
   LayoutGrid,
   Smile,
   UserRound,
@@ -18,6 +19,9 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
+import { AnnualReportPage } from '../features/reports/pages/AnnualReportPage';
+import { MyReportsPage } from '../features/reports/pages/MyReportsPage';
+import { ReportsPage } from '../features/reports/pages/ReportsPage';
 import { DashboardPage } from '../features/communication/pages/DashboardPage';
 import {
   AnnouncementDetailPage,
@@ -320,6 +324,30 @@ export const SHELL_ROUTES: readonly ShellRoute[] = [
     permission: 'requests.create',
     roles: ['STUDENT'],
     nav: { label: 'My requests', icon: Inbox, section: 'main' },
+  },
+  // Phase 11 — reports (generated on the server from the existing records).
+  {
+    path: 'reports',
+    title: 'Reports',
+    element: <ReportsPage />,
+    permission: 'reports.view',
+    roles: ['ADMIN', 'TEACHER'],
+    nav: { label: 'Reports', icon: FileText, section: 'main', end: false },
+  },
+  {
+    path: 'reports/annual/:yearId/:studentId',
+    title: 'Annual report',
+    element: <AnnualReportPage />,
+    permission: 'reports.generate',
+    roles: ['ADMIN', 'CLASS_TEACHER'],
+  },
+  {
+    path: 'portal/reports',
+    title: 'My reports',
+    element: <MyReportsPage />,
+    permission: 'reports.view',
+    roles: ['STUDENT'],
+    nav: { label: 'My reports', icon: FileText, section: 'main' },
   },
   {
     path: 'requests/:id',

@@ -44,6 +44,7 @@ import { KyselyBehaviourRepository } from './repositories/behaviour/behaviour.re
 import { KyselyAchievementRepository } from './repositories/achievements/achievements.repository.js';
 import { KyselyAnnouncementRepository } from './repositories/communication/announcements.repository.js';
 import { KyselyRequestRepository } from './repositories/communication/requests.repository.js';
+import { KyselyAnnualReportRepository } from './repositories/reports/annual-reports.repository.js';
 import { KyselySchemaManager } from './schema-manager.js';
 
 function createRepositories(db: Kysely<Database>): Repositories {
@@ -79,6 +80,7 @@ function createRepositories(db: Kysely<Database>): Repositories {
     achievements: new KyselyAchievementRepository(db),
     announcements: new KyselyAnnouncementRepository(db),
     requests: new KyselyRequestRepository(db),
+    annualReports: new KyselyAnnualReportRepository(db),
   });
 }
 

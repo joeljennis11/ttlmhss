@@ -570,3 +570,38 @@ GET /dashboard  (one call per home page; nothing is calculated here)
 - *Announcements* (feed, full announcement page) and *Manage announcements* (filters, cards, dialog with audience‑dependent class/section, publish now, archive confirmation, restore).
 - *My requests* (list + type‑specific form) and *Requests* for reviewers (filters, list) sharing one request page (details, resolution, review actions, assignment, history, link to the record's own page).
 - Menu: Announcements for everyone; Requests for administrators and class teachers; My requests for students.
+
+## 20. Reports, PDFs and annual reports (Phase 11)
+
+```
+UI (Reports / My reports / annual report page)
+  → GET /reports/…?format=json|pdf|xlsx           (authorised route; scope = the source service's)
+  → ReportService / AnnualReportService            (composition only — no calculations)
+      ← ResultsService (8B results, completeness, ranks)   ← MarkSheetService.sheet (8B)
+      ← AttendanceViewService.studentAttendance / classRegister (P ÷ (P + A), calendar)
+      ← BehaviourService / AchievementService (Phase 9)    ← Phase 4 weightage (exams)
+  → report document (JSON)  ── preview in the browser
+                            └─ render/documents.ts → render/report-pdf.ts (PDFKit, A4) → FileResponse
+                            └─ render/attendance-xlsx.ts (ExcelJS)                    → FileResponse
+```
+
+- **One composition.** Each report is a typed JSON document (`@ttlmhss/shared/reports`); the preview renders it and the PDF/XLSX renderers format it — two presentations of the same data, never two calculations.
+- **PDF engine** (`modules/reports/render/report-pdf.ts`): A4 portrait or landscape; official header (logo from `apps/api/assets/ttlmhss-logo-print.jpg` — a 900 px resize of `assets/brand/ttlmhss-logo-enhanced.jpg` made by `pnpm --filter @ttlmhss/web brand:assets` — and only the configured school identity); a compact running header on later pages; fact grids; tables that wrap, never split a row and repeat their header on every page; boxed notes; signature lines; a footer band with "Page x of y" written after layout (buffered pages), so content never enters it. Standard Helvetica fonts.
+- **Files** leave through `core/http/file-response.ts`: `defineRoute` sends the bytes with `Content-Disposition: attachment; filename="…"` (sanitised parts), `Cache-Control: no-store` and `nosniff`. Nothing is written to disk; PDF bytes are never logged or audited.
+- **Annual reports** (`modules/reports/annual-report.service.ts`, table `annual_reports`): DRAFT content is built live; finalization stores the whole content JSON (`snapshot_json`) and later views/PDFs read only the snapshot. The weighting is `annualPercentBp` in `@ttlmhss/shared`.
+- **Attendance** gained one read‑only view, `AttendanceViewService.classRegister` (the class summary plus every lesson cell with period, subject and teacher from the same pass), used by the class report and its Excel export.
+
+### Endpoints
+| Area | Endpoints | Permission |
+|---|---|---|
+| Options | `GET /reports/options?academicYearId` (years, sections in scope, exams, what the caller can produce) | `reports.view` |
+| Report card | `GET /reports/exam-card?examId&studentId&format` | `reports.view` + 8B scope |
+| Mark sheet | `GET /reports/mark-sheet?examSubjectId&sectionId&format` | `reports.view` + sheet scope |
+| Attendance | `GET /reports/attendance/student?studentId&from&to&format`, `GET /reports/attendance/class?sectionId&from&to&format=json|pdf|xlsx` | `reports.view` + attendance scope |
+| Performance | `GET /reports/performance?studentId&academicYearId&format` | `reports.view` + student scope |
+| Annual | `GET /reports/annual/section?academicYearId&sectionId`, `GET /reports/annual?academicYearId&studentId&format`, `GET /reports/annual/mine`, `POST /reports/annual`, `PUT /reports/annual/:id/remark`, `POST /reports/annual/:id/finalize|publish|unpublish|reopen` | `reports.view` / `reports.generate` + scope |
+
+### Web (`features/reports/`)
+- *Reports* (staff): tabs for what the caller may produce — Report cards (exam + class → students with preview and PDF; PDF disabled while incomplete), Mark sheets (the caller's sheets), Attendance (class + range → summary preview, PDF, Excel, per‑student PDF), Student performance (preview, PDF), Annual reports (class list with status).
+- *Annual report* page: status, problems that block finalizing, sections A–F (same content as the PDF), remark editor with an optional "start from the suggestion", Finalize / Publish / Unpublish / Reopen (reason) with confirmations, PDF.
+- *My reports* (students): published annual reports, report cards (complete results only), attendance report for a chosen range, performance report.

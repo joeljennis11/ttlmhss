@@ -33,6 +33,7 @@ import type { BehaviourRepository } from '../modules/behaviour/behaviour.reposit
 import type { AchievementRepository } from '../modules/achievements/achievements.repository.js';
 import type { AnnouncementRepository } from '../modules/announcements/announcements.repository.js';
 import type { RequestRepository } from '../modules/requests/requests.repository.js';
+import type { AnnualReportRepository } from '../modules/reports/annual-reports.repository.js';
 import type { SchoolSettingsRepository } from '../modules/school/school-settings.repository.js';
 
 /**
@@ -85,6 +86,8 @@ export interface Repositories {
   // Phase 10 — announcements and requests
   readonly announcements: AnnouncementRepository;
   readonly requests: RequestRepository;
+  // Phase 11 — annual reports
+  readonly annualReports: AnnualReportRepository;
 }
 
 export interface MigrationState {

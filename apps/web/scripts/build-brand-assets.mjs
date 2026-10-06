@@ -6,7 +6,7 @@
  * Source (never edited): assets/brand/ttlmhss-logo-enhanced.jpg — the enhanced official artwork
  *                        supplied by the school (8000×8000). The first supplied file,
  *                        ttlmhss-logo-official.jpg, is kept unchanged for reference.
- * Output:                apps/web/public/brand/
+ * Output:                apps/web/public/brand/ (web) and apps/api/assets/ (PDF reports, Phase 11)
  *
  * Only resizing / format conversion is applied — no cropping, recolouring, filters or redrawing.
  * Outputs are committed so normal builds need no image tooling; re-run this only if the official
@@ -43,9 +43,19 @@ const outputs = [
   { file: 'apple-touch-icon.png', size: 180, format: (img) => img.png() },
 ];
 
-for (const { file, size, format } of outputs) {
+// Phase 11: PDF reports embed a 900 px JPEG (sharp at ~25 mm on A4 without a 2 MB master).
+const apiDir = path.resolve(here, '../../api/assets');
+mkdirSync(apiDir, { recursive: true });
+outputs.push({
+  file: 'ttlmhss-logo-print.jpg',
+  dir: apiDir,
+  size: 900,
+  format: (img) => img.jpeg({ quality: 90 }),
+});
+
+for (const { file, size, format, dir = outDir } of outputs) {
   const buffer = await format(sharp(input).resize(size, size, { fit: 'inside' })).toBuffer();
-  writeFileSync(path.join(outDir, file), buffer);
+  writeFileSync(path.join(dir, file), buffer);
   console.log(`  ${file.padEnd(22)} ${size}×${size}  ${(buffer.length / 1024).toFixed(1)} KB`);
 }
 console.log(`[brand] generated from ${path.relative(process.cwd(), source)}`);

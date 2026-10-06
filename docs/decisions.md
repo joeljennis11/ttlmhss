@@ -164,6 +164,22 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑99 | Audit activity on the admin dashboard | Not shown: there is no readable audit viewer yet (`audit.view` is reserved), and raw before/after data does not belong on a home screen. Candidate for Phase 12 | Deferred |
 | D‑100 | Class teacher "View students" | Not offered as a quick action: class teachers have no student list page (the Students page is administrator‑only). The class attendance day lists the class's students | Adopted |
 
+## Added in Phase 11
+
+| ID | Question | Current default | Status |
+|---|---|---|---|
+| D‑101 | PDF and Excel libraries | **PDFKit** (server‑side, pure JS, A4, no browser) for PDFs and **ExcelJS** for `.xlsx`. Standard PDF fonts (Helvetica): Latin text only — characters they cannot draw (e.g. Tamil) are printed as "?" (an embedded Unicode font is a later option) | Adopted — please confirm |
+| D‑102 | Annual calculation | Σ (Phase 8B exam percentage × configured weightage) ÷ 100, half‑up 2 dp (`annualPercentBp`). Only when the year's active weightages total 100 % and every weighted exam's result is complete for the student. No annual grade, pass/fail or rank (no rule exists) | Adopted — please confirm |
+| D‑103 | Annual lifecycle and roles | Draft → Finalized → Published (+ unpublish; reopen Finalized → Draft with a reason). Class teacher of the section and administrators prepare, write the remark and finalize; **only administrators publish, unpublish and reopen** | Adopted — please confirm |
+| D‑104 | Snapshot strategy | Only annual reports are stored: the complete display‑ready content as JSON (`annual_reports.snapshot_json`) at finalization. Report cards, mark sheets, attendance and performance reports are generated on request from current data and are not stored | Adopted |
+| D‑105 | Incomplete results | Previews show what is published with "Incomplete"; the official report‑card PDF is refused until the result is complete (Phase 8B) | Adopted |
+| D‑106 | Suggested remark | One factual sentence (annual %, attendance %, counts) — no judgement bands invented; labelled "System suggestion", drafts only, never printed on an official report; a teacher may start from it but must save their own remark | Adopted |
+| D‑107 | Signatures | Lines with role labels (Class Teacher; Subject Teacher on mark sheets; Principal / Head of Institution). The principal's name is printed only when configured in School details; no signature images | Adopted |
+| D‑108 | Mark sheet of a draft | Staff may print a non‑submitted sheet; it carries a "Not final — not visible to students" banner | Adopted |
+| D‑109 | Report permissions | No new keys: `reports.view` + the scope of the service each report comes from; `reports.generate` for the annual report lifecycle (and the class lists for it). Subject teachers: mark sheets of their own sheets only | Adopted |
+| D‑110 | Student attendance in reports | Any date range within one academic year; the class report adds an Excel export. A timetable published mid‑range only creates lessons from its publication (Phase 6/7 rule) | Adopted |
+| D‑111 | Phase doc location | `docs/phases/phase-11.md` (the project's convention) instead of `docs/phase-11.md` | Adopted |
+
 ## Pending inputs from the user
 
 - ~~Official school logo file~~ — **received 2026‑10‑03** (`assets/brand/ttlmhss-logo-official.jpg`); an enhanced 8000 px version followed with Phase 4 (`ttlmhss-logo-enhanced.jpg`, now the master — D‑34 resolved for print size).

@@ -10,5 +10,6 @@ export * from './marks.js';
 export * from './permission-info.js';
 export * from './people.js';
 export * from './portal.js';
+export * from './reports.js';
 export * from './timetable.js';
 export * from './validation.js';

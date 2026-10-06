@@ -57,6 +57,8 @@ export interface Database {
   // Phase 10
   announcements: AnnouncementsTable;
   requests: RequestsTable;
+  // Phase 11
+  annual_reports: AnnualReportsTable;
 }
 
 export interface AttendancePolicyTable extends Timestamps {
@@ -524,4 +526,24 @@ export interface RequestsTable extends Timestamps {
   closed_at: string | null;
   closed_by: string | null;
   revision: number;
+}
+
+// ---- Phase 11: annual reports ------------------------------------------------------------------
+
+export interface AnnualReportsTable extends Timestamps {
+  id: string;
+  academic_year_id: string;
+  student_id: string;
+  enrolment_id: string;
+  section_id: string;
+  status: string;
+  final_remark: string | null;
+  snapshot_json: string | null;
+  finalized_at: string | null;
+  finalized_by: string | null;
+  published_at: string | null;
+  published_by: string | null;
+  revision: number;
+  created_by: string;
+  updated_by: string | null;
 }

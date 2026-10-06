@@ -12,6 +12,6 @@ The enhanced file is the same artwork at print resolution, without the small str
 ## How the application uses it
 - `pnpm --filter @ttlmhss/web brand:assets` generates, by **resizing only** (deterministic, no AI), into `apps/web/public/brand/`: `ttlmhss-logo.webp` (512 px), `favicon-32.png`, `apple-touch-icon.png`. The script verifies the master's checksum first and refuses to run if the file changed unexpectedly.
 - The school settings (`school_settings.logo_path`, editable by Admin) point at `/brand/ttlmhss-logo.webp`; every screen reads the logo from there (sign‑in, sidebar, phone header). The favicon is linked from `apps/web/index.html`.
-- Report/PDF branding (Phase 11) should read `ttlmhss-logo-enhanced.jpg` directly for sharp A4 printing.
+- Report/PDF branding (Phase 11): the same script also writes `apps/api/assets/ttlmhss-logo-print.jpg` (900 px JPEG, resize only) — sharp at the printed size on A4 without embedding the 2 MB master in every PDF.
 
 If the school supplies a newer official file: add it here unchanged, update the source path and `EXPECTED_SHA256` in `apps/web/scripts/build-brand-assets.mjs`, update this table, and re-run the script.
