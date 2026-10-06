@@ -605,3 +605,20 @@ UI (Reports / My reports / annual report page)
 - *Reports* (staff): tabs for what the caller may produce — Report cards (exam + class → students with preview and PDF; PDF disabled while incomplete), Mark sheets (the caller's sheets), Attendance (class + range → summary preview, PDF, Excel, per‑student PDF), Student performance (preview, PDF), Annual reports (class list with status).
 - *Annual report* page: status, problems that block finalizing, sections A–F (same content as the PDF), remark editor with an optional "start from the suggestion", Finalize / Publish / Unpublish / Reopen (reason) with confirmations, PDF.
 - *My reports* (students): published annual reports, report cards (complete results only), attendance report for a chosen range, performance report.
+
+## 21. Production hardening and security (Phase 12A)
+
+No new framework, route, table or migration. What is enforced, and where:
+
+| Area | Mechanism |
+|---|---|
+| Start‑up configuration | `config/config.ts`: production requires a strong `SESSION_SECRET` (≥ 32 chars, not a placeholder, not repetitive), https `CORS_ORIGINS`, secure cookies, a file/server database. Every environment rejects `*` / non‑origin CORS entries. Problems are listed; values are never echoed |
+| Cookies / sessions | Unchanged from Phase 2: HttpOnly, SameSite=Lax, `Secure` + `__Host-` prefix when secure, idle + absolute expiry, server‑side revocation, HMAC‑hashed tokens |
+| Headers | `app.ts` (helmet): API CSP `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`, X‑Frame‑Options DENY, Referrer‑Policy no‑referrer, nosniff, Permissions‑Policy; HSTS only when `config.hsts` (secure cookies). Web build: CSP `<meta>` injected by `vite.config.ts` (`WEB_CSP`) — exceptions: `style-src 'unsafe-inline'` (React style attributes), `img-src data: blob:`; dev server is exempt (inline hot‑reload preamble). Source maps are `hidden` (not referenced by the bundle) |
+| CSRF / CORS | Origin / Sec‑Fetch‑Site check on unsafe methods, JSON‑only bodies (Phase 2); CORS = exact configured origins with credentials |
+| Rate limits | `core/http/rate-limits.ts`; `@fastify/rate-limit` runs at `preHandler` (after access control) and keys on the account (`user:<id>`) or the IP (`ip:<addr>`). Sign‑in/password change per IP, temporary passwords 20/min, `/reports/*` 60/min |
+| Input validation | Zod on every params/query/body; ids are UUIDs (query filters included — `OptionalIdFilterSchema` treats an empty filter as none); page size 1–100; real calendar dates; report ranges ordered and inside one academic year |
+| Errors / logs | Generic 500s; pino redaction of auth headers, cookies, passwords, hashes, tokens and secrets; audit redaction of password/secret/token/hash fields |
+| Test isolation | `buildApp` throws if test modules are passed in production; e2e seed refuses non‑`*e2e*.sqlite` targets |
+
+Regression tests: `apps/api/test/phase12a.test.ts` (unsafe production configuration, headers, CORS, error leakage, enumeration, an RBAC sweep of every route for anonymous / student / teacher callers, IDOR across students and sections on SQLite and PostgreSQL, malformed input, rate limits).

@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { EnrolmentStatus, PromotionOutcome, RecordStatus } from './controlled-values.js';
-import { IsoDateSchema, optionalText, requiredText } from './validation.js';
+import {
+  IdSchema,
+  IsoDateSchema,
+  OptionalIdFilterSchema,
+  optionalText,
+  requiredText,
+} from './validation.js';
 
 /*
  * Phase 5 — Student & teacher management contracts. Shared by the API (authoritative validation)
@@ -128,9 +134,9 @@ export const StudentListStatusSchema = z.enum([
 
 export const StudentListQuerySchema = z.object({
   q: z.string().trim().max(80).optional(),
-  academicYearId: z.string().optional(),
-  classId: z.string().optional(),
-  sectionId: z.string().optional(),
+  academicYearId: OptionalIdFilterSchema,
+  classId: OptionalIdFilterSchema,
+  sectionId: OptionalIdFilterSchema,
   status: StudentListStatusSchema.default('ACTIVE'),
   sort: StudentSortSchema.default('class'),
   page: z.coerce.number().int().min(1).default(1),
@@ -229,9 +235,9 @@ export const StatusChangeSchema = z.object({
 });
 
 export const PromotionCandidatesQuerySchema = z.object({
-  sourceAcademicYearId: z.string().min(1),
-  sourceSectionId: z.string().min(1),
-  targetAcademicYearId: z.string().min(1).optional(),
+  sourceAcademicYearId: IdSchema,
+  sourceSectionId: IdSchema,
+  targetAcademicYearId: OptionalIdFilterSchema,
 });
 
 // ---------------------------------------------------------------------------
@@ -366,7 +372,7 @@ export type TeacherCreateInput = z.input<typeof TeacherCreateSchema>;
 
 export const TeacherListQuerySchema = z.object({
   q: z.string().trim().max(80).optional(),
-  subjectId: z.string().optional(),
+  subjectId: OptionalIdFilterSchema,
   status: z.enum(['ACTIVE', 'INACTIVE', 'ALL']).default('ACTIVE'),
   designation: z.string().trim().max(80).optional(),
   page: z.coerce.number().int().min(1).default(1),

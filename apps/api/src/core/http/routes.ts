@@ -45,7 +45,7 @@ export interface RouteDefinition<
   access: AccessRequirement;
   /** HTTP status on success (default 200). */
   successStatus?: number;
-  /** Per-client (IP) request limit for this route, e.g. sign-in. */
+  /** Request limit for this route: per account when signed in, otherwise per IP (e.g. sign-in). */
   rateLimit?: { max: number; timeWindowMs: number };
   schema?: { params?: PS; query?: QS; body?: BS };
   handler: (ctx: RouteContext<Infer<PS>, Infer<QS>, Infer<BS>>) => Promise<R> | R;

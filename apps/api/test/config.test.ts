@@ -88,7 +88,7 @@ describe('configuration', () => {
       expect(() => loadConfig({ readEnvFiles: false, env: prod })).toThrow(/SESSION_SECRET/);
       const config = loadConfig({
         readEnvFiles: false,
-        env: { ...prod, SESSION_SECRET: 'x'.repeat(40) },
+        env: { ...prod, SESSION_SECRET: 'q7Vx2LmN9pR4tY8wZ3kJ6hG1fD5sA0bC' },
       });
       expect(config.auth).toMatchObject({ cookieSecure: true, sessionSecretIsEphemeral: false });
     });

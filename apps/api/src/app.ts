@@ -27,6 +27,11 @@ export async function buildApp(
   deps: AppDependencies,
   options: BuildAppOptions = {},
 ): Promise<FastifyInstance> {
+  if (deps.config.isProduction && options.extraModules?.length) {
+    // Test-only routes can never be mounted in a production process.
+    throw new Error('Test modules cannot be registered in production.');
+  }
+
   const app = Fastify({
     logger: options.logger ?? buildLoggerOptions(deps.config),
     // Never trust client-supplied request ids.
@@ -42,20 +47,47 @@ export async function buildApp(
   // cannot submit a body this API will accept (CSRF hardening).
   app.removeContentTypeParser('text/plain');
 
-  await app.register(helmet);
+  // The API only serves JSON and generated files, never HTML: the tightest possible CSP.
+  // HSTS only when the deployment is HTTPS (secure cookies); sending it over plain-http
+  // development would pin browsers to https://localhost.
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'none'"],
+        formAction: ["'none'"],
+      },
+    },
+    referrerPolicy: { policy: 'no-referrer' },
+    frameguard: { action: 'deny' },
+    strictTransportSecurity: deps.config.hsts
+      ? { maxAge: 31_536_000, includeSubDomains: true }
+      : false,
+  });
   await app.register(cors, {
     origin: [...deps.config.corsOrigins],
     credentials: true,
   });
   await app.register(cookie);
-  // Limits are opt-in per route (see RouteDefinition.rateLimit), e.g. sign-in.
+  // Limits are opt-in per route (see RouteDefinition.rateLimit), e.g. sign-in. They run after
+  // access control, so a signed-in caller is limited per account (many staff can share one school
+  // network address) and an anonymous caller per IP address.
   await app.register(rateLimit, {
     global: false,
+    hook: 'preHandler',
+    keyGenerator: (request) =>
+      request.principal ? `user:${request.principal.userId}` : `ip:${request.ip}`,
     errorResponseBuilder: () => new TooManyRequestsError(),
   });
 
   app.addHook('onSend', async (request, reply) => {
     reply.header('x-request-id', request.id);
+    reply.header(
+      'permissions-policy',
+      'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
+    );
   });
 
   registerErrorHandling(app);

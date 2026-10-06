@@ -300,3 +300,12 @@ No new permission keys (D‑109). Every report endpoint requires `reports.view` 
 |---|---|---|---|
 | `reports.view` | Admin, Teacher, Student | all | opening and downloading reports in scope |
 | `reports.generate` | Admin, Class Teacher | staff | annual report lists and lifecycle |
+
+## 17. RBAC audit (Phase 12A)
+
+No permission or grant changed. Audited by an automated sweep (`apps/api/test/phase12a.test.ts`) over every registered route:
+
+- The only public routes are `POST /auth/login`, `POST /auth/logout`, `GET /health` and `GET /school/branding`; every other route answers 401 without a session.
+- A student and a (non‑class) teacher receive 403 on every route whose permission their role does not hold by default.
+- A temporary password allows only the password‑change flow.
+- Record scope (IDOR): a student cannot read another student's reports, attendance, profile or behaviour by changing an id; a class teacher cannot read or prepare reports for another section; a subject teacher without the assignment sees no class report. Out‑of‑scope and missing records answer alike (403/404) and never include the other record's data.

@@ -68,6 +68,33 @@ const EnvSchema = z.object({
     .default(15),
 });
 
+/** A configured web origin: scheme + host (+ port), nothing else. Returns a problem or null. */
+function originProblem(origin: string, production: boolean): string | null {
+  if (origin === '*' || origin.includes('*')) return 'wildcards are not allowed';
+  let url: URL;
+  try {
+    url = new URL(origin);
+  } catch {
+    return 'each entry must be an origin such as https://school.example';
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:')
+    return 'only http(s) origins are allowed';
+  if (url.origin !== origin) {
+    return 'each entry must be an origin only (no path, query or credentials)';
+  }
+  if (production && url.protocol !== 'https:') return 'production origins must use https';
+  return null;
+}
+
+/** Obvious placeholders and low-entropy values that pass the length check but are not secret. */
+export function weakSecretProblem(secret: string): string | null {
+  if (new Set(secret).size < 12) return 'is too repetitive; generate a random value';
+  if (/change.?me|placeholder|example|your.?secret|replace|dummy|default/i.test(secret)) {
+    return 'looks like a placeholder; generate a random value';
+  }
+  return null;
+}
+
 export interface AuthConfig {
   /** Never log or return this. */
   readonly sessionSecret: string;
@@ -91,6 +118,8 @@ export interface AppConfig {
   readonly corsOrigins: readonly string[];
   /** Trust X-Forwarded-* headers (only behind a known reverse proxy). */
   readonly trustProxy: boolean;
+  /** Send Strict-Transport-Security: only when the site is served over HTTPS (secure cookies). */
+  readonly hsts: boolean;
   readonly auth: AuthConfig;
 }
 
@@ -137,7 +166,16 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     );
   }
 
-  if (env.NODE_ENV === 'production') {
+  const production = env.NODE_ENV === 'production';
+  for (const origin of env.CORS_ORIGINS) {
+    const problem = originProblem(origin, production);
+    if (problem) {
+      problems.push(`CORS_ORIGINS: ${problem}`);
+      break;
+    }
+  }
+
+  if (production) {
     if (database?.driver === 'sqlite' && database.filename === SQLITE_MEMORY) {
       problems.push('DATABASE_URL: an in-memory database is not allowed in production');
     }
@@ -146,6 +184,12 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     }
     if (!env.SESSION_SECRET) {
       problems.push('SESSION_SECRET: is required in production (at least 32 random characters)');
+    } else {
+      const weak = weakSecretProblem(env.SESSION_SECRET);
+      if (weak) problems.push(`SESSION_SECRET: ${weak}`);
+    }
+    if (env.COOKIE_SECURE === false) {
+      problems.push('COOKIE_SECURE: cannot be false in production (serve the site over HTTPS)');
     }
   }
   if (env.SESSION_ABSOLUTE_TIMEOUT_HOURS * 60 < env.SESSION_IDLE_TIMEOUT_MINUTES) {
@@ -154,6 +198,7 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
 
   if (problems.length > 0 || !database) throw new ConfigError(problems);
 
+  const cookieSecure = env.COOKIE_SECURE ?? production;
   return Object.freeze({
     env: env.NODE_ENV,
     isProduction: env.NODE_ENV === 'production',
@@ -163,12 +208,13 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     database,
     corsOrigins: Object.freeze([...env.CORS_ORIGINS]),
     trustProxy: env.TRUST_PROXY ?? false,
+    hsts: cookieSecure,
     auth: Object.freeze({
       sessionSecret: env.SESSION_SECRET ?? randomBytes(32).toString('base64url'),
       sessionSecretIsEphemeral: !env.SESSION_SECRET,
       idleTimeoutMs: env.SESSION_IDLE_TIMEOUT_MINUTES * 60_000,
       absoluteTimeoutMs: env.SESSION_ABSOLUTE_TIMEOUT_HOURS * 3_600_000,
-      cookieSecure: env.COOKIE_SECURE ?? env.NODE_ENV === 'production',
+      cookieSecure,
       loginRateLimitPerMinute: env.LOGIN_RATE_LIMIT_PER_MINUTE,
       maxFailedAttempts: env.LOGIN_MAX_FAILED_ATTEMPTS,
       lockoutMs: env.LOGIN_LOCKOUT_MINUTES * 60_000,

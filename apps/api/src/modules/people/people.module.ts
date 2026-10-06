@@ -18,6 +18,7 @@ import { z } from 'zod';
 import type { AppDependencies } from '../../app-dependencies.js';
 import { requires } from '../../core/auth/access.js';
 import type { FeatureModule } from '../../core/http/module.js';
+import { CREDENTIAL_ISSUE_LIMIT } from '../../core/http/rate-limits.js';
 import { defineRoute, type RouteContext } from '../../core/http/routes.js';
 import { createAccountCredentialsService } from '../../composition.js';
 import type { PeopleServiceDeps, RequestContext } from './people-service.js';
@@ -124,6 +125,7 @@ export function peopleModule(deps: AppDependencies): FeatureModule {
         method: 'POST',
         url: '/admin/students/:id/temporary-password',
         access: requires('users.reset_password'),
+        rateLimit: CREDENTIAL_ISSUE_LIMIT,
         schema: { params: Id },
         handler: (c) => (noStore(c), students.issueTemporaryPassword(ctxOf(c), c.params.id)),
       }),
@@ -213,6 +215,7 @@ export function peopleModule(deps: AppDependencies): FeatureModule {
         method: 'POST',
         url: '/admin/teachers/:id/temporary-password',
         access: requires('users.reset_password'),
+        rateLimit: CREDENTIAL_ISSUE_LIMIT,
         schema: { params: Id },
         handler: (c) => (noStore(c), teachers.issueTemporaryPassword(ctxOf(c), c.params.id)),
       }),

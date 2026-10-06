@@ -180,6 +180,17 @@ Status: `Open` · `Proposed` (recommendation given, awaiting confirmation) · `A
 | D‑110 | Student attendance in reports | Any date range within one academic year; the class report adds an Excel export. A timetable published mid‑range only creates lessons from its publication (Phase 6/7 rule) | Adopted |
 | D‑111 | Phase doc location | `docs/phases/phase-11.md` (the project's convention) instead of `docs/phase-11.md` | Adopted |
 
+### Phase 12A — production hardening and security
+
+| # | Decision | Outcome | Status |
+|---|---|---|---|
+| D‑112 | HTTPS in production | Production refuses to start with `COOKIE_SECURE=false`, with non‑https `CORS_ORIGINS`, or with a missing / placeholder / repetitive `SESSION_SECRET`. HSTS (1 year, includeSubDomains) is sent only when cookies are secure. This replaces the earlier "plain HTTP on a closed network" allowance | Adopted — please confirm |
+| D‑113 | CORS origins | Exact `scheme://host[:port]` entries only, in every environment; `*`, paths and non‑http(s) schemes are rejected at start‑up. Localhost http stays allowed in development | Adopted |
+| D‑114 | Security headers | API: CSP `default-src 'none'; frame-ancestors 'none'` (it serves only JSON and files), X‑Frame‑Options DENY, Referrer‑Policy no‑referrer, nosniff, Permissions‑Policy (camera, microphone, geolocation, payment, usb off). Web build: CSP `<meta>` with `script-src 'self'`; exceptions: inline style attributes and `data:`/`blob:` images. The host must add `frame-ancestors` as a header (a `<meta>` cannot) — Phase 12B/C deployment | Adopted |
+| D‑115 | Rate limits | Counted per signed‑in account (many staff share one school IP), per IP when anonymous. Sign‑in / password change: `LOGIN_RATE_LIMIT_PER_MINUTE` per IP (unchanged). Temporary‑password issuance: 20/min. Every `/reports/*` route (previews, PDFs, XLSX, annual lifecycle): 60/min. No global limit. In‑memory counters (one process) | Adopted |
+| D‑116 | Test infrastructure in production | `buildApp` refuses test‑only modules when `NODE_ENV=production`; the e2e seed only accepts a `*e2e*.sqlite` file. Test helpers are never imported by `src/` | Adopted |
+| D‑117 | Dependency audit | `pnpm audit`: one moderate advisory (`uuid` < 11.1.1 via `exceljs`, buffer bounds in v3/v5/v6 with a caller‑supplied buffer). Not reachable — the app never calls those functions; left for a planned upgrade rather than overriding a transitive dependency of ExcelJS | Adopted — revisit when ExcelJS updates |
+
 ## Pending inputs from the user
 
 - ~~Official school logo file~~ — **received 2026‑10‑03** (`assets/brand/ttlmhss-logo-official.jpg`); an enhanced 8000 px version followed with Phase 4 (`ttlmhss-logo-enhanced.jpg`, now the master — D‑34 resolved for print size).
