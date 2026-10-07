@@ -246,6 +246,8 @@ export class AttendanceViewService extends AttendanceServiceBase {
     const cells: {
       date: string;
       studentId: string;
+      /** Roll number of the placement in force on that date (a student may have had several). */
+      rollNumber: string | null;
       periodId: string;
       periodLabel: string;
       subjectName: string;
@@ -264,6 +266,7 @@ export class AttendanceViewService extends AttendanceServiceBase {
           cells.push({
             date,
             studentId: s.studentId,
+            rollNumber: s.rollNumber,
             periodId: l.period.id,
             periodLabel: l.period.label,
             subjectName: l.subject.name,
@@ -332,7 +335,7 @@ export class AttendanceViewService extends AttendanceServiceBase {
           date: c.date,
           periodLabel: c.periodLabel,
           admissionNumber: p.admissionNumber,
-          rollNumber: p.rollNumber,
+          rollNumber: c.rollNumber,
           fullName: p.fullName,
           subjectName: c.subjectName,
           teacherName: c.teacherName,

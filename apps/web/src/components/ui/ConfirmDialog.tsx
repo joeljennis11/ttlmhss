@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useId, useRef, type ReactNode } from 'react';
 import { Button } from './Button';
 import styles from './ui.module.css';
+import { useModalDialog } from './use-modal-dialog';
 
 /**
  * Confirmation before consequential actions (built on the native <dialog>: focus is trapped,
@@ -30,12 +31,7 @@ export function ConfirmDialog({
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal?.();
-    if (!open && dialog.open) dialog.close?.();
-  }, [open]);
+  useModalDialog(ref, open);
 
   return (
     <dialog

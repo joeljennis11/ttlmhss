@@ -269,7 +269,7 @@ tr[data-today] .dayHead {
 }
 
 .free {
-  color: var(--ink-faint);
+  color: var(--ink-muted);
 }
 
 .freeButton {

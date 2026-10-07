@@ -331,25 +331,30 @@ export class KyselyAttendanceRepository implements AttendanceRepository {
   // ---- placements ------------------------------------------------------------------------------
 
   private placements(academicYearId: string, from: string, to: string) {
-    return this.db
-      .selectFrom('enrolments as e')
-      .innerJoin('students as s', 's.id', 'e.student_id')
-      .select([
-        'e.id as enrolment_id',
-        'e.student_id',
-        'e.academic_year_id',
-        'e.section_id',
-        'e.roll_number',
-        'e.status as enrolment_status',
-        'e.started_on',
-        'e.ended_on',
-        's.admission_number',
-        's.full_name',
-        's.status as student_status',
-      ])
-      .where('e.academic_year_id', '=', academicYearId)
-      .where('e.started_on', '<=', to)
-      .where((eb) => eb.or([eb('e.ended_on', 'is', null), eb('e.ended_on', '>=', from)]));
+    return (
+      this.db
+        .selectFrom('enrolments as e')
+        .innerJoin('students as s', 's.id', 'e.student_id')
+        .select([
+          'e.id as enrolment_id',
+          'e.student_id',
+          'e.academic_year_id',
+          'e.section_id',
+          'e.roll_number',
+          'e.status as enrolment_status',
+          'e.started_on',
+          'e.ended_on',
+          's.admission_number',
+          's.full_name',
+          's.status as student_status',
+        ])
+        .where('e.academic_year_id', '=', academicYearId)
+        .where('e.started_on', '<=', to)
+        .where((eb) => eb.or([eb('e.ended_on', 'is', null), eb('e.ended_on', '>=', from)]))
+        // Deterministic on every database: a student's placements oldest first (Phase 12B).
+        .orderBy('e.started_on')
+        .orderBy('e.id')
+    );
   }
 
   private toPlacement(r: {

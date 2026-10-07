@@ -418,6 +418,10 @@ export class RequestService extends MarksServiceBase {
       relatedExamId: null as string | null,
       profileField: null as RequestRecord['profileField'],
     };
+    // The class the question is ABOUT (Phase 12B): a lesson or exam from before a class change
+    // belongs to the class of that time, so its class teacher (who can act on it) reviews it.
+    let about = placement;
+    const history = await repos.enrolments.listForStudentInYear(p.studentId, year.id);
     if (input.type === 'ATTENDANCE_ISSUE') {
       if (input.date < year.startDate || input.date > year.endDate) {
         throw fieldConflict('date', `Choose a date within ${year.label}.`);
@@ -431,6 +435,10 @@ export class RequestService extends MarksServiceBase {
         throw fieldConflict('periodId', 'You had no lesson in that period on that date.');
       }
       summary = `Attendance on ${longDate(input.date)}, ${lesson.period.label} (${lesson.subject.name})`;
+      about =
+        history.find(
+          (e) => e.startedOn <= input.date && (e.endedOn === null || e.endedOn >= input.date),
+        ) ?? placement;
       related.relatedDate = input.date;
       related.relatedPeriodId = lesson.period.id;
       related.relatedSubjectId = lesson.subject.id;
@@ -440,6 +448,11 @@ export class RequestService extends MarksServiceBase {
       const subject = exam.subjects.find((s) => s.id === input.subjectId);
       if (!subject) throw fieldConflict('subjectId', 'Choose a subject of that exam.');
       summary = `${exam.name} — ${subject.name}`;
+      const sectionOfExam = (await this.results.myResult(ctx, exam.id)).section.sectionId;
+      about =
+        sectionOfExam === placement.sectionId
+          ? placement
+          : (history.filter((e) => e.sectionId === sectionOfExam).at(-1) ?? placement);
       related.relatedExamId = exam.id;
       related.relatedSubjectId = subject.id;
     } else {
@@ -468,15 +481,15 @@ export class RequestService extends MarksServiceBase {
       const classTeacher =
         input.type === 'PROFILE_CORRECTION'
           ? null
-          : await this.classTeacherUser(tx, year.id, placement.sectionId);
+          : await this.classTeacherUser(tx, year.id, about.sectionId);
       await tx.requests.create(
         {
           id,
           type: input.type,
           academicYearId: year.id,
           studentId: actor.studentId!,
-          enrolmentId: placement.enrolmentId,
-          sectionId: placement.sectionId,
+          enrolmentId: about.enrolmentId,
+          sectionId: about.sectionId,
           requestedBy: actor.userId,
           requesterRole: 'STUDENT',
           summary,
@@ -495,7 +508,7 @@ export class RequestService extends MarksServiceBase {
           status: 'OPEN',
           studentId: actor.studentId,
           academicYearId: year.id,
-          sectionId: placement.sectionId,
+          sectionId: about.sectionId,
           summary,
           ...related,
           description: input.description,

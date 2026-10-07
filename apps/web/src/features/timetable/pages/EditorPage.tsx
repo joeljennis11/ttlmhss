@@ -578,7 +578,12 @@ function VersionHistory({ yearId, refreshKey }: { yearId: string; refreshKey: st
       title="Version history"
       description="Published timetables are never edited; each change is a new version."
     >
-      <div className={styles.historyWrap}>
+      <div
+        className={styles.historyWrap}
+        role="region"
+        aria-label="Timetable versions"
+        tabIndex={0}
+      >
         <table className={styles.history}>
           <caption className="visually-hidden">Timetable versions</caption>
           <thead>
