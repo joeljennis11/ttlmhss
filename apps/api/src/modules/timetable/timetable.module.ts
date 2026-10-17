@@ -2,6 +2,11 @@ import {
   IdSchema,
   TimetableChangesSchema,
   TimetableLessonsQuerySchema,
+  TimetableRequestCreateSchema,
+  TimetableRequestDeclineSchema,
+  TimetableRequestListQuerySchema,
+  TimetableRequestReviewSchema,
+  TimetableRequestWithdrawSchema,
   TimetableSectionQuerySchema,
   TimetableYearQuerySchema,
 } from '@ttlmhss/shared';
@@ -9,7 +14,9 @@ import { z } from 'zod';
 import type { AppDependencies } from '../../app-dependencies.js';
 import { requires } from '../../core/auth/access.js';
 import type { FeatureModule } from '../../core/http/module.js';
+import { CHANGE_REQUEST_LIMIT } from '../../core/http/rate-limits.js';
 import { defineRoute, type RouteContext } from '../../core/http/routes.js';
+import { TimetableChangeRequestService } from './change-request.service.js';
 import { TimetableEditorService } from './timetable-editor.service.js';
 import type { RequestContext, TimetableServiceDeps } from './timetable-service.js';
 import { TimetableViewService } from './timetable-view.service.js';
@@ -18,6 +25,8 @@ const YearParam = z.object({ yearId: IdSchema });
 const YearSectionParams = z.object({ yearId: IdSchema, sectionId: IdSchema });
 const YearTeacherParams = z.object({ yearId: IdSchema, teacherId: IdSchema });
 const StudentParam = z.object({ studentId: IdSchema });
+const IdParam = z.object({ id: IdSchema });
+const OptionalYear = z.object({ academicYearId: IdSchema.optional() });
 
 const ctxOf = (c: RouteContext<unknown, unknown, unknown>): RequestContext => ({
   principal: c.principal,
@@ -38,6 +47,7 @@ export function timetableModule(deps: AppDependencies): FeatureModule {
   };
   const editor = new TimetableEditorService(base);
   const views = new TimetableViewService(base);
+  const requests = new TimetableChangeRequestService(base);
 
   return {
     name: 'timetable',
@@ -95,6 +105,59 @@ export function timetableModule(deps: AppDependencies): FeatureModule {
           await editor.discardDraft(ctxOf(c), c.params.yearId);
           return { deleted: true } as const;
         },
+      }),
+
+      // ---- Change requests (Phase 12C): class teachers ask, administrators review ----------------
+      defineRoute({
+        method: 'GET',
+        url: '/timetable/change-requests/options',
+        access: requires('timetable.view'),
+        schema: { query: OptionalYear },
+        handler: (c) => requests.options(ctxOf(c), c.query.academicYearId),
+      }),
+      defineRoute({
+        method: 'GET',
+        url: '/timetable/change-requests',
+        access: requires('timetable.view'),
+        schema: { query: TimetableRequestListQuerySchema },
+        handler: (c) => requests.list(ctxOf(c), c.query),
+      }),
+      defineRoute({
+        method: 'GET',
+        url: '/timetable/change-requests/:id',
+        access: requires('timetable.view'),
+        schema: { params: IdParam },
+        handler: (c) => requests.get(ctxOf(c), c.params.id),
+      }),
+      defineRoute({
+        method: 'POST',
+        url: '/timetable/change-requests',
+        access: requires('timetable.view'),
+        rateLimit: CHANGE_REQUEST_LIMIT,
+        successStatus: 201,
+        schema: { body: TimetableRequestCreateSchema },
+        handler: (c) => requests.create(ctxOf(c), c.body),
+      }),
+      defineRoute({
+        method: 'POST',
+        url: '/timetable/change-requests/:id/withdraw',
+        access: requires('timetable.view'),
+        schema: { params: IdParam, body: TimetableRequestWithdrawSchema },
+        handler: (c) => requests.withdraw(ctxOf(c), c.params.id, c.body),
+      }),
+      defineRoute({
+        method: 'POST',
+        url: '/timetable/change-requests/:id/approve',
+        access: requires('timetable.publish'),
+        schema: { params: IdParam, body: TimetableRequestReviewSchema },
+        handler: (c) => requests.approve(ctxOf(c), c.params.id, c.body),
+      }),
+      defineRoute({
+        method: 'POST',
+        url: '/timetable/change-requests/:id/decline',
+        access: requires('timetable.publish'),
+        schema: { params: IdParam, body: TimetableRequestDeclineSchema },
+        handler: (c) => requests.decline(ctxOf(c), c.params.id, c.body),
       }),
 
       // ---- Published views ----------------------------------------------------------------------

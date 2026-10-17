@@ -7,7 +7,11 @@ import {
   TimetableVersionListSchema,
   TimetableVersionViewSchema,
   TimetableYearListSchema,
+  TimetableRequestListSchema,
+  TimetableRequestOptionsSchema,
+  TimetableRequestViewSchema,
   type TimetableOperation,
+  type TimetableRequestCreate,
 } from '@ttlmhss/shared';
 import { z } from 'zod';
 import { apiRequest } from '../../lib/api-client';
@@ -69,5 +73,43 @@ export const timetableApi = {
     apiRequest(`/timetable/me?academicYearId=${encodeURIComponent(yearId)}`, {
       schema: TeacherTimetableViewSchema,
       ...opts(signal),
+    }),
+};
+
+/** Timetable change requests (Phase 12C): class teachers ask, administrators approve or decline. */
+export const timetableRequestsApi = {
+  options: (yearId: string | null, signal?: Signal) =>
+    apiRequest(
+      `/timetable/change-requests/options${yearId ? `?academicYearId=${encodeURIComponent(yearId)}` : ''}`,
+      { schema: TimetableRequestOptionsSchema, ...opts(signal) },
+    ),
+  list: (status: string, signal?: Signal) =>
+    apiRequest(`/timetable/change-requests?status=${encodeURIComponent(status)}`, {
+      schema: TimetableRequestListSchema,
+      ...opts(signal),
+    }),
+  create: (body: TimetableRequestCreate) =>
+    apiRequest('/timetable/change-requests', {
+      method: 'POST',
+      body,
+      schema: TimetableRequestViewSchema,
+    }),
+  approve: (id: string, revision: number, note: string | null) =>
+    apiRequest(`/timetable/change-requests/${id}/approve`, {
+      method: 'POST',
+      body: { revision, note },
+      schema: TimetableRequestViewSchema,
+    }),
+  decline: (id: string, revision: number, note: string) =>
+    apiRequest(`/timetable/change-requests/${id}/decline`, {
+      method: 'POST',
+      body: { revision, note },
+      schema: TimetableRequestViewSchema,
+    }),
+  withdraw: (id: string, revision: number) =>
+    apiRequest(`/timetable/change-requests/${id}/withdraw`, {
+      method: 'POST',
+      body: { revision },
+      schema: TimetableRequestViewSchema,
     }),
 };

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TimetableRequestSummarySchema } from './timetable-requests.js';
 import { AttendanceCountsSchema, AttendanceLessonsViewSchema } from './attendance.js';
 import {
   AnnouncementViewSchema,
@@ -75,6 +76,8 @@ export const AdminDashboardSchema = z.object({
     }),
   }),
   exams: z.array(ExamRefSchema.extend({ sheets: SheetCounts })),
+  /** Phase 12C: timetable change requests waiting for an administrator. */
+  timetableRequests: TimetableRequestSummarySchema,
 });
 export type AdminDashboard = z.infer<typeof AdminDashboardSchema>;
 

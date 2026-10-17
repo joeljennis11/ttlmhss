@@ -60,10 +60,9 @@ export class AuthService {
   async login(input: { username: string; password: string }, meta: RequestMeta): Promise<SignedIn> {
     const { dataStore, hasher, throttle, clock, sessions } = this.deps;
     const repos = dataStore.repositories;
-    const throttleKey = `login:${input.username}`;
     const nowMs = clock.now().getTime();
 
-    if (throttle.isLocked(throttleKey, nowMs)) {
+    if (throttle.isSignInLocked(input.username, meta.ipAddress, nowMs)) {
       await this.audit(repos).record(
         {
           action: 'auth.login.blocked',
@@ -84,7 +83,7 @@ export class AuthService {
     );
 
     if (!account || !credential || !passwordOk || account.status !== 'ACTIVE') {
-      throttle.recordFailure(throttleKey, nowMs);
+      throttle.recordSignInFailure(input.username, meta.ipAddress, nowMs);
       const reason = !account
         ? 'unknown_user'
         : !credential
@@ -105,7 +104,7 @@ export class AuthService {
       throw new UnauthorizedError(INVALID_CREDENTIALS_MESSAGE);
     }
 
-    throttle.reset(throttleKey);
+    throttle.recordSignInSuccess(input.username, meta.ipAddress, nowMs);
     const issued = await dataStore.transaction(async (tx) => {
       const now = toTimestamp(clock.now());
       await tx.sessions.pruneForUser(account.id, now);

@@ -283,7 +283,7 @@ tr[data-today] .dayHead {
   border: 1px dashed var(--line-strong);
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--ink-faint);
+  color: var(--ink-muted);
   font: inherit;
   cursor: pointer;
 }
@@ -446,4 +446,54 @@ tr[data-today] .dayHead {
   margin: 0;
   font-size: var(--text-sm);
   color: var(--ink-muted);
+}
+
+/* ---- Phase 12C: timetable change requests ---- */
+.requestList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3, 12px);
+}
+
+.requestItem {
+  border: 1px solid var(--border, #d9e0db);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  background: var(--surface, #fff);
+}
+
+.requestHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.requestFacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 6px 16px;
+  margin: 10px 0 0;
+}
+
+.requestFacts dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+.requestFacts dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.requestActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }

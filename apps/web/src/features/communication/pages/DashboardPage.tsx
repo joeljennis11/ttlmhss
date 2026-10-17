@@ -23,6 +23,7 @@ import {
   UserPlus,
   type LucideIcon,
 } from 'lucide-react';
+import { WEEKDAY_LABELS } from '../../../lib/format';
 import { usePageTitle } from '../../../app/page-meta';
 import { PageHeader, Panel } from '../../../components/layout/Page';
 import {
@@ -343,6 +344,41 @@ function AdminBlock({
             </ul>
           )}
         </Panel>
+        {can('timetable.publish') && (
+          <Panel
+            title="Timetable requests"
+            description={
+              admin.timetableRequests.pending === 0
+                ? 'No change requests waiting for review.'
+                : `${admin.timetableRequests.pending} change request${admin.timetableRequests.pending === 1 ? '' : 's'} waiting for review.`
+            }
+            actions={
+              <Link to="/timetable/requests" className={styles.link}>
+                Review requests
+              </Link>
+            }
+          >
+            {admin.timetableRequests.items.length === 0 ? (
+              <p className={styles.hint}>Class teachers' requests appear here.</p>
+            ) : (
+              <ul className={styles.list} aria-label="Timetable requests">
+                {admin.timetableRequests.items.map((r) => (
+                  <li key={r.id} className={styles.row}>
+                    <div className={styles.rowMain}>
+                      <Link to="/timetable/requests" className={styles.link}>
+                        {r.section} · {WEEKDAY_LABELS[r.day].short} {r.period}
+                      </Link>
+                      <span className={styles.meta}>
+                        {r.requestedBy}: {r.reason}
+                      </span>
+                    </div>
+                    <Badge tone="warning">Waiting</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        )}
       </div>
     </>
   );

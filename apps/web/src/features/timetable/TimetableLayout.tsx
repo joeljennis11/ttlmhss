@@ -22,6 +22,12 @@ export const TIMETABLE_PAGES = [
     roles: ['ADMIN', 'TEACHER'] as const,
   },
   { path: 'timetable/edit', label: 'Edit timetable', permission: 'timetable.manage' as const },
+  {
+    path: 'timetable/requests',
+    label: 'Requests',
+    permission: 'timetable.view' as const,
+    roles: ['ADMIN', 'CLASS_TEACHER'] as const,
+  },
 ] as const;
 
 function pagesFor(user: Pick<AuthUser, 'permissions' | 'roles'>) {

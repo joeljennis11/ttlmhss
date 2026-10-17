@@ -622,3 +622,13 @@ No new framework, route, table or migration. What is enforced, and where:
 | Test isolation | `buildApp` throws if test modules are passed in production; e2e seed refuses non‑`*e2e*.sqlite` targets |
 
 Regression tests: `apps/api/test/phase12a.test.ts` (unsafe production configuration, headers, CORS, error leakage, enumeration, an RBAC sweep of every route for anonymous / student / teacher callers, IDOR across students and sections on SQLite and PostgreSQL, malformed input, rate limits).
+
+## 22. Deployment readiness (Phase 12C)
+
+- **Topology** (D‑123, `docs/deployment.md`): nginx (`deploy/nginx/ttlmhss.conf` + `security-headers.conf`) terminates HTTPS, redirects HTTP, serves `apps/web/dist` with `index.html` for app routes, proxies `/api/` to ONE API process on 127.0.0.1 (`deploy/systemd/ttlmhss-api.service`). Web headers come from nginx (CSP = `WEB_CSP` + `frame-ancestors 'none'`, HSTS, nosniff, DENY, no‑referrer, Permissions‑Policy); API headers from the API itself. Verified locally with the shipped config (self‑signed certificate), the production build and `NODE_ENV=production`.
+- **Start‑up configuration** adds: explicit `TRUST_PROXY` in production, loopback `HOST` when trusting the proxy, `SMS_PROVIDER` must be `none`, `LOGIN_ACCOUNT_MAX_FAILED_ATTEMPTS`.
+- **Sign‑in throttle** (`modules/auth/login-throttle.ts`, D‑124): per username + address lock, per username lock that spares recently successful addresses, per‑address request limit; in memory.
+- **Caching:** the API sets `Cache-Control: no-store` on every response that has none.
+- **Readiness:** `core/ops/readiness.ts` (pure checks) + `scripts/readiness.ts` (`pnpm readiness[:prod] [url]`): configuration, database, migrations and — given the site URL — health privacy, API/web headers, client‑side routing, unknown API routes, HTTP→HTTPS.
+- **SMS seam:** `core/sms/sms-sender.ts` (no provider; D‑125).
+- **Timetable change requests:** `modules/timetable/change-request.service.ts` (+ repository, routes under `/timetable/change-requests`), web page `/timetable/requests`, administrator dashboard block `admin.timetableRequests`.

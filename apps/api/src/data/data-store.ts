@@ -34,6 +34,7 @@ import type { AchievementRepository } from '../modules/achievements/achievements
 import type { AnnouncementRepository } from '../modules/announcements/announcements.repository.js';
 import type { RequestRepository } from '../modules/requests/requests.repository.js';
 import type { AnnualReportRepository } from '../modules/reports/annual-reports.repository.js';
+import type { TimetableChangeRequestRepository } from '../modules/timetable/change-requests.repository.js';
 import type { SchoolSettingsRepository } from '../modules/school/school-settings.repository.js';
 
 /**
@@ -88,6 +89,8 @@ export interface Repositories {
   readonly requests: RequestRepository;
   // Phase 11 — annual reports
   readonly annualReports: AnnualReportRepository;
+  // Phase 12C — timetable change requests
+  readonly timetableRequests: TimetableChangeRequestRepository;
 }
 
 export interface MigrationState {

@@ -37,6 +37,12 @@ const EnvSchema = z.object({
         .filter(Boolean),
     ),
   TRUST_PROXY: booleanFlag.optional(),
+  /**
+   * SMS provider for staff phone verification (Phase 12C, D-125). Only 'none' exists in this
+   * version: no SMS is ever sent and no OTP flow is offered; the temporary-password onboarding
+   * remains the way staff receive access.
+   */
+  SMS_PROVIDER: z.string().trim().default('none'),
 
   // ---- Authentication (Phase 2) ----
   /** HMAC key for session-token hashing. Required in production; generated per process otherwise. */
@@ -58,8 +64,12 @@ const EnvSchema = z.object({
     .default(12),
   /** Defaults to true in production, false otherwise (plain-http development). */
   COOKIE_SECURE: booleanFlag.optional(),
-  LOGIN_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(1000).default(10),
+  /** Sign-in requests per minute per client address (a school network shares one; D-121). */
+  LOGIN_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(1000).default(60),
+  /** Failed sign-ins for one username from one address before that address is locked. */
   LOGIN_MAX_FAILED_ATTEMPTS: z.coerce.number().int().min(1).max(100).default(5),
+  /** Failed sign-ins for one username from all addresses before unknown addresses are locked. */
+  LOGIN_ACCOUNT_MAX_FAILED_ATTEMPTS: z.coerce.number().int().min(2).max(1000).default(20),
   LOGIN_LOCKOUT_MINUTES: z.coerce
     .number()
     .int()
@@ -86,6 +96,8 @@ function originProblem(origin: string, production: boolean): string | null {
   return null;
 }
 
+const LOOPBACK = new Set(['127.0.0.1', '::1', 'localhost']);
+
 /** Obvious placeholders and low-entropy values that pass the length check but are not secret. */
 export function weakSecretProblem(secret: string): string | null {
   if (new Set(secret).size < 12) return 'is too repetitive; generate a random value';
@@ -105,6 +117,7 @@ export interface AuthConfig {
   readonly cookieSecure: boolean;
   readonly loginRateLimitPerMinute: number;
   readonly maxFailedAttempts: number;
+  readonly accountMaxFailedAttempts: number;
   readonly lockoutMs: number;
 }
 
@@ -175,7 +188,23 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     }
   }
 
+  if (env.SMS_PROVIDER !== 'none') {
+    problems.push(
+      "SMS_PROVIDER: no SMS provider integration is available in this version; leave it unset or 'none' (see docs/deployment.md)",
+    );
+  }
+
   if (production) {
+    if (env.TRUST_PROXY === undefined) {
+      problems.push(
+        'TRUST_PROXY: must be set explicitly in production (true behind the documented reverse proxy, false when clients connect directly)',
+      );
+    }
+    if (env.TRUST_PROXY === true && !LOOPBACK.has(env.HOST)) {
+      problems.push(
+        'TRUST_PROXY: true requires HOST to be a loopback address (127.0.0.1) so that only the local reverse proxy can reach the API and forwarded addresses cannot be forged',
+      );
+    }
     if (database?.driver === 'sqlite' && database.filename === SQLITE_MEMORY) {
       problems.push('DATABASE_URL: an in-memory database is not allowed in production');
     }
@@ -217,6 +246,7 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
       cookieSecure,
       loginRateLimitPerMinute: env.LOGIN_RATE_LIMIT_PER_MINUTE,
       maxFailedAttempts: env.LOGIN_MAX_FAILED_ATTEMPTS,
+      accountMaxFailedAttempts: env.LOGIN_ACCOUNT_MAX_FAILED_ATTEMPTS,
       lockoutMs: env.LOGIN_LOCKOUT_MINUTES * 60_000,
     }),
   });

@@ -84,6 +84,8 @@ export async function buildApp(
 
   app.addHook('onSend', async (request, reply) => {
     reply.header('x-request-id', request.id);
+    // API answers are per-user and dynamic: never stored by browsers or proxies (Phase 12C).
+    if (!reply.hasHeader('cache-control')) reply.header('cache-control', 'no-store');
     reply.header(
       'permissions-policy',
       'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',

@@ -78,6 +78,7 @@ import {
 import { MyResults } from '../features/marks/pages/ResultsPage';
 import { TimetableHome } from '../features/timetable/TimetableLayout';
 import { TimetableEditorPage } from '../features/timetable/pages/EditorPage';
+import { TimetableRequestsPage } from '../features/timetable/pages/RequestsPage';
 import { ClassTimetablePage, MyTimetablePage } from '../features/timetable/pages/ViewPages';
 
 export type NavSection = 'main' | 'management' | 'admin' | 'account';
@@ -179,6 +180,14 @@ export const SHELL_ROUTES: readonly ShellRoute[] = [
     title: 'Edit timetable',
     element: <TimetableEditorPage />,
     permission: 'timetable.manage',
+  },
+  // Phase 12C — timetable change requests (class teachers ask; administrators review).
+  {
+    path: 'timetable/requests',
+    title: 'Timetable requests',
+    element: <TimetableRequestsPage />,
+    permission: 'timetable.view',
+    roles: ['ADMIN', 'CLASS_TEACHER'],
   },
   // Phase 7 — Attendance (period-wise; scope is decided by the API from the timetable).
   {

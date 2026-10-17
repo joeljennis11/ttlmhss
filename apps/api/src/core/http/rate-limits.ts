@@ -9,3 +9,6 @@ export const CREDENTIAL_ISSUE_LIMIT = { max: 20, timeWindowMs: MINUTE };
 
 /** Report previews and PDF/XLSX generation (CPU-heavy documents). */
 export const REPORT_LIMIT = { max: 60, timeWindowMs: MINUTE };
+
+/** Creating a timetable change request (stops floods; the per-person open limit also applies). */
+export const CHANGE_REQUEST_LIMIT = { max: 20, timeWindowMs: MINUTE };

@@ -12,4 +12,5 @@ export * from './people.js';
 export * from './portal.js';
 export * from './reports.js';
 export * from './timetable.js';
+export * from './timetable-requests.js';
 export * from './validation.js';

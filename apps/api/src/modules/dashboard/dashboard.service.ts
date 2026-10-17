@@ -1,3 +1,4 @@
+import { TimetableChangeRequestService } from '../timetable/change-request.service.js';
 import {
   type AdminDashboard,
   type ClassDashboard,
@@ -67,6 +68,7 @@ export class DashboardService extends MarksServiceBase {
   private readonly announcements: AnnouncementService;
   private readonly requests: RequestService;
   private readonly portal: PortalService;
+  private readonly timetableRequests: TimetableChangeRequestService;
 
   constructor(deps: MarksServiceDeps) {
     super(deps);
@@ -78,6 +80,7 @@ export class DashboardService extends MarksServiceBase {
     this.announcements = new AnnouncementService(deps);
     this.requests = new RequestService(deps);
     this.portal = new PortalService(deps);
+    this.timetableRequests = new TimetableChangeRequestService(deps);
   }
 
   /** Runs one block; a refusal or "not applicable" from the underlying service leaves it out. */
@@ -183,7 +186,12 @@ export class DashboardService extends MarksServiceBase {
     const lessons = day.sections.reduce((n, s) => n + s.lessons, 0);
     const taken = day.sections.reduce((n, s) => n + s.taken, 0);
     const home = await this.marks.home(ctx, year?.id);
+    // Phase 12C: timetable change requests waiting for review (the same list the review page shows).
+    const timetableRequests = ctx.principal!.permissions.has('timetable.publish')
+      ? await this.timetableRequests.summary(ctx)
+      : { pending: 0, items: [] };
     return {
+      timetableRequests,
       counts: {
         activeStudents: students.total,
         activeTeachers: teachers.total,

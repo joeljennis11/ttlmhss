@@ -14,7 +14,9 @@
     "db:status": "tsx --conditions=@ttlmhss/source src/scripts/db.ts status",
     "db:migrate:prod": "node dist/scripts/db.js migrate",
     "account": "tsx --conditions=@ttlmhss/source src/scripts/accounts.ts",
-    "account:prod": "node dist/scripts/accounts.js"
+    "account:prod": "node dist/scripts/accounts.js",
+    "readiness": "tsx --conditions=@ttlmhss/source src/scripts/readiness.ts",
+    "readiness:prod": "node dist/scripts/readiness.js"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

@@ -33,6 +33,8 @@ const PROD = {
   DATABASE_URL: 'sqlite:./data/never-opened.sqlite',
   CORS_ORIGINS: 'https://school.test',
   SESSION_SECRET: GOOD_SECRET,
+  // Phase 12C: production must decide explicitly whether a local reverse proxy is trusted.
+  TRUST_PROXY: 'true',
 };
 
 function problemsOf(env: Record<string, string>): string {

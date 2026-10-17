@@ -24,7 +24,8 @@
     "db:migrate": "pnpm --filter @ttlmhss/api db:migrate",
     "db:rollback": "pnpm --filter @ttlmhss/api db:rollback",
     "db:status": "pnpm --filter @ttlmhss/api db:status",
-    "account": "pnpm --filter @ttlmhss/api account"
+    "account": "pnpm --filter @ttlmhss/api account",
+    "readiness": "pnpm --filter @ttlmhss/api readiness"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

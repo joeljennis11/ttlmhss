@@ -82,6 +82,7 @@ describe('configuration', () => {
       NODE_ENV: 'production',
       DATABASE_URL: 'sqlite:./data/x.sqlite',
       CORS_ORIGINS: 'https://school.example',
+      TRUST_PROXY: 'false',
     };
 
     it('requires SESSION_SECRET in production and defaults to secure cookies there', () => {
@@ -111,7 +112,7 @@ describe('configuration', () => {
         idleTimeoutMs: 120 * 60_000,
         absoluteTimeoutMs: 12 * 3_600_000,
         cookieSecure: false,
-        loginRateLimitPerMinute: 10,
+        loginRateLimitPerMinute: 60,
         maxFailedAttempts: 5,
         lockoutMs: 15 * 60_000,
       });

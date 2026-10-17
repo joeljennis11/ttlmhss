@@ -32,7 +32,7 @@ Development happens in explicit, user‑unlocked phases:
 - Do not silently introduce major new requirements.
 - Do not make irreversible architectural decisions the spec leaves open — ask. Open decisions are tracked in `docs/decisions.md`.
 
-**Current phase status:** Phase 12B complete (full integration and QA). Waiting for the next instruction (Phase 12C not started).
+**Current phase status:** Phase 12C complete (deployment readiness and operations) — the planned Phase 12 work is finished. Waiting for the next instruction.
 
 ## 2. Workflow for every phase
 
@@ -117,6 +117,7 @@ Real generated documents only: A4, official logo, school name, academic year, st
 - **Reports (Phase 11):** `modules/reports/` COMPOSES report documents from the existing services called with the caller's identity (ResultsService, MarkSheetService.sheet, AttendanceViewService incl. `classRegister`, BehaviourService, AchievementService) — never recalculate marks, grades, ranks, completeness or attendance %. The JSON document is both the preview and the input of the PDF (`render/report-pdf.ts` on PDFKit, A4, official logo from `apps/api/assets/ttlmhss-logo-print.jpg` resized by the brand script) and the XLSX (`render/attendance-xlsx.ts`, ExcelJS); routes return files via `FileResponse`. Official report cards only for complete results. Annual percentage = `annualPercentBp` (Σ exam % × configured weightage ÷ 100; weightages must total 100 % and every weighted exam be complete). `annual_reports`: DRAFT (live) → FINALIZED (full content frozen in `snapshot_json`, incl. the final remark) → PUBLISHED (student); class teachers prepare/remark/finalize, administrators publish/unpublish/reopen (reason); audit entity `annual_report`. Never print the system remark suggestion on an official report; never invent school details or signatures.
 - **Security (Phase 12A):** production start‑up refuses unsafe configuration (`config.ts`) — never add a silent fallback for production. New sensitive or costly routes declare `rateLimit` from `core/http/rate-limits.ts` (per account, else per IP). Query‑string ids use `IdSchema` / `OptionalIdFilterSchema`, never bare `z.string()`. Do not loosen the API CSP or the web `WEB_CSP` without recording the exception in `docs/architecture.md` §21. Test‑only modules/seeds must stay impossible in production.
 - **Integration (Phase 12B):** a student may have several placements in a year — anything about a past lesson or exam uses the placement of THAT date/exam (never "the last placement" from a map); repository queries that feed such lookups must be explicitly ordered so SQLite and PostgreSQL agree. Dialogs open through `useModalDialog` (focus returns to the opener). `apps/api/test/phase12b.test.ts` is the cross‑module regression suite — extend it when a change crosses modules.
+- **Operations (Phase 12C):** the supported deployment is ONE API process behind the nginx config in `deploy/` (`docs/deployment.md`); do not add features that need several processes without a shared store. Timetable change requests (`modules/timetable/change-request.service.ts`) only ever write to the draft via `TimetableEditorService.applyChanges` — never to a published version. Any new start‑up setting is validated in `config.ts`, documented in `.env.example`, `deploy/api.env.example` and `docs/deployment.md`, and checked by `pnpm readiness` where it matters. No feature may claim to send SMS/email without a real configured provider (`core/sms/sms-sender.ts`).
 - Run `pnpm check` (lint + format + typecheck + tests) before finishing a phase; run `pnpm --filter @ttlmhss/web test:e2e` when UI flows change.
 
 ## 9. Documentation map
@@ -129,6 +130,7 @@ Real generated documents only: A4, official logo, school name, academic year, st
 | `docs/architecture.md` | Proposed architecture, stack and boundaries |
 | `docs/database-design.md` | High‑level conceptual data model (provider‑agnostic) |
 | `docs/decisions.md` | Open decisions and their status — check before deciding anything |
+| `docs/deployment.md` | Production deployment, updates, rollback, backup/restore, troubleshooting |
 | `docs/phases/phase-N.md` | Record of what each phase did |
 
 Keep docs accurate and lean. Update them when a phase changes something they describe. Do not create docs for their own sake.

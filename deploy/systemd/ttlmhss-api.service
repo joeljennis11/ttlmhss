@@ -1,0 +1,27 @@
+# TTLMHSS API — systemd unit (Phase 12C). ONE process (rate-limit and sign-in counters are in memory).
+# Install: copy to /etc/systemd/system/, adjust paths/user, `systemctl daemon-reload`,
+# `systemctl enable --now ttlmhss-api`. Secrets live in /etc/ttlmhss/api.env (chmod 600, owner root),
+# never in the repository.
+[Unit]
+Description=TTLMHSS School Management System API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ttlmhss
+Group=ttlmhss
+WorkingDirectory=/srv/ttlmhss/apps/api
+EnvironmentFile=/etc/ttlmhss/api.env
+ExecStart=/usr/bin/node dist/server.js
+Restart=on-failure
+RestartSec=5
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/ttlmhss/apps/api/data
+
+[Install]
+WantedBy=multi-user.target

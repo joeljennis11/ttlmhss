@@ -32,6 +32,7 @@ export function createAppDependencies(
       overrides.loginThrottle ??
       new LoginThrottle({
         maxFailures: config.auth.maxFailedAttempts,
+        accountMaxFailures: config.auth.accountMaxFailedAttempts,
         lockoutMs: config.auth.lockoutMs,
       }),
     authenticator:

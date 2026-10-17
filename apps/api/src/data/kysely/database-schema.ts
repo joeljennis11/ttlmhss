@@ -59,6 +59,7 @@ export interface Database {
   requests: RequestsTable;
   // Phase 11
   annual_reports: AnnualReportsTable;
+  timetable_change_requests: TimetableChangeRequestsTable;
 }
 
 export interface AttendancePolicyTable extends Timestamps {
@@ -545,5 +546,28 @@ export interface AnnualReportsTable extends Timestamps {
   published_by: string | null;
   revision: number;
   created_by: string;
+  updated_by: string | null;
+}
+
+// ---- Phase 12C: timetable change requests ------------------------------------------------------
+
+export interface TimetableChangeRequestsTable extends Timestamps {
+  id: string;
+  academic_year_id: string;
+  section_id: string;
+  day: string;
+  period_id: string;
+  kind: string;
+  current_subject_id: string | null;
+  current_teacher_id: string | null;
+  proposed_subject_id: string | null;
+  proposed_teacher_id: string | null;
+  reason: string;
+  status: string;
+  review_note: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  revision: number;
+  requested_by: string;
   updated_by: string | null;
 }

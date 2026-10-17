@@ -58,6 +58,7 @@ Authoritative definitions of the domain rules. Each rule has an ID so code, test
 - **BR‑TT‑16 (Phase 6)** History is protected: a period, section, subject or teacher used by any timetable version cannot be deleted (deactivate instead); a Teacher → Subject pair used by the draft or live timetable cannot be removed; a closed year's timetable cannot change.
 - **BR‑TT‑17 (Phase 6)** If the configuration changes after a lesson was added (period deactivated, working day removed, teacher/subject deactivated, subject unassigned), the lesson is kept and shown, listed as a problem, and blocks publishing until fixed.
 - **BR‑TT‑18 (Phase 6)** The timetable is the future source of the attendance context: for a date, the published entry for that weekday gives Date + Period + Class/Section + Subject + Teacher (`/timetable/lessons`).
+- **BR‑TT‑19 (Phase 12C)** A class teacher may ask for a change to ONE lesson slot of their own section (add, change subject/teacher, remove) with a reason; one pending request per slot. The proposed teacher must teach the proposed subject. Nothing changes until an administrator approves; approval applies the change to the year's draft with every editor check repeated (clashes, qualification) and is refused — the request stays pending — when the slot no longer holds the lesson the request was based on. Declining needs a reason; the requester may withdraw while pending. Only administrators publish; a request never edits the published timetable.
 
 ## Attendance (BR‑ATT)
 

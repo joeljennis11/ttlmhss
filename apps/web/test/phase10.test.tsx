@@ -130,6 +130,7 @@ describe('dashboards', () => {
                     sheets: { total: 8, notStarted: 2, draft: 3, submitted: 3, unlocked: 0 },
                   },
                 ],
+                timetableRequests: { pending: 0, items: [] },
               },
               announcements: { items: [announcement()], total: 1 },
               requests: { items: [request()], active: 1 },

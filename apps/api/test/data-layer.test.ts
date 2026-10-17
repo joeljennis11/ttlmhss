@@ -150,6 +150,7 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) =
       '0011_behaviour_achievements',
       '0012_announcements_requests',
       '0013_annual_reports',
+      '0014_timetable_change_requests',
     ];
 
     it('migrates an empty database to the latest version', async () => {
@@ -161,6 +162,7 @@ describe.each<TestDriver>(['sqlite', 'postgres'])('data layer on %s', (driver) =
     });
 
     it('every migration rolls back cleanly and re-applies (schema is reproducible)', async () => {
+      expect(await store.schema.rollbackLast()).toBe('0014_timetable_change_requests');
       expect(await store.schema.rollbackLast()).toBe('0013_annual_reports');
       expect(await store.schema.rollbackLast()).toBe('0012_announcements_requests');
       expect(await store.schema.rollbackLast()).toBe('0011_behaviour_achievements');

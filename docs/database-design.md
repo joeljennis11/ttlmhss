@@ -284,6 +284,10 @@ exams (+ stage DRAFT/OPEN/CLOSED, description)
 - The snapshot is the complete display‑ready report (JSON matching `AnnualReportContentSchema`), so an official report never depends on mutable configuration or records. Other reports are generated on request and not stored (D‑104).
 - References are ON DELETE RESTRICT. No rows are inserted.
 
+### 5j. Phase 12C additions (`0014_timetable_change_requests`)
+
+- **timetable_change_requests** — a class teacher's request to change ONE lesson slot: academic year, section, day, period (FKs), `kind` ADD / CHANGE / REMOVE, the lesson in the slot when asked (`current_subject_id`, `current_teacher_id` — the stale‑approval check) and the proposal (`proposed_*`; both null for REMOVE, enforced by check constraints), reason (1–500), `status` PENDING / APPROVED / DECLINED / WITHDRAWN, review note (required when declined), reviewer and time, `revision` (optimistic concurrency), requester. Indexed by year + status, section, requester. All references ON DELETE RESTRICT; requests are never deleted. Approval writes to the draft through `timetable_entries` like any edit; the request row never changes the published version.
+
 ## 6. Mapping of the functional entity list to the schema
 
 | Functional entity | Representation | When |

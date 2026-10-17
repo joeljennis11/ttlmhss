@@ -309,3 +309,16 @@ No permission or grant changed. Audited by an automated sweep (`apps/api/test/ph
 - A student and a (non‑class) teacher receive 403 on every route whose permission their role does not hold by default.
 - A temporary password allows only the password‑change flow.
 - Record scope (IDOR): a student cannot read another student's reports, attendance, profile or behaviour by changing an id; a class teacher cannot read or prepare reports for another section; a subject teacher without the assignment sees no class report. Out‑of‑scope and missing records answer alike (403/404) and never include the other record's data.
+
+## 18. Timetable change requests (Phase 12C)
+
+No new permission keys (D‑122).
+
+| Action | Who | Server check |
+|---|---|---|
+| See options, ask for a change, withdraw own request | Class teacher of the section (current year) | `timetable.view` + `classTeacherOf` contains the section; withdraw: requester only |
+| See requests | Administrators (all); class teachers (their sections) | `timetable.view`; reviewers = holders of `timetable.publish`; others 403 |
+| Approve / decline | Administrators | `timetable.publish` (never grantable to other roles) |
+| Edit the draft directly | Administrators; class teachers only if granted `timetable.manage` (D‑17) | unchanged |
+
+Subject teachers and students get 403 on every change‑request route.
