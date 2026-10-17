@@ -65,6 +65,34 @@ describe('production configuration (Phase 12C additions)', () => {
     expect(problems({ ...PROD, HOST: '0.0.0.0' })).toContain('requires HOST to be a loopback');
   });
 
+  it('on Vercel only the two secrets are needed; yes/no settings tolerate case and spaces', () => {
+    const minimal = {
+      NODE_ENV: 'production',
+      VERCEL: '1',
+      VERCEL_PROJECT_PRODUCTION_URL: 'ttlmhss.vercel.app',
+      DATABASE_URL: 'postgres://u:p@db.example/ttlmhss',
+      SESSION_SECRET: GOOD_SECRET,
+    };
+    const c = loadConfig({ readEnvFiles: false, env: minimal });
+    expect(c.corsOrigins).toEqual(['https://ttlmhss.vercel.app']);
+    expect(c.trustProxy).toBe(true);
+    expect(c.auth.cookieSecure).toBe(true);
+    // An explicit value still wins.
+    expect(
+      loadConfig({ readEnvFiles: false, env: { ...minimal, CORS_ORIGINS: 'https://school.test' } })
+        .corsOrigins,
+    ).toEqual(['https://school.test']);
+    expect(
+      loadConfig({ readEnvFiles: false, env: { ...minimal, TRUST_PROXY: ' True ' } }).trustProxy,
+    ).toBe(true);
+    // Still refused: no secret.
+    const { SESSION_SECRET: _s, ...noSecret } = minimal;
+    expect(problems(noSecret)).toContain('SESSION_SECRET: is required');
+    // Off Vercel nothing is inferred.
+    const { VERCEL: _v, ...offVercel } = minimal;
+    expect(problems(offVercel)).toContain('CORS_ORIGINS: must list');
+  });
+
   it('refuses an SMS provider that does not exist, and never pretends to send', async () => {
     expect(problems({ ...PROD, SMS_PROVIDER: 'twilio' })).toContain('SMS_PROVIDER');
     expect(unavailableSmsSender.available).toBe(false);

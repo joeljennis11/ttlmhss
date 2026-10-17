@@ -19,7 +19,11 @@ export type RuntimeEnv = (typeof RUNTIME_ENVS)[number];
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
-const booleanFlag = z.enum(['true', 'false']).transform((value) => value === 'true');
+// Accepts true/false in any letter case with surrounding spaces (a common dashboard typo).
+const booleanFlag = z.preprocess(
+  (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value),
+  z.enum(['true', 'false']).transform((value) => value === 'true'),
+);
 
 const EnvSchema = z.object({
   NODE_ENV: z.enum(RUNTIME_ENVS).default('development'),
@@ -175,6 +179,14 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     );
   }
   const env = parsed.data;
+  // Vercel (Phase 12C, D-129): the platform supplies what a server operator would set by hand —
+  // the site address (system variable VERCEL_PROJECT_PRODUCTION_URL) and an edge that overwrites
+  // X-Forwarded-For. Explicit values still win.
+  if (onVercel(raw)) {
+    if (env.TRUST_PROXY === undefined) env.TRUST_PROXY = true;
+    const site = raw.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+    if (env.CORS_ORIGINS.length === 0 && site) env.CORS_ORIGINS = [`https://${site}`];
+  }
   const problems: string[] = [];
 
   let database: DatabaseConfig | undefined;
