@@ -28,3 +28,4 @@ apps/api/data/
 !.vscode/extensions.json
 **/e2e/.results/
 **/playwright-report/
+.neon
