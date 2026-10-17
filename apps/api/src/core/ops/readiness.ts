@@ -44,9 +44,14 @@ export function configChecks(config: AppConfig): Check[] {
     },
     {
       name: 'reverse proxy',
-      ok: !config.trustProxy || ['127.0.0.1', '::1', 'localhost'].includes(config.host),
+      ok:
+        !config.trustProxy ||
+        config.vercel ||
+        ['127.0.0.1', '::1', 'localhost'].includes(config.host),
       detail: config.trustProxy
-        ? `trusting X-Forwarded-* from the local proxy (API on ${config.host})`
+        ? config.vercel
+          ? "trusting X-Forwarded-* from Vercel's edge"
+          : `trusting X-Forwarded-* from the local proxy (API on ${config.host})`
         : 'clients connect directly; forwarded headers ignored',
     },
     {

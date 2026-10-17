@@ -26,5 +26,11 @@ export async function createKysely(config: DatabaseConfig): Promise<Kysely<Datab
 
   const { default: pg } = await import('pg');
   const pool = new pg.Pool({ connectionString: config.connectionString, max: 10 });
+  if (process.env.VERCEL) {
+    // On Vercel Functions (Fluid compute) an instance is suspended between requests: let the
+    // platform close idle pool connections first so they do not leak (Neon / Vercel guidance).
+    const { attachDatabasePool } = await import('@vercel/functions');
+    attachDatabasePool(pool);
+  }
   return new Kysely<Database>({ dialect: new PostgresDialect({ pool }) });
 }

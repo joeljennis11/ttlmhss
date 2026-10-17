@@ -264,3 +264,12 @@ These cannot be done from the repository:
 - **The first administrator account and its first password change.**
 - **School data** (Admin → School setup). Do **not** copy the development database (`apps/api/data/*.sqlite`) to production; it holds synthetic test data only.
 - **An SMS provider and sender registration**, only if phone verification is developed later (D‑125).
+
+## 12. Alternative: Vercel (D‑129)
+
+`vercel.json` deploys the repository as one Vercel project with two services: `web` (static site, public at `/`) and `api` (Fastify as a Vercel Function, public at `/api/*`). The same security rules apply; Vercel‑specific points:
+
+- **Database:** PostgreSQL only (for example Neon). Set `DATABASE_URL` to the pooled connection string for the API; run migrations from a workstation with the **direct** (non‑pooler) string: `DATABASE_URL=<direct> pnpm db:migrate`, then `pnpm account create-admin <username>`. The API refuses to start while migrations are pending.
+- **Environment variables (Vercel → Project → Settings → Environment Variables, Production):** `DATABASE_URL`, `SESSION_SECRET` (generate as in §3), `CORS_ORIGINS=https://<production domain>`, `TRUST_PROXY=true`. `NODE_ENV` and `VERCEL` are set by Vercel.
+- **Preview deployments** have other addresses; sign‑in there is refused by the origin check unless that exact address is added to `CORS_ORIGINS` (do not use production data in previews).
+- **Limits:** sign‑in and rate‑limit counters are kept per function instance (Vercel may run several), so brute‑force limits are weaker than on the single‑server setup; responses are limited to 4.5 MB (very large class reports could hit it); backups are the database provider's (Neon point‑in‑time restore) plus `pg_dump` as in §9.

@@ -98,6 +98,11 @@ function originProblem(origin: string, production: boolean): string | null {
 
 const LOOPBACK = new Set(['127.0.0.1', '::1', 'localhost']);
 
+/** Running on Vercel (the platform sets VERCEL=1 for builds and functions). */
+export function onVercel(raw: RawEnv): boolean {
+  return raw.VERCEL === '1';
+}
+
 /** Obvious placeholders and low-entropy values that pass the length check but are not secret. */
 export function weakSecretProblem(secret: string): string | null {
   if (new Set(secret).size < 12) return 'is too repetitive; generate a random value';
@@ -131,6 +136,8 @@ export interface AppConfig {
   readonly corsOrigins: readonly string[];
   /** Trust X-Forwarded-* headers (only behind a known reverse proxy). */
   readonly trustProxy: boolean;
+  /** Deployed on Vercel (ingress only through Vercel's edge). */
+  readonly vercel: boolean;
   /** Send Strict-Transport-Security: only when the site is served over HTTPS (secure cookies). */
   readonly hsts: boolean;
   readonly auth: AuthConfig;
@@ -200,9 +207,16 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
         'TRUST_PROXY: must be set explicitly in production (true behind the documented reverse proxy, false when clients connect directly)',
       );
     }
-    if (env.TRUST_PROXY === true && !LOOPBACK.has(env.HOST)) {
+    // On Vercel the API is reachable only through Vercel's edge, which sets X-Forwarded-For
+    // itself; elsewhere only a proxy on the same host may be trusted.
+    if (env.TRUST_PROXY === true && !LOOPBACK.has(env.HOST) && !onVercel(raw)) {
       problems.push(
         'TRUST_PROXY: true requires HOST to be a loopback address (127.0.0.1) so that only the local reverse proxy can reach the API and forwarded addresses cannot be forged',
+      );
+    }
+    if (database?.driver === 'sqlite' && onVercel(raw)) {
+      problems.push(
+        'DATABASE_URL: SQLite cannot be used on Vercel (function storage is temporary and data would be lost); use a PostgreSQL connection string',
       );
     }
     if (database?.driver === 'sqlite' && database.filename === SQLITE_MEMORY) {
@@ -237,6 +251,7 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     database,
     corsOrigins: Object.freeze([...env.CORS_ORIGINS]),
     trustProxy: env.TRUST_PROXY ?? false,
+    vercel: onVercel(raw),
     hsts: cookieSecure,
     auth: Object.freeze({
       sessionSecret: env.SESSION_SECRET ?? randomBytes(32).toString('base64url'),

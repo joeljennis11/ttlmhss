@@ -48,6 +48,23 @@ describe('production configuration (Phase 12C additions)', () => {
     expect(problems({ ...PROD, HOST: '0.0.0.0', TRUST_PROXY: 'false' })).toBe('');
   });
 
+  it('on Vercel: PostgreSQL is required, and the edge may be trusted for forwarded addresses', () => {
+    const vercel = { ...PROD, VERCEL: '1', DATABASE_URL: 'postgres://u:p@db.example/ttlmhss' };
+    expect(problems({ ...vercel, HOST: '0.0.0.0' })).toBe('');
+    expect(loadConfig({ readEnvFiles: false, env: vercel }).vercel).toBe(true);
+    expect(
+      configChecks(loadConfig({ readEnvFiles: false, env: { ...vercel, HOST: '0.0.0.0' } })).find(
+        (c) => c.name === 'reverse proxy',
+      )?.ok,
+    ).toBe(true);
+    // SQLite on Vercel would lose every record when the function instance goes away.
+    expect(problems({ ...vercel, DATABASE_URL: 'sqlite:./data/x.sqlite' })).toContain(
+      'SQLite cannot be used on Vercel',
+    );
+    // Off Vercel the loopback rule still applies.
+    expect(problems({ ...PROD, HOST: '0.0.0.0' })).toContain('requires HOST to be a loopback');
+  });
+
   it('refuses an SMS provider that does not exist, and never pretends to send', async () => {
     expect(problems({ ...PROD, SMS_PROVIDER: 'twilio' })).toContain('SMS_PROVIDER');
     expect(unavailableSmsSender.available).toBe(false);
